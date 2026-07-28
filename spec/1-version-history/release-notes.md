@@ -6,9 +6,9 @@
 
 ### **v3.0.0-alpha** <a href="#v3.0.0" id="v3.0.0"></a>
 
-_Release date: June 2025_
+_Release date: June 2026_
 
-_Authors: David Higgins, Ali González_
+_Authors: David Higgins, Ali González-García_
 
 #### **Release Overview:**
 
