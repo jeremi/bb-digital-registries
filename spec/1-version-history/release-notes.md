@@ -12,7 +12,7 @@ _Authors: David Higgins, Ali González-García_
 
 #### **Release Overview:**
 
-This release is the result of the consolidation of a new Registries and Registration Working Group that worked between July 2025 and February 2026; The team discussed terminology and scope of the Registries Building Block and reviewed the current BB structure to reflect GovSpecs 2.0 Architecture. Since February, the team have discussed a re-scope of both the Registries and Registration BB and [opened articles for public comment](https://govstack.global/news/how-to-define-digital-registries-and-registration-in-the-govstack-context/). \
+This release is the result of the consolidation of a new Registries and Registration Working Group that worked between July 2025 and June 2026; The team discussed terminology and scope of the Registries Building Block and reviewed the current BB structure to reflect GovSpecs 2.0 Architecture. Since February, the team have discussed a re-scope of both the Registries and Registration BB and [opened articles for public comment](https://govstack.global/news/how-to-define-digital-registries-and-registration-in-the-govstack-context/). \
 \
 This early release represents the direction in which the Working Group will take the Registries and Registration solutions' space.&#x20;
 
