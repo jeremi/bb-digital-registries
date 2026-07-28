@@ -5,7 +5,7 @@ description: Version 3.0-alpha; June 2026
 # Digital Registries Building Block Specification
 
 _**Coordinating authors:**_\
-Dr. Bimal Kumar, Xilene Siquero, and Sebastian Leidig
+Dr. Bimal Kumar, Xilene Siquero, and Sebastian Leidig (Aam Digital)
 
 _**Authors:**_\
 Janet Ngugi, Vivek Rana, Chinenye Ifebirinachi, Ananya Jha, Umang Gupta, and Leonora Smart-Abbey, and Jeremi Joslin

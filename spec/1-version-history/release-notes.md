@@ -16,7 +16,7 @@ This release is the result of the consolidation of a new Registries and Registra
 \
 This early release represents the direction in which the Working Group will take the Registries and Registration solutions' space.&#x20;
 
-Changelog per section is as follows:
+Change-log per section is as follows:
 
 | Section                                                            | Title                         | Change Level                                                           |
 | ------------------------------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------- |
