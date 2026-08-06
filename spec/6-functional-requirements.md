@@ -1,424 +1,155 @@
 ---
-description: This section lists the technical capabilities of this Building Block.
+description: Draft Registry Core and Consultation Retrieve requirements.
 ---
 
 # 6 Functional Requirements
 
-## Introduction <a href="#docs-internal-guid-d85f59a4-7fff-1564-6ae2-86d67f36a258" id="docs-internal-guid-d85f59a4-7fff-1564-6ae2-86d67f36a258"></a>
-
-This page translates the key functionalities of the Digital Registries Building Block into a clear set of functional requirements. These are the specific capabilities that any implementation of the building block must support to be considered compliant with the GovStack standard
-
-For technical teams, these requirements serve as a specification for development. For government stakeholders, they provide a checklist to evaluate solutions.
-
-In short, this list describes what a **Digital Registry** must be able to _do_. It’s the checklist for building or buying a system that meets GovStack standards.
-
-## 6.1 Administrative/Analyst Functions <a href="#docs-internal-guid-d85f59a4-7fff-1564-6ae2-86d67f36a258" id="docs-internal-guid-d85f59a4-7fff-1564-6ae2-86d67f36a258"></a>
-
-#### **DRS-1:** **Create Registries**
-
-The Digital Registry BB shall enable authorised users to create new registry schemas, each identified by: (REQUIRED):
-
-1. Name of the database;
-2. A unique short code / name;
-3. A structured schema definition as specified in (see DRS-3).
-4. Registry metadata (domain, owner department, retention policy, classification Open/Restricted/Confidential)
-5. Lifecycle state: Draft-> Published ->Archived
-6. Default indexing & Storage profile (row store / column store / document store)
-
-#### **DRS-2: Multiple Databases**
-
-* Analysts can create multiple databases in one system instance.&#x20;
-  * Links can be:
-    * **Foreign key** (Strict)
-    * **Soft link** (UUID reference; no FK constraint)
-    * **Graph relationship** (NEW: parent-child, many-to-many edges)
-* Analysts can configure which databases and which fields are linked. In this document and foreign key function, we consider databases as database tables that can be linked with one another. See the [example illustration](https://github.com/GovStackWorkingGroup/bb-digital-registries/blob/23Q4/spec/.gitbook/assets/Database%20Foreign%20key.png).
-  * **User story**: As a user, I can browse database content (Data) in the user interface and when databases are linked, then I can click and move from one database/table to another where the corresponding linked data will open in the user interface.
-* In the Digital Registries Data user interface, it should be possible to open another database by clicking on the record ID in one database and all corresponding records from the other Database will open.
-* It is required to have at least two levels of IDs (database ID and field ID) to link the databases. See the example API in [Appendix 2](https://github.com/GovStackWorkingGroup/bb-digital-registries/blob/23Q4/spec/.gitbook/assets/appendix2.json).
-  * **Example**: In one registry database we store information about Mother and Child records. In the second registry database, we store information about payments made for the mother. The system must enable a foreign key link between the payment database to the Mother and child record database. Users can click in the payment database record user interface to the Mother ID field and the system user interface should open the corresponding record in the Mother and Child database. (REQUIRED)
-* **Reference Integrity Rules**:
-  * Cascade delete
-  * Restrict delete
-  * Orphan tolerance
-
-#### **DRS-3: Database Schema**
-
-*   Analysts have the option to add fields to the database schema. Fields of the database must contain at least the following elements (REQUIRED):
-
-    1. Field name;
-    2. Field type, at least with the following types:
-       1. Text;
-       2. Number;
-       3. Boolean;
-       4. Date/time;
-       5. Date;
-       6. Time;
-       7. File (pdf, doc, etc.). File extensions/types must be configurable;
-       8. List/Array/Edit grid (sub-table/array of values inside a field);
-       9. JSON object / Block container (optional, to group fields visually);
-       10. List of Values/Catalog (holding value and key).
-       11. Database/Cluster encoding UTF-8 for multi language support (Optional)
-       12. GeoPoint (lat/long) (optional)
-       13. GeoShape (polygon, boundary)(optional)
-
-    3\. Field properties (see more in DRS-17)
-
-#### **DRS-4:** **Publishing and Versioning**
-
-* Analysts have the option to publish the database. Publishing will reveal the database to users. (REQUIRED)
-* Publish uses versioning. Each publish request creates a new version of the database schema and API services.
-* Old database schemas must be made available to the users.
-* Data stored in the old database versions must be usable in old versions and in new versions.
-* Analysts can delete database schema versions. Same version API services must be deleted at the same time.
-* Change impact analysis:
-  * Breaking changes identified automatically
-  * Warnings shown to analyst
-
-#### **DRS-5: APIs**
-
-* Analysts must be able to configure the API services per registry database. (REQUIRED)
-  * The system automatically creates API services to:
-    * create data.
-    * read data.
-    * update data.
-    * delete data.
-    * Bulk operations (batch create/update/delete)
-    * validate data (if exists).
-    * update or create data.
-    * archive data
-    * Schema Introspection (replies with the schema (tables/fields/types/relations) in a machine-readable form)
-* Analysts can hide/disable API services.
-* Analysts can delete API services.
-* Analysts can copy API services.
-* Analysts can create view (Read data) custom API services.
-* Field-level masking applied dynamically (Optional) (DRS-9)
-* Subscription API (event-based)
-* An analyst must be able to mark a field as secret (DRS-15)
-* An analyst must be able to mark a field as PersonalDataID (DRS-14)
-* The system generates the API data structure from the dynamic database structure automatically each time a publish is done.
-
-#### **DRS-6: Authorization and Access Control**
-
-*   Authorization to (REQUIRED)
-
-    1. create and manage databases.
-    2. API usage per service, per record, per data field.
-    3. access to DATA.
-
-    Analysts have the option to manage user rights of a database and data via API and via a user interface.
-* RBAC (roles)
-* ABAC (attributes)
-* PBAC (policy-based access control)
-* Consent-based access
-* **Delegated access** (guardian, parent, representative)
-* **Cross-registry access templates**
-* **Data minimization rules** (only minimum required fields returned)
-* **Condition-based dynamic restrictions** Example: Show fields only if “CaseStatus=APPROVED”
-* "Any logged-in user" role must be available
-* "Anonymous" user role must be available
-* Attribute Based Access Control (ABAC) logic could be used (API, Schema, data fields, record filter, users)
-* Per user, per group of users option must be available.
-  * Group is a set of users in a role
-  * Role is a set of rights
-
-#### **DRS-7: Logging and Auditing**
-
-1. The system must log all data processing in the database. (REQUIRED)
-   1. Schema changes must be logged
-   2. Data processing (Create, Read, Update, Delete) must be logged
-   3. Logs must be visible and searchable to the Analyst via the User Interface
-   4. Every data owner (e.g. physical person) has the option to see who has processed his/her data (PersonalData). The function is a standard function for all registries ([DRS-14 API example](https://github.com/GovStackWorkingGroup/bb-digital-registries/blob/23Q4/api/GovStack_Digital_registries_BB_Data_API_template-1.3.0.json))
-2. Change logs are protected with the highest level of integrity (chaining of logs)
-3. Database logs could be logged with an external blockchain for additional security (optional)
-
-#### **DRS-8: Personal Data usage. (REQUIRED)**
-
-1. The System must automatically store all data read requests and store these in the log table.
-   * Covers data read events via User Interface and via APIs
-   * Personal Data logs are stored with PersonalData data tag, storing at least the following information.
-     * Log ID
-     * Data record ID
-     * Field ID
-     * PersonalDataID (unique and unchangeable identifier of a person)
-     * Reader ID- who read the data
-     * Reader name- name or initial of a person
-     * When - the moment when the Personal Data was read
-   * The Personal Data report is visible only for Analysts to see all data read logs and Data Owners (physical persons) to see their own personal data usage log. Input is PersonalDataID field
-   * PersonalData report is usable as an API service (read)
-   * System has API for PersonalData reports. API is per registry(database)
-   * System must log Personal Data log read events to the log table.
-   * Legal justification (if required by law)
-   * Consent reference (if applicable)
-   * Data viewer’s role, org, location, Device fingerprint (optional)
-
-#### **DRS-9: Analysts must be able to create views of a database. (OPTIONAL)**
-
-* View is a selection of data from a database
-* View can be opened as OPEN DATA (anonymous user)
-* View can be created, and it can be as a base for an API service (Custom API)
-* View is not for changing or deleting data, only for reading
-* View rights are managed by the user rights management system
-
-#### **DRS-10**
-
-The option export database schema to JSON/YAML file, (optional: XLS file format) (REQUIRED)
-
-#### **DRS-11**
-
-The option to import database schema from JSON/YAML file. (REQUIRED); The option to import database schema from XLS file. (OPTIONAL)
-
-#### **DRS-12**
-
-* Service usage statistics (OPTIONAL)
-  * System must record all API service usage information.
-  * System must record all searches made in the Registry User Interface and via APIs.
-
-#### **DRS-13**
-
-* An analyst must be able to mark a field as PersonalData log object (This field contains personal data). (OPTIONAL)
-
-#### **DRS-14**&#x20;
-
-An analyst must be able to mark a field as PersonalDataID. This is the data owner’s ID. (OPTIONAL)
-
-* Multiple identifiers (national ID, passport, local ID)
-* Identifier validation rules
-* Identifier linking to external registries
-* Immutable identifier enforcement
-
-#### **DRS-15**&#x20;
-
-An analyst must be able to mark a field as secret
-
-* This field contains secret data (credit card number). E.g. secret data (card data) must be encrypted while at REST.
-* Information in transit between the Building Blocks is secured with encryption. Information in Transit is described and governed by Information Mediator Building Block. (REQUIRED)
-
-#### **DRS-16**
-
-* Analyst has the option to read database schema in the web User Interface. (REQUIRED)
-
-#### **DRS-17**
+## 6.1 Reading the requirements
 
-* Analyst has capabilities to configure database field properties (REQUIRED)
-  1. API-related field properties
-     1. Validation options: required, unique, max, min
-     2. blinded/encrypted (DRS-15, DRS-22)
-  2. User Interface related field properties:
-     * field mask, format
-     * read-only
-     * personal data
-     * enum list selection
-     * blinded/encrypted (DRS-22)
-     * multiple value/array. User can add more values (e.g. multi select from catalog list) to the same field. Multiple values are
-       * array type field
-       * validation options- Required, Unique, max, min
-       * Foreign keys (to link other databases in the same ecosystem). See the example schema in [Appendix 2](https://github.com/GovStackWorkingGroup/bb-digital-registries/blob/23Q4/spec/.gitbook/assets/appendix2.json)
-     * Triggers to automate field content-related actions
-       * create IDs
-       * merge fields
-       * add prefix
-       * suffix
-       * conditional logic
-       * trigger will be activated if certain condition(s) are true
-       * transform-upper/lower case/ javascript)
-       * Triggers are automated when a record is created/changed. A trigger is a record-level automation
+This release contains only requirements that support the target Base Registry Profile. Additional families are described in [Key Functionalities](5-key-functionalities.md) but have no requirements or conformance effect in this release.
 
-#### **DRS-18**&#x20;
-
-Analyst has the capability to add an encryption key per database. (REQUIRED)
+Each requirement follows the GovStack Requirements Model. `DRAFT` means that the requirement is available for review but is not included in certification. Requirement identifiers are permanently reserved even while the requirement is DRAFT.
 
-* Encryption key is used to encrypt and decrypt data (DRS-17).
-* Encryption key can be used by applications to read encrypted data. Each database has a unique encryption key defined by the analyst.
-* Encryption key is blinded in the User Interface.
-* If applications want to read encrypted data via API they must know the encryption key. Data is decrypted in the user interface.
+## 6.2 Registry Core
 
-#### **DRS-19**&#x20;
+Registry Core requirements apply globally rather than to one Key Functionality.
 
-Analyst has the capabilities to automate data exchange between databases internally and externally via API. (REQUIRED)
+### #1 Publish Registry service metadata
 
-1. Automation is triggered automatically after a pre-configured time interval as a loop (finishes when all corresponding records have been processed).
-2. Automation processes one record at a time.
-3. Automation has configurable conditions (business rules in Rules Engine). E.g. IF field A = 123 then true. Conditions can be grouped with AND and OR operators.
-4. Automation is configured by mapping (input, output) registry data fields to:
-   1. another database in the same instance.
-   2. API in an external database.
-5. Mapping involves:
-   1. query part (input)
-   2. answer part (output)
-6. Webhook triggers (Multi-Registry Orchestration )
+`govstack-bb-digital-registries-fr-core#req-1`
 
-Mapping can be done from many to one and one to many. Mapping may have a transformation option to convert data to another format. E.g. est->EST; Expected outcome: Automation can be activated automatically when certain conditions are true and the system sends data to another database or to an external API.
+`DRAFT EXTENSIBLE AUDITABLE`
 
-#### **DRS-20**&#x20;
+An implementation publishes machine-readable service metadata containing a globally unique and stable Registry Identifier, a human-readable Registry name, the identity of the Registry Authority, the Digital Registries specification version, and the GovStack CFR version it implements.
 
-Analyst may have capabilities to use database schema templates so that the registry creation is faster. (OPTIONAL)
+**Purpose:** An adopter can determine which Registry and authority stand behind a service and which complete set of requirements applies.
 
-1. Schema templates can be shared in the same instance (internal marketplace).
-2. Schema templates can be shared in a marketplace.
-3. Schema templates can be imported and exported.
-4. Full registry + schema + views + API configs
-5. Domain templates: Health Registry, Business Registry, Farmer Registry (Optional)
-6. Versioned template repository
+**Prerequisite:** The Registry Authority and authoritative scope have been established by the adopting organisation.
 
-#### **DRS-21**
+**Verification:** Inspect the published service metadata, validate that all required values are present, and review evidence that the Registry Identifier is not shared with another Registry or changed between service revisions.
 
-Analyst has a view to see all data in the registry. (REQUIRED)
+### #2 Identify each returned Record
 
-1. Two main views:
-   1. Main registry records grid view.
-   2. Record detail view.
-2. See data;
-3. See documents(open if image, download if other type);
-4. Data log view (changes (create, update, delete). Data before and after).
-5. Data read view (information about who has looked at/exported the data). Data and data reader information is stored in the log registry.
+`govstack-bb-digital-registries-fr-core#req-2`
 
-#### **DRS-22**&#x20;
+`DRAFT EXTENSIBLE OBSERVABLE`
 
-Analyst has a view to edit data in the registry. (REQUIRED) Two main views:
+Every returned Record representation includes the Registry Identifier and a Record Identifier that is unique within that Registry. Together, the two identifiers uniquely identify the Record.
 
-1. Main grid (inline editing).
-2. Detail record edit view:
-   1. Edit data;
-   2. Remove/add documents (upload).
-   3. blinded/encrypted
+**Purpose:** Consumers can distinguish Records from different Registries and refer to one Record without depending on mutable domain attributes.
 
-Analyst has option to delete data in the registry. All data changes are logged.
+**Prerequisite:** A Record has been accepted into the Registry.
 
-#### **DRS-23**&#x20;
+**Verification:** Retrieve two distinct Record fixtures and verify that each response carries the expected Registry Identifier and a different Record Identifier.
 
-Analyst can use additional functions to simplify data searching (REQUIRED)
+### #3 Preserve Record Identifiers
 
-* Filtering by search criteria by field content.
-* Full-text data search.
-* Order by each data field.
+`govstack-bb-digital-registries-fr-core#req-3`
 
-#### **DRS-24**&#x20;
+`DRAFT EXTENSIBLE AUDITABLE`
 
-Import data to the registry. Analyst has the option to import information into the database. Import formats are: JSON, CSV, XLS. (REQUIRED)
+An implementation keeps a Record Identifier unchanged throughout that Record's lifecycle and revisions and never reassigns the identifier to a different Record.
 
-#### **DRS-25**&#x20;
+**Purpose:** A Record reference remains unambiguous after changes, retirement, archival, or deletion.
 
-Export data from the registry. Analyst has the option to export selected/filtered data from a registry to CSV/XLS, JSON. (REQUIRED)
+**Prerequisite:** The implementation has a documented Record Identifier lifecycle policy.
 
-#### **DRS-26**&#x20;
+**Verification:** Review the identifier policy and evidence showing that successive revisions retain the same identifier, distinct Records do not share an identifier, and retired identifiers are not returned to the allocation pool.
 
-Statistical queries. The system should have the ability to (REQUIRED):
+### #4 Identify the Record schema and semantic model
 
-1. Produce standard statistical reports
-   1. System must show statistics of all registered items in the registry, with various criteria for filtering. For example:
-      1. Details of registered people
-      2. Details of registered services
-      3. Time series: Change in registration of people/services over time
-      4. Details of change to data elements (audit logs)
-   2. Generate customizable reports based on the fields registered in the registry.
-2. Allow the analyst/user to analyze data collected in the system in various ways:
-   1. (Option) Develop functionality to allow custom dashboards for analysts to analyze data within databases.
-   2. Provide APIs for extracting data from databases to analyze in external data analytics systems (e.g. Tableau).
+`govstack-bb-digital-registries-fr-core#req-4`
 
-#### **DRS-27**&#x20;
+`DRAFT EXTENSIBLE OBSERVABLE`
 
-Users can share data with other users. Share data with other users via e-mail, or via a unique and secure URL. Sharing must be at a record level and field level. Data sharing can be turned off in the authorization module. Data can be shared with anonymous users. The data shared with anonymous users is Open Data. (REQUIRED)
+Every returned Record representation identifies a resolvable machine-readable schema and the published semantic model that govern its domain data.
 
-1. Time-bound secure links
-2. Consent-required links
-3. Role-restricted link sharing
-4. QR code sharing
-5. Download watermarking
-6. View-only mode (no export)
+**Purpose:** Consumers can validate the structure of a representation and interpret its domain meaning without knowledge of the implementation's internal storage.
 
-#### **DRS-28**&#x20;
+**Prerequisite:** The Registry Authority has selected the applicable schema and semantic model.
 
-Developer has the option to create a new registry database by sending data via API (REQUIRED). Developer is a user who is using API interface.
+**Verification:** Retrieve a Record, resolve the declared schema, validate the representation, and resolve the semantic-model identifier to its published definition.
 
-1. Name of the database;
-2. A short name;
-3. Schema of the database (see DRS-3).
+### #5 Identify the current revision and lifecycle state
 
-#### **DRS-29**&#x20;
+`govstack-bb-digital-registries-fr-core#req-5`
 
-Developer can create multiple registry databases into one system instance. (REQUIRED)
+`DRAFT EXTENSIBLE OBSERVABLE`
 
-#### **DRS-30**&#x20;
+Every returned Record representation identifies its current revision and a lifecycle state permitted by the representation's declared schema.
 
-Developer has the option to publish the database. Publishing will reveal the database to users. (REQUIRED)
+**Purpose:** Consumers can distinguish the current representation from earlier revisions and interpret its declared state.
 
-#### **DRS-31**&#x20;
+**Prerequisite:** The selected representation schema defines the supported lifecycle-state vocabulary.
 
-Developer must be able to modify API services per registry database. (REQUIRED)
+**Verification:** Retrieve fixtures in each lifecycle state exposed through Consultation, validate each state against the declared schema, and verify that each response identifies a current revision.
 
-1. The system generates the API data structure from the dynamic database structure automatically each time a publish is done.
-2. The system automatically creates API services to:
-   1. create data;
-   2. read data;
-   3. update data;
-   4. delete data;
-   5. validate data (if exists);
-   6. update or create data.
-3. Developer can hide API services;
-4. Developer can delete API services;
-5. Developer can copy API services;
-6. Developer can create custom API services.
+### #6 Provide minimum Record provenance
 
-#### **DRS-32**&#x20;
+`govstack-bb-digital-registries-fr-core#req-6`
 
-Developer has the option to read database schema via API. Developer has the option to read the list API services available per Database. (REQUIRED)
+`DRAFT EXTENSIBLE OBSERVABLE`
 
-## 6.2 Applicant Functions <a href="#docs-internal-guid-d85f59a4-7fff-1564-6ae2-86d67f36a258" id="docs-internal-guid-d85f59a4-7fff-1564-6ae2-86d67f36a258"></a>
+Every returned Record representation identifies the Registry Authority as the responsible source and provides the time at which the current revision was recorded.
 
-#### **DRS-33**&#x20;
+**Purpose:** A consumer can assess the institutional source and currency of the authoritative information.
 
-Building Block must enable client systems to process (CRUD) the database records via Open API services. (REQUIRED)
+**Prerequisite:** The Registry captures provenance for each accepted revision.
 
-* Applicant can search data
-* Applicant can create data
-* Applicant can read data
-* Applicant can update data
-* Applicant can delete data
-* Applicant can create or update data.
+**Verification:** Retrieve a Record and verify that the representation contains the Registry Authority identifier and recording time. Additional protected provenance details are outside this minimum requirement.
 
-Building Block authorizes client systems and users to process data
+## 6.3 Consultation Retrieve
 
-#### **DRS-34**&#x20;
+The following requirements link to the Consultation Key Functionality intended for the Base Registry Profile.
 
-Building Block has the Open API service list (Swagger) to visualize all API services and API service versions. (REQUIRED)
+### #1 Retrieve the current Record by identifier
 
-Client systems must be able to see all API service descriptions including:
+`govstack-bb-digital-registries-fr-consultation#req-1`
 
-* Description of each field.
-* Example data of each field.
+`DRAFT EXTENSIBLE OBSERVABLE`
 
-If possible then the example must be real so that whoever is looking at the API specifications can test the example data in the service (try it).
+`KF: Consultation`
 
-#### **DRS-35**&#x20;
+Given a valid Record Identifier and an authorised request, an implementation returns the current permitted representation of that Record without modifying the Record.
 
-System has an API for PersonalData usage report. (REQUIRED)
+**Purpose:** An API consumer that already knows a Record Identifier can obtain authoritative Registry information without using search or enumeration.
 
-1. API input must be configurable by the analyst. Input must be a unique identifier of the data owner(e.g. personal identification number)
-2. If the registry database schema is designed to store personal data then the analyst must be able to link the personal data to the owner of personal data (e.g. citizen).
+**Prerequisite:** An authorised API consumer and an accessible Record fixture exist.
 
-#### **DRS-36**
+**Verification:** Retrieve a known Record by identifier, verify the Registry and Record identifiers, current revision, lifecycle state, schema, semantic model, minimum provenance, and permitted domain data, and confirm that a subsequent Retrieve returns the same revision when no intervening change occurred.
 
-Statistical queries via API. (OPTIONAL)
+### #2 Apply disclosure rules to the returned representation
 
-1. System should make data accessible through the API
-   1. Registration Data
-   2. Program Data
-2. API should allow querying data with multiple parameters
-   1. Date, time ranges
-   2. Registered Program
-3. Only authorized data should be available through the API.
+`govstack-bb-digital-registries-fr-consultation#req-2`
 
-#### **DRS-37**&#x20;
+`DRAFT EXTENSIBLE OBSERVABLE`
 
-Using viewing event logs- every data owner has the right to see who has looked at their personal data. (REQUIRED)
+`KF: Consultation`
 
-1. Data owner is a physical person whose personal data is stored in the registry
-2. Data owner has the right to access data reading/processing event logs of the personal data they own. Personal data in a registry is marked accordingly (PersonalData) by the analyst
-3. PersonalData logs are visible via API or via User Interface (PersonalData report).
+An implementation returns only the Record fields and metadata permitted for the authenticated API consumer and request context.
 
-## Building Block Components
+**Purpose:** Retrieve does not become an entitlement to the complete stored Record.
 
-The Building Block has a user interface to query and consult the registry data but in most cases, the Applicants are using the end client applications like Registration Building Block to access the registry. Any Building Block can query data from Digital Registries Building Block via APIs if authorization is given.
+**Prerequisite:** At least two test consumers have different disclosure entitlements for the same Record.
 
-![Digital registries functional components](<.gitbook/assets/image3 (1) (1).png>)
+**Verification:** Retrieve the same Record using both consumers and verify that each receives only its permitted projection and that omitted values are not exposed through errors or metadata returned to the consumer.
+
+### #3 Hide protected Record existence
+
+`govstack-bb-digital-registries-fr-consultation#req-3`
+
+`DRAFT EXTENSIBLE OBSERVABLE`
+
+`KF: Consultation`
+
+For an API consumer that is not authorised to learn whether a protected Record exists, an implementation returns an error response that is indistinguishable under the published Retrieve contract from the response for an unknown Record Identifier. This includes the same status or error category, security-relevant headers, stable problem type or code, response schema, and non-Record-specific problem values. Per-request correlation values may differ when they are generated independently of Record existence. The response contains no Record-specific data.
+
+**Purpose:** An unauthorised consumer cannot enumerate protected Record Identifiers through the Retrieve error contract.
+
+**Prerequisite:** An unknown Record Identifier and a protected Record Identifier are available as test fixtures for the same consumer.
+
+**Verification:** Retrieve both identifiers as that consumer and compare the status or error category, security-relevant headers, problem type or code, response schema, non-Record-specific problem values, and data fields. Verify that any differing correlation values are independent of Record existence and that neither response exposes Record-specific data.
+
+## 6.4 Deferred capabilities
+
+No requirement identifier is assigned to Provisioning, additional Consultation sub-patterns, Evidence, Write, Notification, Aggregate Data, Access Transparency, or Identity Federation in this release.

@@ -1,84 +1,28 @@
-# GovStack Building Block Template
+# GovStack Digital Registries Building Block
 
-This template is intended to be used by the various GovStack building block
-repos. Each building block repo will have at least 4 main sections, outlined in
-the directory structure below.
+This repository contains the Digital Registries Building Block specification, interface contracts, conformance tests, and implementation examples.
 
-## Gitbook and the published "Building Block Specifications" document
+## Specification status
 
-Note that pushes to the `main` branch will automatically trigger a Gitbook build
-and deployment from the `/spec` directory.
+The `3.0.0-alpha.2` specification defines a domain-neutral Registry Core with mandatory Consultation Retrieve and additional optional capability families. Its requirements are classified as DRAFT and do not establish a GovStack certification claim.
 
-## Repo Structure
+Start with the [Digital Registries Building Block Specification](spec/README.md).
 
-```sh
-README.md
-/spec # the markdown files which are used to build the specification in GitBook
-/api # the openapi specification
-/test # the test plan and tests
-  plan.md
-/examples # examples for deploying, configuring, and testing applications which implement the behaviors specified by this building block
-  /application-a
-    README.md # instructions for deployment/testing
-    docker-compose.yaml # example deployment file
-      db
-      web
-      adaptor
-      security-server
-    Caddyfile # example config for "adaptor"
-    Dockerfile # dockerfile to build "adaptor"
-  /application-b
-  /application-c
-```
+## Repository structure
 
-## Test data
+| Path | Contents | Current status |
+|---|---|---|
+| `spec/` | Human-readable specification published through GitBook | 3.0.0-alpha.2 draft |
+| `api/` | Machine-readable service contracts | Previous generated CRUD contracts retained as legacy; no 3.0.0-alpha.2 contract published |
+| `test/` | Conformance and contract tests | Previous generated CRUD tests retained as legacy; draft scenarios are documented in `spec/11-testing.md` |
+| `examples/` | Product and integration examples | Historical examples; not evidence of 3.0.0-alpha.2 conformance |
 
-In order to properly call the tests, a file with input data has been created.
+## Alpha coverage
 
-The data must exist in tested software before running the tests.
+The alpha publishes the proposed scope, terminology, Base Registry Profile, DRAFT Core and Retrieve requirements, conceptual Record model, workflow, verification intent, and migration from the previous `DRS-1` through `DRS-37` requirements.
 
-This data are compatible with the data used in the tests and they are stored in
-the `openAPI` folder in the `test-data.json`.
+It does not publish a canonical OpenAPI contract or executable conformance suite. No implementation can claim conformance with this alpha.
 
-## Run Cucumber tests
+## Publication
 
-Cucumber-js is used to execute test harness to check compability of application
-api with BB test definitions.
-
-### Mock server
-
-Launch the mock server from examples/mock folder. The instruction is located in
-'examples/mock' folder in file README.md
-
-### Cucumber tests
-
-To install project's dependencies, navigate to folder 'test' and execute the
-following command:
-
-```
-yarn install
-```
-
-Then to execute all tests scenarios use the following command:
-
-```
-yarn test
-```
-
-or
-
-```
-npx cucumber-js
-```
-
-To execute specific test scenario use the following command:
-
-```
-npx cucumber-js features/<file_name>
-```
-
-example:
-
-```
-npx cucumber-js features/data_update_or_create.feature
-```
+GitBook publishes content from the `spec/` directory according to `.gitbook.yaml`. The navigation source is [spec/SUMMARY.md](spec/SUMMARY.md).

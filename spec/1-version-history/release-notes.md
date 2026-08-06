@@ -4,7 +4,7 @@
 
 ***
 
-### **v3.0.0-alpha** <a href="#v3.0.0" id="v3.0.0"></a>
+### **v3.0.0-alpha.1** <a href="#v3.0.0-alpha.1" id="v3.0.0-alpha.1"></a>
 
 _Release date: June 2026_
 

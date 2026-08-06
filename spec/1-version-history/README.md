@@ -1,9 +1,45 @@
 ---
-description: >-
-  The version history table describes the major changes to the specifications
-  between published versions.
+description: Major changes to the Digital Registries Building Block specification.
 ---
 
 # 1 Version History
 
-<table><thead><tr><th width="137.66666666666669">Version</th><th width="247">Authors</th><th width="328.3333333333333">Comment</th></tr></thead><tbody><tr><td>0.7</td><td>Frank Grozel, Ingmar Vali, Tambet Artma, Saurav Bhattarai, Dr. P. S. Ramkumar, Rauno Kulla.</td><td>Initial Revision</td></tr><tr><td>0.8</td><td><p>Frank Grozel, Ingmar Vali, Tambet Artma, Saurav Bhattarai, Dr. P. S. Ramkumar, Rauno Kulla.</p><p>Reviewers:</p><p>Neil Roy, Aare Lapõnin, Amy Darling</p></td><td>Applied feedback from technical review</td></tr><tr><td>0.9</td><td><p>Ingmar Vali, Sebastian Leidig, Frank Grozel, Tambet Artma</p><p>Technical Reviewers: Tony Shannon, Saša Kovačević, Riham Moawad, Riham Fahmi, Aare Laponin, Manish Srivastava, Palab Saha, Surendra Singh Sucharia, Arvind Gupta, Gayatri. P., Shivank Singh Chauhan, Gavin Lyons</p><p><br>Reviewers: Steve Conrad, Wes Brown, Valeria Tafoya</p></td><td>Future consideration section analysis and conversion to requirements.<br>Fine tuning, and chapter reorganization.</td></tr><tr><td><strong>1.0</strong><br><sup><em>May 2023</em></sup></td><td><p>Ingmar Vali</p><p>Reviewers: Steve Conrad, Wes Brown, Valeria Tafoya</p></td><td>Final edits to align content to specification template for GovStack 1.0 release</td></tr><tr><td><strong>2.0</strong><br><em>(previously known as 23Q4)</em><br><sup><em>November 2023</em></sup></td><td><em><strong>Authors:</strong></em><br>Sebastian Leidig, Steve Conrad, Łukasz Ruzicki, Damian Borowiecki, Karolina Kopacz, and Paweł Gesek<br><br><em><strong>Reviewer:</strong></em><br>Sebastian Leidig<br><br><em><strong>Editors:</strong></em><br>Steve Conrad, Valeria Tafoya</td><td>Structural Updates to Cross Cutting Requirements.<br>Move of section on standards from previously in section 7.1 to section 5.3<br>Section 8 - Service APIs significantly updated with renamed endpoints and changes to APIs<br>Publishing of test suite</td></tr><tr><td><strong>3.0.0-alpha</strong><br><sup><em>June 2026</em></sup></td><td><p><br><em><strong>Coordinators:</strong></em><br>Dr. Bimal Kumar, Xilene Siquero, Sebastian Leidig</p><p><br><em><strong>Authors:</strong></em><br>Janet Ngugi, Vivek Rana, Chinenye Ifebirinachi, Ananya Jha, Umang Gupta</p><p><br><em><strong>Editors:</strong></em><br>Ali González-García, and David Higgins</p><p></p><p></p></td><td>This version reflects the comprehensive upgrade of the specifications aligned to the enhanced scope, architectural patterns, cross-cutting requirements, and interoperability standards introduced in GovStack Architecture 2.1.</td></tr></tbody></table>
+| Version | Contributors | Comment |
+|---|---|---|
+| 0.7, 0.8, and 0.9 | Initial authors and reviewers listed below | Initial drafts and technical review. |
+| 1.0, May 2023 | Ingmar Vali; reviewers Steve Conrad, Wes Brown, and Valeria Tafoya | First GovStack 1.0-aligned release. |
+| 2.0, November 2023 | Authors and editors listed below | Updated cross-cutting requirements, service APIs, and the test suite. Breaking change. |
+| 3.0.0-alpha.1, June 2026 | Coordinators, authors, and editors listed below | Expanded scope and alignment work for GovStack Architecture 2.x. Public alpha release. |
+| 3.0.0-alpha.2, August 2026 | Digital Registries Working Group | Reframed the alpha as a domain-neutral Registry Core with mandatory Consultation Retrieve and additional capability families. Breaking prerelease change. |
+
+## Contributors by release
+
+### Versions 0.7 and 0.8
+
+Authors: Frank Grozel, Ingmar Vali, Tambet Artma, Saurav Bhattarai, Dr. P. S. Ramkumar, and Rauno Kulla.
+
+Version 0.8 reviewers: Neil Roy, Aare Lapõnin, and Amy Darling.
+
+### Version 0.9
+
+Authors: Ingmar Vali, Sebastian Leidig, Frank Grozel, and Tambet Artma.
+
+Technical reviewers: Tony Shannon, Saša Kovačević, Riham Moawad, Riham Fahmi, Aare Laponin, Manish Srivastava, Palab Saha, Surendra Singh Sucharia, Arvind Gupta, Gayatri P., Shivank Singh Chauhan, and Gavin Lyons.
+
+Reviewers: Steve Conrad, Wes Brown, and Valeria Tafoya.
+
+### Version 2.0
+
+Authors: Sebastian Leidig, Steve Conrad, Łukasz Ruzicki, Damian Borowiecki, Karolina Kopacz, and Paweł Gesek.
+
+Reviewer: Sebastian Leidig. Editors: Steve Conrad and Valeria Tafoya.
+
+### Version 3.0.0-alpha.1
+
+Coordinators: Dr. Bimal Kumar, Xilene Siquero, and Sebastian Leidig.
+
+Authors: Janet Ngugi, Vivek Rana, Chinenye Ifebirinachi, Ananya Jha, Umang Gupta, Leonora Smart-Abbey, and Jeremi Joslin.
+
+Editors: Ali González-García and David Higgins.
+
+The detailed change record is preserved in the [Release Notes](release-notes.md).

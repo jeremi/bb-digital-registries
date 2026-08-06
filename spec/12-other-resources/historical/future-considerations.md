@@ -1,4 +1,10 @@
-# 12  Future Consideration
+---
+description: Archived future-consideration backlog from earlier Digital Registries versions.
+---
+
+# Historical Future Considerations
+
+> **Archived and non-normative.** This page preserves an earlier working-group backlog. Statements and proposed requirements on this page are not part of the current specification.
 
 12.1 Integration with a blockchain solution to guarantee the integrity of the data and logs. The function would notice unauthorized changes in data. This option may be available with a fee therefore should be optional.&#x20;
 
