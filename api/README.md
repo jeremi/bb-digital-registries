@@ -2,6 +2,8 @@
 
 The JSON and YAML files under `legacy/generated-crud/` describe the generated CRUD interface from earlier Digital Registries releases. They are retained for migration analysis and are not service contracts for the 3.0.0-alpha.2 specification.
 
+Their original release status, contributor acknowledgements, and publication context are preserved in the [legacy API README](legacy/generated-crud/README.md).
+
 The `gitbook-copies/` subdirectory contains additional copies previously embedded as publication assets. They remain separated from current API artifacts because their content is not identical in every case.
 
 In particular, the legacy interface does not provide the `consultation.retrieve` operation, which retrieves a Record directly by its stable Record Identifier. Its `POST /read` operation performs search-by-example instead.
