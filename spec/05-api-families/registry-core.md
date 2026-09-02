@@ -102,7 +102,7 @@ The current alpha treats this publication layout as discovery guidance rather th
 
 ### Informative JSON-LD example
 
-The following JSON-LD document describes one business Registry, accountable authority, governed dataset, and three services supporting the Consultation, Write, and Evidence API families. It references the versioned GovStack context, which maps readable JSON property names to the RDF vocabulary and identifies properties whose values are IRIs. Readers familiar with [W3C Verifiable Credentials Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) will recognise the `@context`, `@id`, and `@type` pattern, but this catalogue metadata is not a Verifiable Credential. The versioned GovStack specification IRIs are illustrative because this alpha does not publish canonical IRIs for them.
+The following JSON-LD document describes one business Registry, accountable authority, governed dataset, and three services supporting the Consultation, Write, and Evidence API families. It references the versioned GovStack context, which maps readable JSON property names to the RDF vocabulary and identifies properties whose values are IRIs. The versioned GovStack specification IRIs are illustrative because this alpha does not publish canonical IRIs for them.
 
 ```json
 {
