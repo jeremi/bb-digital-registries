@@ -7,7 +7,6 @@
     "apif": "https://vocab.govstack.global/digital-registries/api-families#",
     "govreg": "https://vocab.govstack.global/digital-registries#",
     "prov": "http://www.w3.org/ns/prov#",
-    "skos": "http://www.w3.org/2004/02/skos/core#",
     "title": {
       "@id": "dct:title",
       "@container": "@language"
@@ -46,14 +45,6 @@
     },
     "dataService": {
       "@id": "govreg:dataService",
-      "@type": "@id"
-    },
-    "prefLabel": {
-      "@id": "skos:prefLabel",
-      "@container": "@language"
-    },
-    "inScheme": {
-      "@id": "skos:inScheme",
       "@type": "@id"
     },
     "serviceType": {

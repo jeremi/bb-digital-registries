@@ -102,7 +102,7 @@ The current alpha treats this publication layout as discovery guidance rather th
 
 ### Informative JSON-LD example
 
-The following JSON-LD document describes one business Registry, accountable authority, governed dataset, and Retrieve service. It references the versioned GovStack context, which maps readable JSON property names to the RDF vocabulary and identifies properties whose values are IRIs. Readers familiar with [W3C Verifiable Credentials Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) will recognise the `@context`, `@id`, and `@type` pattern, but this catalogue metadata is not a Verifiable Credential. The versioned GovStack specification IRIs are illustrative because this alpha does not publish canonical IRIs for them.
+The following JSON-LD document describes one business Registry, accountable authority, governed dataset, and three services supporting the Consultation, Write, and Evidence API families. It references the versioned GovStack context, which maps readable JSON property names to the RDF vocabulary and identifies properties whose values are IRIs. Readers familiar with [W3C Verifiable Credentials Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) will recognise the `@context`, `@id`, and `@type` pattern, but this catalogue metadata is not a Verifiable Credential. The versioned GovStack specification IRIs are illustrative because this alpha does not publish canonical IRIs for them.
 
 ```json
 {
@@ -112,11 +112,15 @@ The following JSON-LD document describes one business Registry, accountable auth
       "@id": "https://registry.example/catalog",
       "@type": "dcat:Catalog",
       "title": "Business Registry catalogue",
-      "description": "Discovery metadata for the Business Registry, its dataset, and its Retrieve API.",
+      "description": "Discovery metadata for the Business Registry, its dataset, and its APIs.",
       "publisher": "https://registry.example/organisations/business-authority",
       "catalogResource": "https://registry.example/registries/business",
       "catalogDataset": "https://registry.example/datasets/business-records",
-      "catalogService": "https://registry.example/services/business-retrieve"
+      "catalogService": [
+        "https://registry.example/services/business-retrieve",
+        "https://registry.example/services/business-write",
+        "https://registry.example/services/business-evidence"
+      ]
     },
     {
       "@id": "https://registry.example/registries/business",
@@ -129,7 +133,11 @@ The following JSON-LD document describes one business Registry, accountable auth
       "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
       "authority": "https://registry.example/organisations/business-authority",
       "governedDataset": "https://registry.example/datasets/business-records",
-      "dataService": "https://registry.example/services/business-retrieve"
+      "dataService": [
+        "https://registry.example/services/business-retrieve",
+        "https://registry.example/services/business-write",
+        "https://registry.example/services/business-evidence"
+      ]
     },
     {
       "@id": "https://registry.example/organisations/business-authority",
@@ -144,17 +152,6 @@ The following JSON-LD document describes one business Registry, accountable auth
       "publisher": "https://registry.example/organisations/business-authority"
     },
     {
-      "@id": "https://vocab.govstack.global/digital-registries/api-families",
-      "@type": "skos:ConceptScheme",
-      "title": "Digital Registries API Families"
-    },
-    {
-      "@id": "apif:consultation",
-      "@type": "skos:Concept",
-      "prefLabel": "Consultation",
-      "inScheme": "https://vocab.govstack.global/digital-registries/api-families"
-    },
-    {
       "@id": "https://registry.example/services/business-retrieve",
       "@type": "dcat:DataService",
       "title": "Business Registry Retrieve API",
@@ -164,6 +161,26 @@ The following JSON-LD document describes one business Registry, accountable auth
       "servesDataset": "https://registry.example/datasets/business-records",
       "endpointURL": "https://registry.example/api/business",
       "endpointDescription": "https://registry.example/contracts/business-retrieve.openapi.json"
+    },
+    {
+      "@id": "https://registry.example/services/business-write",
+      "@type": "dcat:DataService",
+      "title": "Business Registry Write API",
+      "description": "Accepts governed requests to create or revise business Records.",
+      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
+      "serviceType": "apif:write",
+      "endpointURL": "https://registry.example/api/business/write",
+      "endpointDescription": "https://registry.example/contracts/business-write.openapi.json"
+    },
+    {
+      "@id": "https://registry.example/services/business-evidence",
+      "@type": "dcat:DataService",
+      "title": "Business Registry Evidence API",
+      "description": "Produces signed assertions derived from permitted business registration information.",
+      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
+      "serviceType": "apif:evidence",
+      "endpointURL": "https://registry.example/api/business/evidence",
+      "endpointDescription": "https://registry.example/contracts/business-evidence.openapi.json"
     }
   ]
 }
@@ -173,9 +190,9 @@ The example uses untagged strings for readability. Deployments can use JSON-LD l
 
 The Registry is also typed as [`dcat:Resource`](https://www.w3.org/TR/vocab-dcat-3/#Class:Resource) so that the catalogue can list it with [`dcat:resource`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_resource). This does not make the Registry a dataset or a data service. The vocabulary expresses `govreg:Registry` as a subclass of `dcat:Resource`, while explicit dual typing keeps an instance understandable without ontology inference.
 
-The relationships have different scopes. `dcat:resource`, `dcat:dataset`, and `dcat:service` state what is listed in this catalogue. `govreg:dataset` and `govreg:dataService` state which dataset and service belong to this Registry. `dcat:servesDataset` states which dataset the technical service exposes.
+The relationships have different scopes. `dcat:resource`, `dcat:dataset`, and `dcat:service` state what is listed in this catalogue. `govreg:dataset` and `govreg:dataService` state which datasets and services belong to this Registry. `dcat:servesDataset` states which dataset a technical service exposes, when applicable.
 
-The `dct:type apif:consultation` statement lets a client discover the supported API family from the catalogue. The client follows `dcat:endpointDescription` to determine which Consultation operations are available and how to invoke them.
+The `dct:type` statements let a client discover that the catalogue exposes Consultation, Write, and Evidence services. The client follows each service's `dcat:endpointDescription` to determine which operations are available and how to invoke them.
 
 The same graph pattern covers common deployment arrangements:
 
@@ -225,7 +242,7 @@ for each serviceReference in asList(registry.dataService):
 return supportedCapabilities
 ```
 
-Here, `loadJsonLd` applies the versioned context and normalises properties that can contain one or several values. `DigitalRegistriesApiFamilies` is populated from the published [API-family vocabulary](registry-core-vocabulary.ttl), not inferred from an IRI prefix. With the preceding example, the result identifies the Retrieve Data Service as supporting the Consultation family. If a Data Service omits `serviceType`, a client cannot infer API-family support from the catalogue alone, even when its endpoint description happens to contain related operations.
+Here, `loadJsonLd` applies the versioned context and normalises properties that can contain one or several values. `DigitalRegistriesApiFamilies` is populated from the published [API-family vocabulary](registry-core-vocabulary.ttl), not inferred from an IRI prefix. With the preceding example, the result identifies three Data Services supporting the Consultation, Write, and Evidence families. If a Data Service omits `serviceType`, a client cannot infer API-family support from the catalogue alone, even when its endpoint description happens to contain related operations.
 
 ### External alignments
 
