@@ -99,7 +99,7 @@ An adopter may need Consultation capabilities beyond Retrieve. These capabilitie
 | Record Match | A consumer supplies incomplete or variable domain information that may correspond to more than one Record. | Permitted inputs, matching rules, confidence interpretation, disclosure of possible matches, and ambiguous or no-match outcomes. A match is not an authoritative identity, eligibility, or acceptance decision. |
 | GIS Query | A spatial Registry exposes Records through geographic relationships. | Supported spatial predicates, coordinate and geometry semantics, spatial and result bounds, and disclosure of protected Records or locations. |
 
-Every selected capability applies disclosure to both Record content and result metadata. Counts, ordering, page boundaries, confidence values, suggestions, and geometries must not reveal information that the consumer is not permitted to learn.
+For every selected capability, disclosure applies to both Record content and result metadata. The applicable profile needs to ensure that counts, ordering, page boundaries, confidence values, suggestions, and geometries do not reveal information that the consumer is not permitted to learn.
 
 ## Binding status
 

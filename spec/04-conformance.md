@@ -8,7 +8,7 @@ description: Draft minimum conformance and capability model for Digital Registri
 
 All requirements in the 3.0.0-alpha.2 specification are classified as DRAFT. They do not create a certification obligation.
 
-Each requirement follows the GovStack Requirements Model. Requirement identifiers are permanently reserved even while the requirement is DRAFT. Cross-family requirements are defined under [Registry Core](05-api-families/registry-core.md#registry-core-functional-requirements), while family-specific requirements are defined on the applicable API-family page.
+Each requirement follows the [GovStack Requirements Model](https://specs.govstack.global/architecture/development/5-specification-framework/5.3-requirements-model). Requirement levels and other classifiers are interpreted according to that model. Lowercase modal verbs have their ordinary English meaning; this specification does not use BCP 14 keywords to assign requirement levels. Requirement identifiers are permanently reserved even while the requirement is DRAFT. Cross-family requirements are defined under [Registry Core](05-api-families/registry-core.md#registry-core-functional-requirements), while family-specific requirements are defined on the applicable API-family page.
 
 ## 4.2 Inherited cross-functional requirements
 

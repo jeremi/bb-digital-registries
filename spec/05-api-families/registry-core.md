@@ -39,7 +39,6 @@ The Registry metadata description identifies the institutionally governed Regist
 | Registry Name | Required | [`dct:title`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#title) | Human-readable name used by adopters and consumers. |
 | Registry Authority | Required | `govreg:authority` with a [`prov:Agent`](https://www.w3.org/TR/prov-o/#Agent) value | Institution accountable for the Registry and its declared authoritative scope. |
 | Digital Registries specification version | Required | [`dct:conformsTo`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#conformsTo) | Versioned Digital Registries specification implemented by the service. |
-| CFR version | Required | [`dct:conformsTo`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#conformsTo) | Versioned GovStack Common Requirements Framework implemented by the service. |
 | Description | Optional | [`dct:description`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#description) | Human-readable description of the Registry and its scope. |
 | Governed dataset | Optional and repeatable | `govreg:dataset` with a [`dcat:Dataset`](https://www.w3.org/TR/vocab-dcat-3/#Class:Dataset) value | A governed collection of Registry Records described for discovery or exchange. |
 | Data service | Optional and repeatable | `govreg:dataService` with a [`dcat:DataService`](https://www.w3.org/TR/vocab-dcat-3/#Class:Data_Service) value | A technical interface that provides access to Registry data or operations. |
@@ -57,7 +56,9 @@ The companion [Turtle vocabulary](registry-core-vocabulary.ttl) provides machine
 
 The selected publication namespace is the dedicated `vocab.govstack.global` host. The Registry Core namespace document is `https://vocab.govstack.global/digital-registries`, and the API-family concept-scheme document is `https://vocab.govstack.global/digital-registries/api-families`. Terms use fragment IRIs so each small vocabulary can be retrieved as one document. These version-independent IRIs remain stable when the vocabulary evolves.
 
-The host must be provisioned so both namespace documents dereference before the vocabulary is published. Content negotiation can add HTML and JSON-LD representations without changing the term IRIs. The companion file does not make Turtle a required Registry metadata publication format or establish RDF conformance, and this release does not define a SHACL shape.
+> **Editorial note:** Before release, GovStack needs to provision the namespace host so that both namespace documents dereference. This note can be removed once the host is operational.
+
+The namespace can provide HTML, Turtle, and JSON-LD representations through HTTP content negotiation without changing the term IRIs. The companion Turtle file does not require Registry implementations to publish Turtle or claim RDF conformance. This release does not define a SHACL shape.
 
 The versioned [JSON-LD context](registry-core-context.jsonld) is assigned the publication URI `https://vocab.govstack.global/digital-registries/context/v1`. When the vocabulary host is provisioned, this URI serves the context with the `application/ld+json` media type. Context versions are immutable because changing a context can change how existing JSON is interpreted. Versioning the context does not version or otherwise change the vocabulary term IRIs.
 
@@ -110,12 +111,8 @@ The following JSON-LD document describes one business Registry, accountable auth
     {
       "@id": "https://registry.example/catalog",
       "@type": "dcat:Catalog",
-      "title": {
-        "en": "Business Registry catalogue"
-      },
-      "description": {
-        "en": "Discovery metadata for the Business Registry, its dataset, and its Retrieve API."
-      },
+      "title": "Business Registry catalogue",
+      "description": "Discovery metadata for the Business Registry, its dataset, and its Retrieve API.",
       "publisher": "https://registry.example/organisations/business-authority",
       "catalogResource": "https://registry.example/registries/business",
       "catalogDataset": "https://registry.example/datasets/business-records",
@@ -127,16 +124,9 @@ The following JSON-LD document describes one business Registry, accountable auth
         "govreg:Registry",
         "dcat:Resource"
       ],
-      "title": {
-        "en": "Business Registry"
-      },
-      "description": {
-        "en": "Registry maintained for authoritative business registration records."
-      },
-      "conformsTo": [
-        "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
-        "https://specs.govstack.example/cfr/2.1.0"
-      ],
+      "title": "Business Registry",
+      "description": "Registry maintained for authoritative business registration records.",
+      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
       "authority": "https://registry.example/organisations/business-authority",
       "governedDataset": "https://registry.example/datasets/business-records",
       "dataService": "https://registry.example/services/business-retrieve"
@@ -144,49 +134,32 @@ The following JSON-LD document describes one business Registry, accountable auth
     {
       "@id": "https://registry.example/organisations/business-authority",
       "@type": "prov:Organization",
-      "title": {
-        "en": "Business Registration Authority"
-      }
+      "title": "Business Registration Authority"
     },
     {
       "@id": "https://registry.example/datasets/business-records",
       "@type": "dcat:Dataset",
-      "title": {
-        "en": "Business registration records dataset"
-      },
-      "description": {
-        "en": "Governed collection of business registration Records."
-      },
+      "title": "Business registration records dataset",
+      "description": "Governed collection of business registration Records.",
       "publisher": "https://registry.example/organisations/business-authority"
     },
     {
       "@id": "https://vocab.govstack.global/digital-registries/api-families",
       "@type": "skos:ConceptScheme",
-      "title": {
-        "en": "Digital Registries API Families"
-      }
+      "title": "Digital Registries API Families"
     },
     {
       "@id": "apif:consultation",
       "@type": "skos:Concept",
-      "prefLabel": {
-        "en": "Consultation"
-      },
+      "prefLabel": "Consultation",
       "inScheme": "https://vocab.govstack.global/digital-registries/api-families"
     },
     {
       "@id": "https://registry.example/services/business-retrieve",
       "@type": "dcat:DataService",
-      "title": {
-        "en": "Business Registry Retrieve API"
-      },
-      "description": {
-        "en": "Retrieves the current permitted representation of a business Record."
-      },
-      "conformsTo": [
-        "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
-        "https://specs.govstack.example/cfr/2.1.0"
-      ],
+      "title": "Business Registry Retrieve API",
+      "description": "Retrieves the current permitted representation of a business Record.",
+      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
       "serviceType": "apif:consultation",
       "servesDataset": "https://registry.example/datasets/business-records",
       "endpointURL": "https://registry.example/api/business",
@@ -195,6 +168,8 @@ The following JSON-LD document describes one business Registry, accountable auth
   ]
 }
 ```
+
+The example uses untagged strings for readability. Deployments can use JSON-LD language maps, such as `"title": {"en": "Business Registry"}`, when publishing multilingual labels.
 
 The Registry is also typed as [`dcat:Resource`](https://www.w3.org/TR/vocab-dcat-3/#Class:Resource) so that the catalogue can list it with [`dcat:resource`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_resource). This does not make the Registry a dataset or a data service. The vocabulary expresses `govreg:Registry` as a subclass of `dcat:Resource`, while explicit dual typing keeps an instance understandable without ontology inference.
 
@@ -301,9 +276,9 @@ Extensions do not change the meaning of required Registry or Record metadata. Ru
 
 `govstack-bb-digital-registries-fr-core#req-1`
 
-An implementation publishes machine-readable Registry metadata containing a globally unique and stable Registry Identifier, a human-readable Registry name, the identity of the Registry Authority, the Digital Registries specification version, and the GovStack CFR version it implements.
+An implementation publishes machine-readable Registry metadata containing a globally unique and stable Registry Identifier, a human-readable Registry name, the identity of the Registry Authority, and the Digital Registries specification version it implements.
 
-**Purpose:** An adopter can determine which Registry and authority stand behind a service and which complete set of requirements applies.
+**Purpose:** An adopter can determine which Registry and authority stand behind a service and which versioned requirement set, including its inherited requirements, applies.
 
 **Prerequisite:** The Registry Authority and authoritative scope have been established by the adopting organisation.
 

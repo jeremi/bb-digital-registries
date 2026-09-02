@@ -28,7 +28,7 @@ Testers use synthetic fixtures rather than real personal or confidential data.
 
 | Requirement | Verification item | Expected result |
 |---|---|---|
-| `fr-core#req-1` | Inspect machine-readable Registry metadata and identifier evidence | Globally unique and stable Registry Identifier, Registry name, Registry Authority, Digital Registries specification version, and CFR version are present. |
+| `fr-core#req-1` | Inspect machine-readable Registry metadata and identifier evidence | Globally unique and stable Registry Identifier, Registry name, Registry Authority, and Digital Registries specification version are present. |
 | `fr-core#req-2` | Retrieve two distinct Records | Each response includes the Registry Identifier and a different Record Identifier; each identifier pair is unique. |
 | `fr-core#req-3` | Inspect the identifier policy and lifecycle evidence | A Record Identifier remains unchanged across revisions and lifecycle states, is not shared, and is not reassigned after retirement. |
 | `fr-core#req-4` | Validate a retrieved representation | The representation format conveyed by the binding matches the representation, schema and semantic-model references resolve, and schema validation succeeds. |
@@ -70,6 +70,6 @@ Feature: Retrieve the current permitted Registry Record
 
 ## 11.5 Evidence retained for audit
 
-Verification evidence identifies the Digital Registries specification version and the `govstack-cfr-2.1.0` baseline tested. It also includes fixture definitions, requests, responses, schema-validation results, identifier-lifecycle evidence, and a traceability report mapping every evaluated requirement to a pass or fail result.
+Verification evidence identifies the Digital Registries specification version tested. It also includes fixture definitions, requests, responses, schema-validation results, identifier-lifecycle evidence, and a traceability report mapping every evaluated requirement to a pass or fail result.
 
 No fixed response-time threshold, container technology, administrative user interface, Information Mediator header, or test tool is part of the target Base Registry Profile.
