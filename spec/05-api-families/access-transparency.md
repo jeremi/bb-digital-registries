@@ -12,7 +12,7 @@ Access Transparency enables an entitled Record Principal to obtain a permitted v
 
 A Record Principal can be a subject, owner, title holder, director, beneficiary, or credential holder. The relationship alone does not create a universal entitlement. The adopting jurisdiction defines the applicable right, delegation rules, and period for which the relationship is relevant.
 
-## Candidate capability areas
+## Capability areas
 
 | Area | Outcome |
 |---|---|
@@ -24,11 +24,11 @@ A Record Principal can be a subject, owner, title holder, director, beneficiary,
 
 Internal security and audit logging is a cross-functional concern. Access Transparency is the outward-facing service derived from permitted audit information. Its representation can omit actor identities or operational details where disclosure would create a privacy, security, or investigation risk.
 
-A complete profile needs to define entitlement, relationship verification, delegation, outward event vocabulary, retention, correction handling, and disclosure restrictions.
+An adopting authority that includes Access Transparency in its deployment needs to define entitlement, relationship verification, delegation, outward event vocabulary, retention, correction handling, and disclosure restrictions.
 
-## Candidate binding
+## Binding status
 
-Synchronous HTTP described by OpenAPI is the candidate general binding. No outward event schema or API contract is selected in this release.
+This release does not specify an Access Transparency binding, outward event schema, or API contract. An adopter evaluating implementation options can use synchronous HTTP described by OpenAPI, but that choice does not create a GovStack capability claim.
 
 ## Example
 

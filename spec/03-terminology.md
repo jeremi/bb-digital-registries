@@ -21,6 +21,7 @@ This specification uses the [GovStack Common Terminology](https://specs.govstack
 | Record Identifier | A stable identifier assigned to a record within a Registry. |
 | Record Principal | A person or organisation with a recognised relationship to a record, such as its subject, owner, title holder, director, or credential holder. |
 | Record Revision | A representation of a record at a defined point in its change history. |
+| Representation Format | The serialisation or media type used to encode a returned representation, identified through the applicable binding. |
 | Registry Authority | The institution accountable for the Registry and its declared authoritative scope. |
 | Registry Core | Behaviour and metadata required of every conformant Registry implementation. |
 | Registry Identifier | A globally unique and stable identifier for a Registry. |

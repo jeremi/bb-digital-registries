@@ -42,4 +42,4 @@ Authors: Janet Ngugi, Vivek Rana, Chinenye Ifebirinachi, Ananya Jha, Umang Gupta
 
 Editors: Ali González-García and David Higgins.
 
-The detailed change record is preserved in the [Release Notes](release-notes.md).
+The detailed change record is preserved in the [Release Notes](01-version-history/release-notes.md).

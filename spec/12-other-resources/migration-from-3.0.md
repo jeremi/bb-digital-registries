@@ -29,7 +29,7 @@ The earlier draft also elevated `govstack-cfr-data#req-4` and `govstack-cfr-data
 | DRS-11 Import Schema | Moves to optional Provisioning. File formats will be defined by an applicable binding or guide. |
 | DRS-12 Service Usage Statistics | Generic monitoring inherits from CFR. Administrative analytics are implementation guidance. Logging every search term is not a default requirement. |
 | DRS-13 Personal Data Field | Sensitivity and classification metadata remain relevant through CFR and declared schemas. UI-specific field marking is retired. |
-| DRS-14 Personal Data Identifier | Stable identifier concepts are retained, while Record, foundational, functional, and domain identifiers are distinguished. Federation behaviour moves to Identity Federation. |
+| DRS-14 Personal Data Identifier | Stable identifier concepts are retained, while Record, foundational, functional, and domain identifiers are distinguished. Federation behaviour is tracked under the candidate Identity Federation family pending a cross-BB ownership decision. |
 | DRS-15 Secret Field | Classification, encryption, and transport security inherit from CFR. Policy-driven redaction is retained in Consultation. The credit-card and mandatory Information Mediator examples are removed. |
 | DRS-16 Read Schema in UI | Machine-readable schema declaration is retained. Administrative UI presentation is implementation guidance. |
 | DRS-17 Field Properties and Triggers | Validation constraints inform schemas and optional Provisioning. UI widgets, database relationships, and embedded trigger scripting are implementation choices. |
@@ -47,7 +47,7 @@ The earlier draft also elevated `govstack-cfr-data#req-4` and `govstack-cfr-data
 | DRS-29 Multiple Registries by API | Duplicate of DRS-2. Mandatory multi-tenancy is retired. |
 | DRS-30 Publish Registry by API | Duplicate of DRS-4. Moves to optional Provisioning. |
 | DRS-31 Modify APIs | Duplicate of DRS-5. Only abstract capability declaration is retained; generated-API product behaviour is retired. |
-| DRS-32 Schema and API Discovery | Machine-readable contract and capability discovery are retained as design goals. Full schema administration is optional Provisioning. The discovery format is not specified in this release. |
+| DRS-32 Schema and API Discovery | Machine-readable contract and capability discovery are retained as design goals. Full schema administration is optional Provisioning. The [Registry Core metadata model](../05-api-families/registry-core.md#registry-metadata) establishes a minimal conceptual DCAT composition, while its serialisation and validation remain unspecified in this release. |
 | DRS-33 Applicant CRUD | Split across mandatory Consultation Retrieve, optional Consultation sub-patterns, and optional Write. The Applicant CRUD framing is retired. |
 | DRS-34 Swagger Service List | Machine-readable service contracts are retained. Swagger UI and live production examples are not conformance requirements. Protocol-native bindings depend on the GovStack framework update. |
 | DRS-35 Personal Data Usage API | Duplicate of DRS-8. Moves to Access Transparency and is generalised from a person-specific identifier to a Record Principal. |
@@ -60,17 +60,17 @@ The following DRAFT requirements carry forward the interoperability intent that 
 
 | Current target | Principal predecessors |
 |---|---|
-| `fr-core#req-1` Registry service metadata | DRS-1, DRS-32, DRS-34 |
+| `fr-core#req-1` Registry metadata | DRS-1, DRS-32, DRS-34 |
 | `fr-core#req-2` Record identification | DRS-14, DRS-33 |
 | `fr-core#req-3` Record Identifier preservation | DRS-14, DRS-33 |
-| `fr-core#req-4` Schema and semantic-model identification | DRS-3, DRS-4, DRS-16, DRS-17, DRS-32, DRS-34 |
+| `fr-core#req-4` Schema, semantic-model, and representation-format identification | DRS-3, DRS-4, DRS-16, DRS-17, DRS-32, DRS-34 |
 | `fr-core#req-5` Revision and lifecycle-state identification | DRS-4, DRS-7, DRS-14 |
 | `fr-core#req-6` Minimum provenance | DRS-7, DRS-21, DRS-33 |
 | `fr-consultation#req-1` Retrieve by identifier | DRS-5, DRS-21, DRS-33 |
 | `fr-consultation#req-2` Permitted representation | DRS-6, DRS-15, DRS-21, DRS-27, DRS-33 |
 | `fr-consultation#req-3` Protected-existence handling | DRS-6, DRS-15, DRS-33 |
 
-Concepts moved to capability families without requirements in this release retain no normative force. Provisioning carries DRS-1, DRS-3, DRS-4, DRS-10, DRS-11, DRS-17, DRS-24, DRS-28, and DRS-30. Consultation List or Search carries DRS-9 and DRS-23. Write carries DRS-22 and relevant parts of DRS-24. Notification carries DRS-19. Aggregate Data carries DRS-26 and DRS-36. Access Transparency carries DRS-8, DRS-35, and DRS-37. Evidence and Identity Federation carry the relevant disclosure and identifier-federation aspects of DRS-14 and DRS-27.
+Concepts moved to capability families without requirements in this release retain no normative force. Provisioning carries DRS-1, DRS-3, DRS-4, DRS-10, DRS-11, DRS-17, DRS-24, DRS-28, and DRS-30. Consultation List or Search carries DRS-9 and DRS-23. Write carries DRS-22 and relevant parts of DRS-24. Notification carries DRS-19. Aggregate Data carries DRS-26 and DRS-36. Access Transparency carries DRS-8, DRS-35, and DRS-37. Evidence carries the relevant disclosure aspects of DRS-27. The candidate Identity Federation family tracks relevant identifier-federation aspects of DRS-14 and DRS-27 pending agreement with the Identity team on profile ownership.
 
 All remaining retired or guidance-only clauses have the exact disposition recorded in the table above.
 

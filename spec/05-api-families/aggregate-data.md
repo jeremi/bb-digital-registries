@@ -10,7 +10,7 @@ description: Approved statistics derived from Registry Records.
 
 Aggregate Data provides approved statistics derived from Registry Records, such as counts, distributions, or time series. It applies when the Registry itself publishes statistical outputs. In other deployments, a national statistics service or open-data platform can own that responsibility instead.
 
-## Candidate capability areas
+## Capability areas
 
 | Area | Outcome |
 |---|---|
@@ -20,11 +20,11 @@ Aggregate Data provides approved statistics derived from Registry Records, such 
 
 ## Capability boundary
 
-Aggregate Data is not Record-level [Consultation](consultation.md), a mandatory analytics engine, or a dashboard. It is not automatically public. Aggregation is not itself anonymisation, and a complete profile needs to address disclosure thresholds, suppression, legal controls, revisions, and indicators of applied protection.
+Aggregate Data is not Record-level [Consultation](consultation.md), a mandatory analytics engine, or a dashboard. It is not automatically public. Aggregation is not itself anonymisation. An adopting authority that includes Aggregate Data in its deployment needs to define disclosure thresholds, suppression, legal controls, revisions, and indicators of applied protection.
 
-## Candidate bindings
+## Binding status
 
-Synchronous HTTP described by OpenAPI is a candidate general binding. SDMX is a candidate semantic and interchange standard where outputs need to participate in national or international statistical ecosystems. This release selects neither binding.
+This release does not specify an Aggregate Data binding. An adopter evaluating implementation options can use synchronous HTTP described by OpenAPI or SDMX where outputs need to participate in national or international statistical ecosystems. These choices do not create a GovStack capability claim.
 
 ## Example
 

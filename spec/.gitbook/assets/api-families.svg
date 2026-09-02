@@ -23,7 +23,7 @@
   </text>
   <text x="500" y="82" text-anchor="middle" fill="#11186A" fill-opacity="0.7"
         font-size="14" font-weight="400">
-    Eight capability families with candidate interface bindings
+    Eight capability families with illustrative protocol options
   </text>
 
   <!-- Spokes: mint dotted lines from hub perimeter to nearest card edge -->
@@ -242,8 +242,8 @@
       <rect width="102" height="20" rx="10" fill="#FFFFFF"
             stroke="#11186A" stroke-width="1"/>
       <text x="51" y="14" text-anchor="middle" fill="#11186A"
-            font-size="10" font-weight="500"
-            font-family="'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace">OpenID Connect</text>
+            font-size="9.5" font-weight="500"
+            font-family="'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace">OWNERSHIP TBD</text>
     </g>
   </g>
 

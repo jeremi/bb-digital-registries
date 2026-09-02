@@ -12,24 +12,24 @@ Provisioning configures a Registry service and publishes its externally visible 
 
 Many authoritative registries do not need this family. Their authority and schema may be established by law, governance, or an operational process outside an API.
 
-## Candidate capability areas
+## Capability areas
 
 | Area | Outcome |
 |---|---|
-| Metadata administration | Creates or revises the Registry's machine-readable identity and capability declarations through an administrative interface. Registry Core separately requires publication of the current service metadata. |
+| Metadata administration | Creates or revises the Registry's machine-readable identity and capability declarations through an administrative interface. Registry Core separately requires publication of the current Registry metadata. |
 | Schema lifecycle | Publishes, revises, or retires a representation schema under defined compatibility rules. |
 | Interface publication | Declares supported families, sub-patterns, bindings, and access conditions. |
 | Bulk transfer | Initiates a controlled import or export of data and metadata. |
 
 These areas do not require dynamic database creation, a no-code builder, an administrative user interface, or a particular storage engine. Provisioning manages metadata programmatically; it does not make the Core publication requirement optional. It also does not perform the legal or governance act that establishes a Registry Authority.
 
-## Data and policy considerations
+## Adoption considerations
 
-A complete profile needs to address administrative authorisation, schema compatibility, publication lifecycle, bulk-operation validation, provenance, and failure recovery. Those decisions are not defined in this release.
+An adopting authority that includes Provisioning in its deployment needs to define administrative authorisation, schema compatibility, publication lifecycle, bulk-operation validation, provenance, and failure recovery. This release does not supply those deployment rules.
 
-## Candidate binding
+## Binding status
 
-Synchronous HTTP described by OpenAPI is a candidate for administrative operations. Long-running bulk work may require an asynchronous job or messaging pattern. No binding is selected in this release.
+This release does not specify a Provisioning binding. An adopter evaluating implementation options can use synchronous HTTP described by OpenAPI for administrative operations and an asynchronous job or messaging pattern for long-running bulk work, but those choices do not create a GovStack capability claim.
 
 ## Example
 

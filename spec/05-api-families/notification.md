@@ -10,7 +10,7 @@ description: Authorised delivery of Registry change events.
 
 Notification informs authorised subscribers that Registry state changed. It applies when downstream systems need timely cache invalidation, propagation, or processing and cannot rely on polling Consultation.
 
-## Candidate capability areas
+## Capability areas
 
 | Area | Outcome |
 |---|---|
@@ -21,13 +21,13 @@ Notification informs authorised subscribers that Registry state changed. It appl
 
 A change event is not necessarily the authoritative Record. A consumer that needs the current permitted representation uses [Consultation](consultation.md). Notification is also distinct from internal security and audit logging.
 
-## Data and policy considerations
+## Adoption considerations
 
-A complete profile needs to define event identifiers, Registry and Record context, revision references, event types, occurrence and publication time, subscription authorisation, minimisation, ordering, duplicate handling, delivery guarantees, and replay.
+An adopting authority that includes Notification in its deployment needs to define event identifiers, Registry and Record context, revision references, event types, occurrence and publication time, subscription authorisation, minimisation, ordering, duplicate handling, delivery guarantees, and replay.
 
-## Candidate bindings
+## Binding status
 
-OpenAPI webhooks are candidates for HTTP push. AsyncAPI is a candidate description format for event-driven transports such as AMQP, MQTT, Kafka, or WebSockets. A Messaging or Information Mediator component can carry events without owning their Registry meaning.
+This release does not specify a Notification binding. An adopter evaluating HTTP push can consider OpenAPI webhooks, while event-driven transports such as AMQP, MQTT, Kafka, or WebSockets can be described with AsyncAPI. A Messaging or Information Mediator component can carry events without owning their Registry meaning. These choices do not create a GovStack capability claim.
 
 ## Example
 

@@ -1,5 +1,5 @@
 ---
-description: Abstract operation and proposed HTTP binding for Consultation Retrieve.
+description: Abstract operation and binding status for Consultation Retrieve.
 ---
 
 # 9 Service Interfaces
@@ -18,15 +18,15 @@ The previous generated CRUD OpenAPI files are legacy artifacts. They are not con
 | Purpose | Obtain the current permitted representation of one Record. |
 | Required input | Record Identifier. |
 | Request context | Authentication and authorisation information required by the deployment and inherited CFR requirements. |
-| Success output | Current permitted Record representation described in [Data Structures](8-data-structures.md). |
-| Unsuccessful output | Problem response without protected Record data and with the protected-existence handling required by `fr-consultation#req-3`. |
-| Excluded behaviour | List, Search, Record Match, GIS Query, historical-revision retrieval, and individual stored-field retrieval. |
+| Success output | Current permitted Record representation described under [Consultation](05-api-families/consultation.md#retrieve-representation), including the [common Record context](05-api-families/registry-core.md#common-record-context). |
+| Unsuccessful outcome | Outcome without protected Record data and with the protected-existence handling required by `fr-consultation#req-3`. |
+| Excluded behaviour | Existence Check, List, Search, Revision History, Record Match, GIS Query, and individual stored-field retrieval. |
 
-## 9.3 Proposed HTTP binding
+## 9.3 Binding status
 
-The initial binding is synchronous HTTP over HTTPS and will be described by an OpenAPI contract. The contract will use the shared GovStack API components for problem details and other cross-BB structures once those components and their consumption rules are ratified.
+No canonical OpenAPI contract is published in this release, so an implementation-specific HTTP interface cannot be used to establish a GovStack capability claim. An adopter prototyping Retrieve can use synchronous HTTP over HTTPS and describe that interface with OpenAPI.
 
-No canonical OpenAPI file is published in this release. A future contract needs to define:
+An HTTP contract used by an adopter needs to define:
 
 - resource path and API versioning;
 - exact Registry and Record metadata property names;
@@ -35,14 +35,14 @@ No canonical OpenAPI file is published in this release. A future contract needs 
 - policy-compliant mapping of unknown, unauthorised, inactive, and superseded outcomes; and
 - contract examples that do not assume a person registry.
 
-## 9.4 Candidate bindings for later capabilities
+## 9.4 Protocol options for additional capabilities
 
-The following standards are informative candidates for capabilities that are not claimable in this release. This table does not establish a required version or profile.
+The following standards can help an adopter evaluate implementation options for capabilities that are not claimable in this release. The table does not establish a required specification, version, or profile.
 
-| Capability | Candidate specification |
+| Capability | Protocol options |
 |---|---|
 | Provisioning and general HTTP operations | OpenAPI |
-| Consultation Retrieve, List, Search, and Record Match | OpenAPI |
+| Consultation Retrieve, Existence Check, List, Search, Revision History, and Record Match | OpenAPI |
 | GIS Query | OGC API Features |
 | Wallet-mediated Evidence | OpenID for Verifiable Credential Issuance and Presentation; W3C Verifiable Credentials |
 | Direct Evidence | OpenAPI with a signed credential or attestation format |
@@ -50,4 +50,4 @@ The following standards are informative candidates for capabilities that are not
 | Notification | OpenAPI webhooks for HTTP push; AsyncAPI for event-driven bindings |
 | Aggregate Data | OpenAPI; SDMX for statistical exchange |
 | Access Transparency | OpenAPI |
-| Identity Federation | OpenID Connect Core and Discovery |
+| Identity Federation | No protocol option selected; profile ownership and binding remain subject to cross-BB agreement with the Identity team |

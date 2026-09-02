@@ -18,7 +18,7 @@ This workflow describes externally observable behaviour. It does not prescribe i
 
 1. The Registry publishes the identity metadata required by Registry Core.
 2. The API Consumer has the credentials and request context required by the deployment.
-3. The current Record representation identifies its schema, semantic model, revision, lifecycle state, and minimum provenance.
+3. The current Record representation identifies its representation format, schema, semantic model, revision, lifecycle state, and minimum provenance.
 4. The implementation can determine the permitted representation for the API Consumer and request context.
 
 ### Interaction
@@ -27,7 +27,7 @@ This workflow describes externally observable behaviour. It does not prescribe i
 2. The Registry authenticates the caller and evaluates access and disclosure policy.
 3. If the policy permits access, the Registry resolves the current revision and lifecycle state.
 4. The Registry constructs the permitted representation, including the Record context required by Registry Core.
-5. The Registry returns the permitted representation or the applicable problem response.
+5. The Registry returns the permitted representation or the applicable unsuccessful outcome.
 
 ### Outcomes
 
@@ -35,11 +35,11 @@ This workflow describes externally observable behaviour. It does not prescribe i
 |---|---|
 | Current Record is accessible | Current permitted representation is returned. |
 | Consumer has narrower disclosure rights | A valid filtered or redacted representation is returned. |
-| Identifier is unknown | The implementation returns its unknown-identifier problem response. |
-| Consumer may not learn whether a protected Record exists | The response is indistinguishable under the published contract from the unknown-identifier response, including security-relevant headers and non-Record-specific problem values. Independently generated correlation values may differ, and no Record-specific data is returned. |
+| Identifier is unknown | The implementation returns its unknown-identifier outcome. |
+| Consumer may not learn whether a protected Record exists | The outcome is indistinguishable under the published contract from the unknown-identifier outcome, including the same status or protocol outcome, security-relevant response metadata, stable error type, response structure, and non-Record-specific values. Independently generated trace or correlation values may differ, and no Record-specific data is returned. |
 
 ### Postconditions
 
 - The Record is not modified by the operation.
 - The returned representation identifies the same Record Identifier requested by the consumer.
-- A successful response identifies the Registry, current revision, lifecycle state, schema, semantic model, Registry Authority, and recording time.
+- A successful response identifies the Registry, current revision, lifecycle state, representation format, schema, semantic model, Registry Authority, and recording time.

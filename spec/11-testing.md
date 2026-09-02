@@ -1,5 +1,5 @@
 ---
-description: Proposed verification for the Base Registry Profile.
+description: Verification approach for the Base Registry Profile.
 ---
 
 # 11 Testing
@@ -12,9 +12,9 @@ Legacy Cucumber tests under `test/openAPI` exercise the previous generated CRUD 
 
 ## 11.2 Required fixtures
 
-A candidate implementation provides non-production fixtures for:
+An implementation being evaluated provides non-production fixtures for:
 
-- machine-readable service metadata;
+- machine-readable Registry metadata;
 - two distinct current Records in the same Registry;
 - a current Record accessible to two consumers with different disclosure rights;
 - evidence of the identifier lifecycle across successive revisions and retired Records;
@@ -28,17 +28,17 @@ Testers use synthetic fixtures rather than real personal or confidential data.
 
 | Requirement | Verification item | Expected result |
 |---|---|---|
-| `fr-core#req-1` | Inspect machine-readable service metadata and identifier evidence | Globally unique and stable Registry Identifier, Registry name, Registry Authority, Digital Registries specification version, and CFR version are present. |
+| `fr-core#req-1` | Inspect machine-readable Registry metadata and identifier evidence | Globally unique and stable Registry Identifier, Registry name, Registry Authority, Digital Registries specification version, and CFR version are present. |
 | `fr-core#req-2` | Retrieve two distinct Records | Each response includes the Registry Identifier and a different Record Identifier; each identifier pair is unique. |
 | `fr-core#req-3` | Inspect the identifier policy and lifecycle evidence | A Record Identifier remains unchanged across revisions and lifecycle states, is not shared, and is not reassigned after retirement. |
-| `fr-core#req-4` | Validate a retrieved representation | Schema and semantic-model references resolve, and schema validation succeeds. |
+| `fr-core#req-4` | Validate a retrieved representation | The representation format conveyed by the binding matches the representation, schema and semantic-model references resolve, and schema validation succeeds. |
 | `fr-core#req-5` | Retrieve fixtures across exposed lifecycle states | Each response identifies the current revision and a lifecycle state permitted by its declared schema. |
 | `fr-core#req-6` | Retrieve a known accessible Record | Registry Authority identifier and recording time are present. |
 | `fr-consultation#req-1` | Retrieve a known accessible Record | Current permitted representation is returned with required Record context. |
 | `fr-consultation#req-2` | Retrieve the same Record as two consumers | Each response contains only the projection permitted to that consumer. |
-| `fr-consultation#req-3` | Retrieve unknown and protected identifiers as the same consumer | Status or error category, security-relevant headers, stable problem type or code, response schema, and non-Record-specific problem values match; any differing correlation values are independent of Record existence; neither response contains Record-specific data. |
+| `fr-consultation#req-3` | Retrieve unknown and protected identifiers as the same consumer | Status or protocol outcome, security-relevant response metadata, stable error type, response structure, and non-Record-specific values match; any differing trace or correlation values are independent of Record existence; neither response contains Record-specific data. |
 
-The abbreviated references in this table use the full `govstack-bb-digital-registries` namespaces defined in [Functional Requirements](6-functional-requirements.md).
+The abbreviated references in this table use the full `govstack-bb-digital-registries` namespaces defined under [Registry Core](05-api-families/registry-core.md#registry-core-functional-requirements) and [Consultation](05-api-families/consultation.md#retrieve-functional-requirements).
 
 ## 11.4 Behaviour scenarios
 
@@ -50,7 +50,7 @@ Feature: Retrieve the current permitted Registry Record
     And an API Consumer authorised to receive its standard representation
     When the consumer retrieves the Record by that identifier
     Then the Registry returns the current permitted representation
-    And the representation identifies its Registry, revision, lifecycle state, schema, semantic model, Registry Authority, and recording time
+    And the representation identifies its Registry, revision, lifecycle state, representation format, schema, semantic model, Registry Authority, and recording time
     And the retrieval does not modify the Record
 
   Scenario: Consumers receive different permitted representations
@@ -62,9 +62,9 @@ Feature: Retrieve the current permitted Registry Record
     Given a consumer that is not authorised to know whether a protected Record exists
     And an unknown Record Identifier
     When the consumer requests the protected and unknown Record Identifiers
-    Then both responses use the same status or error category
-    And both responses use the same security-relevant headers, stable problem type or code, response schema, and non-Record-specific problem values
-    And any differing correlation values are generated independently of Record existence
+    Then both responses use the same status or protocol outcome
+    And both responses use the same security-relevant response metadata, stable error type, response structure, and non-Record-specific values
+    And any differing trace or correlation values are generated independently of Record existence
     And neither response contains Record-specific data
 ```
 

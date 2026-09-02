@@ -19,7 +19,7 @@ This specification covers:
 - identification and description of a registry;
 - stable identification and lifecycle representation of registry records;
 - retrieval of the current permitted representation of a record;
-- declaration of schemas, semantic models, supported capabilities, and protocol bindings;
+- declaration of representation formats, schemas, semantic models, supported capabilities, and protocol bindings;
 - registry-specific revision and provenance information; and
 - optional capabilities for provisioning, additional consultation patterns, evidence, writing, notifications, aggregate data, access transparency, and identity federation.
 
@@ -30,7 +30,7 @@ The same specification can be applied to registries containing records about per
 The specification separates four concerns:
 
 1. **Operations** describe what an API consumer can ask the registry to do.
-2. **Common metadata** identifies the registry, record, revision, lifecycle state, schema, and provenance relevant to an operation.
+2. **Common metadata** identifies the registry, record, revision, lifecycle state, representation format, schema, and provenance relevant to an operation.
 3. **Semantic models** define the meaning of domain data.
 4. **Bindings** map operations to HTTP, event-driven messaging, or an established industry protocol.
 
@@ -54,7 +54,7 @@ A Registry can integrate with neighbouring Building Blocks without transferring 
 | Consent | Consent can provide evidence or policy signals used in a disclosure decision. The Registry enforces the decision applicable to each request and supports other lawful bases where relevant. |
 | E-Signature | E-Signature can perform signing operations. The Registry remains responsible for the meaning, issuance, status, and lifecycle of Registry Evidence. |
 | Wallet | A Wallet can hold and present credentials issued through Evidence. The Registry remains the source of the asserted facts and is not required to operate a Wallet. |
-| Identity | Identity can authenticate users or provide foundational identity services. A sectoral Registry remains responsible for its functional identifiers. Identity Federation does not replace API access control. |
+| Identity | The [Identity Building Block](https://github.com/GovStackWorkingGroup/bb-identity/blob/main/spec/2-description.md) currently defines foundational identity services and discusses integration with functional identities. A sectoral Registry remains responsible for its functional identifiers. Ownership of an outward-facing functional Identity Federation profile remains an open cross-Building-Block decision, and Identity Federation does not replace API access control. |
 | GIS | GIS can provide geospatial processing and visualisation. A spatial Registry remains responsible for its records and can expose an OGC-aligned GIS Query capability. |
 
 These integrations are optional unless a selected capability profile states otherwise.
