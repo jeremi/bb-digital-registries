@@ -25,6 +25,7 @@ These references inform the capability direction. Only the requirements and cano
 - [JSON:API 1.1](https://jsonapi.org/format/1.1/), considered as an alternative representation convention
 - [RFC 9727: api-catalog Well-Known URI and Link Relation](https://www.rfc-editor.org/rfc/rfc9727.html)
 - [RFC 9264: Linkset Media Types and Link Relation](https://www.rfc-editor.org/rfc/rfc9264.html)
+- [RFC 8631: Link Relation Types for Web Services](https://www.rfc-editor.org/rfc/rfc8631.html)
 - [W3C Data Catalog Vocabulary (DCAT) 3](https://www.w3.org/TR/vocab-dcat-3/)
 - [AsyncAPI Specification 3.0.0](https://www.asyncapi.com/docs/reference/specification/v3.0.0)
 - [OGC API Features](https://ogcapi.ogc.org/features/)

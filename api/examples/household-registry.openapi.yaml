@@ -51,6 +51,11 @@ paths:
         Absent Records, Records outside this collection and protected existence share
         404 record-not-available.
       tags: [Consultation]
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/households
+        collection: households
+        capability: retrieve
+        view: household-with-memberships
       parameters:
         - $ref: '../openapi.yaml#/components/parameters/RecordId'
         - $ref: '../openapi.yaml#/components/parameters/Traceparent'

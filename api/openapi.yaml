@@ -75,6 +75,11 @@ paths:
         outside the collection and protected existence share the 404 response. Conditional
         retrieval uses the representation’s ETag after authorization.
       tags: [Consultation]
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/records
+        collection: records
+        capability: retrieve
+        view: record-public
       parameters:
         - $ref: '#/components/parameters/RecordId'
         - $ref: '#/components/parameters/Traceparent'
@@ -114,6 +119,11 @@ paths:
         request is authorized; unsupported query parameters return 400. Continuations follow
         the Cursor and PageSize rules.
       tags: [Consultation]
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/records
+        collection: records
+        capability: list
+        view: record-public
       parameters:
         - $ref: '#/components/parameters/Traceparent'
         - $ref: '#/components/parameters/PageSize'
@@ -156,6 +166,11 @@ paths:
         retryable without an Idempotency-Key. Selector values remain confined to the request
         body.
       tags: [Consultation]
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/records
+        collection: records
+        capability: lookup
+        view: record-public
       parameters:
         - $ref: '#/components/parameters/Traceparent'
       requestBody:
@@ -214,6 +229,11 @@ paths:
         use 400 invalid-cursor. This synchronous read is retryable without an Idempotency-Key.
         Search values remain confined to the request body.
       tags: [Consultation]
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/records
+        collection: records
+        capability: search
+        view: record-public
       parameters:
         - $ref: '#/components/parameters/Traceparent'
       requestBody:

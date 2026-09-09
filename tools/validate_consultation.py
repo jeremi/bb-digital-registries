@@ -33,7 +33,22 @@ HOUSEHOLD = API / "examples/household-registry.openapi.yaml"
 BIRTH = API / "examples/birth-registration.openapi.yaml"
 RELATIONSHIPS = API / "examples/relationship-examples.schema.json"
 OPENAPI_DOCUMENTS = (CANONICAL, BUSINESS, HOUSEHOLD, BIRTH)
-SCHEMA_DOCUMENTS = (BINDING, RELATIONSHIPS)
+EXTENSION = "x-govstack-digital-registries"
+EXTENSION_SCHEMA = API / "extensions/x-govstack-digital-registries.schema.json"
+METADATA_SCHEMA = API / "extensions/registry-metadata.schema.json"
+METADATA_EXAMPLE = API / "examples/registry-metadata.jsonld"
+LINKSET_EXAMPLE = API / "examples/api-catalog.linkset.json"
+CONTEXT = Path(__file__).resolve().parents[1] / "spec/05-api-families/registry-core-context.jsonld"
+CORE_PAGE = Path(__file__).resolve().parents[1] / "spec/05-api-families/registry-core.md"
+CONTEXT_URI = "https://vocab.govstack.global/digital-registries/context/v1"
+API_FAMILY_PREFIX = "apif:"
+CAPABILITY_BY_ROUTE = {
+    ("get", "item"): "retrieve",
+    ("get", "collection"): "list",
+    ("post", "lookup"): "lookup",
+    ("post", "search"): "search",
+}
+SCHEMA_DOCUMENTS = (BINDING, RELATIONSHIPS, EXTENSION_SCHEMA, METADATA_SCHEMA)
 DOCUMENTS: dict[str, dict] = {}
 
 
@@ -88,6 +103,58 @@ def resolve_object(path: Path, value: dict) -> tuple[Path, dict]:
         for token in fragment.lstrip("/").split("/") if fragment else []:
             value = value[token.replace("~1", "/").replace("~0", "~")]
     return path, value
+
+
+def route_kind(path: str, method: str) -> tuple[str, str] | None:
+    """Classify a Consultation route by its shape: item, collection, :lookup or :search."""
+    if not path.startswith("/v1/"):
+        return None
+    if path.endswith(":lookup"):
+        return method, "lookup"
+    if path.endswith(":search"):
+        return method, "search"
+    if path.endswith("/{recordId}"):
+        return method, "item"
+    return method, "collection"
+
+
+def collection_segment(path: str) -> str:
+    return path.removeprefix("/v1/").split("/")[0].split(":")[0]
+
+
+def success_record_schema(path: Path, operation: dict) -> dict:
+    """Return the resolved Record schema of a 200 response, unwrapping a Page's items."""
+    response_path, response = resolve_object(path, operation["responses"]["200"])
+    schema_path, schema = resolve_object(response_path, response["content"]["application/json"]["schema"])
+    for member in [schema, *schema.get("allOf", [])]:
+        if "items" in member.get("properties", {}):
+            schema_path, items = resolve_object(schema_path, member["properties"]["items"])
+            schema_path, schema = resolve_object(schema_path, items["items"])
+            break
+    return schema
+
+
+def as_list(value) -> list:
+    return value if isinstance(value, list) else [value]
+
+
+def fenced_json_blocks(markdown: str, heading: str) -> list[dict]:
+    """Parse every ```json block between the named heading and the next heading of equal or higher level."""
+    lines = markdown.splitlines()
+    level = heading.count("#", 0, heading.find(" "))
+    start = lines.index(heading)
+    blocks, current = [], None
+    for line in lines[start + 1:]:
+        if line.startswith("#") and line.count("#", 0, line.find(" ")) <= level:
+            break
+        if line.strip() == "```json":
+            current = []
+        elif line.strip() == "```" and current is not None:
+            blocks.append(json.loads("\n".join(current)))
+            current = None
+        elif current is not None:
+            current.append(line)
+    return blocks
 
 
 class ConsultationContractTests(unittest.TestCase):
@@ -363,6 +430,108 @@ class ConsultationContractTests(unittest.TestCase):
         self.assertEqual(set(record), {"recordId", "data"}, "The example must not require source metadata enrichment")
         self.assertFalse(record_check.is_valid({**record, "data": {**record["data"], "parents": [{"nameAtRegistration": "Example"}] * 5}}))
         self.assertFalse(record_check.is_valid({**record, "data": {**record["data"], "dateOfBirth": "2020-02-30"}}))
+
+    def test_consultation_operations_declare_registry_context(self):
+        extension_check = validator(EXTENSION_SCHEMA, "")
+        for path in OPENAPI_DOCUMENTS:
+            spec = document(path)
+            views: dict[tuple[str, str, str], tuple[str, dict]] = {}
+            for route, item in spec["paths"].items():
+                for method, operation in item.items():
+                    kind = route_kind(route, method)
+                    if kind is None:
+                        continue
+                    with self.subTest(file=path.name, operation=operation.get("operationId")):
+                        self.assertIn(EXTENSION, operation, "Every Consultation operation declares its Registry context")
+                        declared = operation[EXTENSION]
+                        extension_check.validate(declared)
+                        self.assertEqual(declared["capability"], CAPABILITY_BY_ROUTE[kind])
+                        self.assertEqual(declared["collection"], collection_segment(route))
+                        key = (declared["registry"], declared["collection"], declared["view"])
+                        schema = success_record_schema(path, operation)
+                        if key in views:
+                            self.assertEqual(views[key][1], schema,
+                                             f"{operation['operationId']} and {views[key][0]} share a view but not a Record schema")
+                        views[key] = (operation["operationId"], schema)
+        for path, invalid in (
+            (EXTENSION_SCHEMA, {"registry": "https://registry.example/registries/business", "collection": "businesses", "capability": "retrieve"}),
+            (EXTENSION_SCHEMA, {"registry": "not an iri", "collection": "businesses", "capability": "retrieve", "view": "public"}),
+            (EXTENSION_SCHEMA, {"registry": "https://registry.example/registries/business", "collection": "Businesses", "capability": "retrieve", "view": "public"}),
+            (EXTENSION_SCHEMA, {"registry": "https://registry.example/registries/business", "collection": "businesses", "capability": "delete", "view": "public"}),
+            (EXTENSION_SCHEMA, {"registry": "https://registry.example/registries/business", "collection": "businesses", "capability": "retrieve", "view": "public", "family": "consultation"}),
+        ):
+            self.assertFalse(validator(path, "").is_valid(invalid), invalid)
+
+    def test_registry_metadata_example_is_well_formed(self):
+        metadata = json.loads(METADATA_EXAMPLE.read_text())
+        validator(METADATA_SCHEMA, "").validate(metadata)
+        self.assertEqual(metadata["@context"], CONTEXT_URI)
+        from pyld import jsonld
+        local_context = json.loads(CONTEXT.read_text())
+        def loader(url, options=None):
+            self.assertEqual(url, CONTEXT_URI, "The example must only depend on the shipped context")
+            return {"contextUrl": None, "documentUrl": url, "document": local_context}
+        expanded = jsonld.expand(metadata, {"documentLoader": loader})
+        by_id = {node["@id"]: node for node in expanded}
+        registries = [n for n in expanded if "https://vocab.govstack.global/digital-registries#Registry" in n.get("@type", [])]
+        self.assertTrue(registries, "The example describes at least one Registry")
+        for registry in registries:
+            for property_iri in ("http://purl.org/dc/terms/title", "http://purl.org/dc/terms/description",
+                                 "http://purl.org/dc/terms/references",
+                                 "https://vocab.govstack.global/digital-registries#authority",
+                                 "https://vocab.govstack.global/digital-registries#dataService"):
+                self.assertIn(property_iri, registry, f"{registry['@id']} lacks {property_iri}")
+            for service_ref in registry["https://vocab.govstack.global/digital-registries#dataService"]:
+                service = by_id[service_ref["@id"]]
+                self.assertIn("http://www.w3.org/ns/dcat#DataService", service["@type"])
+                families = [t["@id"] for t in service["http://purl.org/dc/terms/type"]]
+                self.assertTrue(all(f.startswith("https://vocab.govstack.global/digital-registries/api-families#") for f in families))
+                self.assertIn("http://www.w3.org/ns/dcat#endpointURL", service)
+                self.assertIn("http://www.w3.org/ns/dcat#endpointDescription", service)
+        metadata_check = validator(METADATA_SCHEMA, "")
+        registry_node = next(n for n in metadata["@graph"] if "govreg:Registry" in as_list(n["@type"]))
+        for missing in ("title", "authority", "specification", "description", "dataService"):
+            broken = deepcopy(metadata)
+            node = next(n for n in broken["@graph"] if n["@id"] == registry_node["@id"])
+            del node[missing]
+            self.assertFalse(metadata_check.is_valid(broken), f"Registry without {missing} must be rejected")
+        broken = deepcopy(metadata)
+        broken["@context"] = "https://vocab.govstack.global/digital-registries/context/v2"
+        self.assertFalse(metadata_check.is_valid(broken), "Only the pinned context version is accepted")
+
+    def test_api_catalog_links_contracts_and_metadata(self):
+        linkset = json.loads(LINKSET_EXAMPLE.read_text())
+        metadata = json.loads(METADATA_EXAMPLE.read_text())
+        self.assertEqual(list(linkset), ["linkset"])
+        descriptions, metadata_links = set(), set()
+        for context in linkset["linkset"]:
+            self.assertTrue(context["anchor"].startswith("https://"))
+            for link in context.get("service-desc", []):
+                self.assertTrue(link["href"].startswith("https://"))
+                self.assertIn(link["type"], ("application/vnd.oai.openapi", "application/vnd.oai.openapi+json"))
+                descriptions.add(link["href"])
+            for link in context.get("service-meta", []):
+                self.assertEqual(link["type"], "application/ld+json")
+                metadata_links.add(link["href"])
+        services = [n for n in metadata["@graph"] if "dcat:DataService" in as_list(n["@type"])]
+        self.assertTrue(services)
+        self.assertEqual({s["endpointDescription"] for s in services}, descriptions,
+                         "The linkset advertises exactly the contracts the metadata declares")
+        catalog = next(n for n in metadata["@graph"] if "dcat:Catalog" in as_list(n["@type"]))
+        self.assertEqual(metadata_links, {catalog["@id"]}, "service-meta points at the metadata document")
+        business = document(BUSINESS)
+        registry = next(n for n in metadata["@graph"] if "govreg:Registry" in as_list(n["@type"]))
+        for item in business["paths"].values():
+            for method, operation in item.items():
+                if route_kind(next(iter(business["paths"])), method) and EXTENSION in operation:
+                    self.assertEqual(operation[EXTENSION]["registry"], registry["@id"])
+
+    def test_core_page_examples_match_discovery_artifacts(self):
+        page = CORE_PAGE.read_text()
+        metadata_blocks = fenced_json_blocks(page, "### Informative JSON-LD example")
+        self.assertEqual(metadata_blocks, [json.loads(METADATA_EXAMPLE.read_text())])
+        linkset_blocks = fenced_json_blocks(page, "### Discovery publication")
+        self.assertEqual(linkset_blocks, [json.loads(LINKSET_EXAMPLE.read_text())])
 
 
 if __name__ == "__main__":

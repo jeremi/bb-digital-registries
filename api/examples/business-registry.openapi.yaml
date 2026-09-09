@@ -61,6 +61,11 @@ paths:
         share 404 record-not-available. The response uses no-store.
       tags:
       - Consultation
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/business
+        collection: businesses
+        capability: retrieve
+        view: business-public
       parameters:
       - $ref: ../openapi.yaml#/components/parameters/RecordId
       - $ref: ../openapi.yaml#/components/parameters/Traceparent
@@ -104,6 +109,11 @@ paths:
         effective pageSize. Only nextCursor null ends traversal.
       tags:
       - Consultation
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/business
+        collection: businesses
+        capability: list
+        view: business-public
       parameters:
       - $ref: ../openapi.yaml#/components/parameters/Traceparent
       - $ref: ../openapi.yaml#/components/parameters/PageSize
@@ -150,6 +160,11 @@ paths:
         422. Protected-existence policy applies before Record-specific diagnostics.
       tags:
       - Consultation
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/business
+        collection: businesses
+        capability: lookup
+        view: business-public
       parameters:
       - $ref: ../openapi.yaml#/components/parameters/Traceparent
       requestBody:
@@ -222,6 +237,11 @@ paths:
         invalid-cursor.
       tags:
       - Consultation
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/business
+        collection: businesses
+        capability: search
+        view: business-public
       parameters:
       - $ref: ../openapi.yaml#/components/parameters/Traceparent
       requestBody:

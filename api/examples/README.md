@@ -8,8 +8,9 @@ These illustrative deployments specialize the [Consultation contract](../openapi
 | [Household registry](household-registry.openapi.yaml) | `/v1/households` | Retrieve | Address, memberships, and individual references |
 | [Birth registration](birth-registration.openapi.yaml) | `/v1/birth-registrations` | Retrieve | Birth details and recorded parent information |
 
-Each contract publishes its Registry context, schemas, source currency, access
-policy, limits, and response examples. The business contract also defines exact
+Each contract declares its Registry, collection, capability, and view on every
+operation with `x-govstack-digital-registries`, and publishes schemas, source
+currency, access policy, limits, and response examples. The business contract also defines exact
 and composite selectors, a typed status search, and live cursor pagination.
 
 The examples use `https://registry.example` as their API root. A deployment can
@@ -34,6 +35,16 @@ containing Record views.
 | --- | --- |
 | [Business Record and request schemas](business-registry.schema.json) | [Consultation exchanges](consultation-exchanges.json) |
 | [Household, birth-registration, and reference schemas](relationship-examples.schema.json) | [Relationship exchanges](relationship-exchanges.json) |
+
+## Discovery
+
+| Artifact | Purpose |
+| --- | --- |
+| [Registry metadata](registry-metadata.jsonld) | Compacted JSON-LD document for the business Registry, validated against the [metadata document schema](../extensions/registry-metadata.schema.json) |
+| [API catalog linkset](api-catalog.linkset.json) | RFC 9727 `/.well-known/api-catalog` response linking the three contracts and the metadata document |
+
+The Registry Core page embeds both documents; the validator checks that the
+embedded copies and these files are identical.
 
 Named exchanges represent independent fixture states, except
 `emptySearchContinuation` and `finalSearchPage`, which form one traversal.

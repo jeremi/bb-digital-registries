@@ -25,10 +25,15 @@ path. API-family labels describe capabilities; families can share resource paths
 with distinct HTTP methods, schemas, and access requirements.
 
 The shared Record schemas apply the [Registry Core](../spec/05-api-families/registry-core.md)
-representation rules. Core metadata is published separately as a static document or
-catalogue entry. It identifies the Registry and its authority and links each service
-to its deployed OpenAPI contract. Together, the metadata and selected Consultation
-operations provide the Core + Consultation contract.
+representation rules. Core metadata is published as a JSON-LD document that the
+RFC 9727 `/.well-known/api-catalog` linkset locates. It identifies the Registry and
+its authority and links each service to its deployed OpenAPI contract. Every
+Record-returning operation declares its Registry, collection, capability, and view
+with the `x-govstack-digital-registries` extension. Together, the metadata and
+selected Consultation operations provide the Core + Consultation contract.
+
+[extensions/](extensions/) holds the JSON Schemas for the extension and for the
+compacted metadata document.
 
 A deployment publishes its selected operations with concrete schemas for
 `data`, selector values, search criteria, and supported sorting. Its contract
@@ -43,7 +48,9 @@ schemas for local reference resolution.
 ## Validation
 
 From the repository root, validate the four OpenAPI documents, domain schemas,
-inline examples, and positive and negative fixtures:
+inline examples, positive and negative fixtures, the Registry context extension
+of every operation, and the discovery examples against their schemas and the
+Registry Core page:
 
 ```sh
 uv run --with-requirements tools/requirements-api.txt python tools/validate_consultation.py

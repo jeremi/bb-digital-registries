@@ -10,11 +10,14 @@ description: Shared identity, metadata, semantics, lifecycle, and provenance for
 
 Registry Core defines the common behaviour and metadata shared by the API families. It identifies the Registry, its authority and scope, and its available services. Returned Records have stable identity within an unambiguous Registry context and a documented representation schema. A capability or domain profile can additionally require revision, lifecycle, provenance, or formal semantic-model information.
 
+Core is the interoperability boundary of this specification. Two implementations that conform to Core and the same capability expose the same operation shapes, error model, pagination, discovery mechanism and Record envelope. They do not expose the same domain fields: each deployment declares its own Record schemas in its published contract, and a domain profile can narrow them. A consumer that reads one Registry can read another after loading that Registry's contract, not before.
+
 The [conformance model](../04-conformance.md) combines Core with at least one selected capability. Core requirements apply as follows:
 
 - Registry metadata and service discovery apply to every implementation.
 - Record representation requirements apply to implemented capabilities that return Records.
 - Identifier preservation applies where the implementation assigns or maintains Record Identifiers.
+- Registry context declaration applies to every published OpenAPI contract.
 
 [Provisioning](provisioning.md) provides optional administrative operations for creating or revising metadata. Publication can also use a static document or an external catalogue.
 
@@ -102,7 +105,20 @@ A service description declares only the families available for its associated Re
 
 ### API composition
 
-One API can expose several Record collections and operations from several families. Its contract declares each collection's Registry association and membership, and each operation's family, inputs, representation, and access requirements. API-family classifications describe capabilities independently of URL structure.
+One API can expose several Record collections and operations from several families. Its contract documents each collection's membership and each operation's inputs, representation, and access requirements. API-family classifications describe capabilities independently of URL structure.
+
+An OpenAPI contract declares the Registry context of each operation that returns Records with the `x-govstack-digital-registries` extension on the Operation Object. The extension carries four values: `registry`, the Registry Identifier, equal to the `@id` of a `govreg:Registry` in the published metadata; `collection`, equal to the collection segment of the operation path; `capability`, one of `retrieve`, `lookup`, `list` and `search`; and `view`, the name of the Record view the operation returns. The [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json) is its normative definition. Operations of one collection that declare the same view return the same Record schema. The extension is the machine-readable link between a Record read and the metadata that identifies its Registry and authority; the [Common Record context](#common-record-context) relies on it.
+
+```yaml
+  /v1/businesses/{recordId}:
+    get:
+      operationId: retrieveBusiness
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/business
+        collection: businesses
+        capability: retrieve
+        view: business-public
+```
 
 Operations from different families can share a resource URI through distinct HTTP methods. For example, Consultation can retrieve a Record at a URI where Write accepts an update. Each operation defines its own request and response schemas and permissions. The API contract coordinates collection, action, and supporting-resource paths, including any schema, subscription, or asynchronous-operation resources.
 
@@ -110,21 +126,53 @@ The major version applies to the API contract exposed at that root. Separately e
 
 ### Discovery publication
 
-An implementation publishes the required metadata at a stable URI made available to its intended API consumers. Publication can use a statically hosted document or an entry in an external catalogue. Implementations document the publication URI, supported representations, and access conditions.
+An implementation publishes its Registry metadata as one document compacted with the version 1 JSON-LD context and served as `application/ld+json`. The [metadata document schema](../../api/extensions/registry-metadata.schema.json) defines the compacted shape; the JSON-LD context defines its RDF meaning. The document describes one or more Registries, their governed datasets, and their services. The document URI identifies the document; each Registry has its own Registry Identifier. The document URI is chosen by the deployment, is stable, and is not part of the versioned API surface.
 
-For a DCAT catalogue on an HTTPS origin, the recommended default is the root-relative `/catalog` URI, with DCAT representations available through HTTP content negotiation. Deployments can select another stable path. The catalogue describes one or more Registries, their governed datasets, and their services. The catalogue URI identifies the catalogue; each Registry has its own Registry Identifier.
+Consumers locate the document through the [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727.html) API catalog. The origin that hosts a Digital Registries API serves `/.well-known/api-catalog` as an [RFC 9264 linkset](https://www.rfc-editor.org/rfc/rfc9264.html) in `application/linkset+json`, following the GET, HEAD, and HTTPS requirements of RFC 9727. For every Digital Registries API at that origin, the linkset carries a `service-desc` link to the OpenAPI contract and a `service-meta` link, typed `application/ld+json`, to the Registry metadata document. Both link relations are defined by [RFC 8631](https://www.rfc-editor.org/rfc/rfc8631.html). The well-known path is one of the unversioned paths the GovStack API Design Guide permits, so no other root path is needed for discovery.
 
-The optional [RFC 9727 API discovery mechanism](https://www.rfc-editor.org/rfc/rfc9727.html) defines `/.well-known/api-catalog` and the `api-catalog` link relation for locating the canonical API catalogue. Deployments using it follow its GET, HEAD, HTTPS, and [`application/linkset+json`](https://www.rfc-editor.org/rfc/rfc9264.html) requirements.
+The linkset below publishes the three contracts and the metadata document of the [informative example](#informative-json-ld-example). It is also available as a [file](../../api/examples/api-catalog.linkset.json).
 
-A deployment supporting the JSON-LD workflow below provides `application/ld+json` at the configured or discovered catalogue URI. When using RFC 9727, it also provides the required Linkset representation. Clients request JSON-LD explicitly and check the response media type before parsing; RFC 9727 alone guarantees only Linkset support.
+```json
+{
+  "linkset": [
+    {
+      "anchor": "https://registry.example/",
+      "service-desc": [
+        {
+          "href": "https://registry.example/contracts/1.0.0-draft/examples/business-registry.openapi.yaml",
+          "type": "application/vnd.oai.openapi",
+          "title": "Business Registry Consultation API"
+        },
+        {
+          "href": "https://registry.example/contracts/business-write.openapi.json",
+          "type": "application/vnd.oai.openapi+json",
+          "title": "Business Registry Write API"
+        },
+        {
+          "href": "https://registry.example/contracts/business-evidence.openapi.json",
+          "type": "application/vnd.oai.openapi+json",
+          "title": "Business Registry Evidence API"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://registry.example/catalog",
+          "type": "application/ld+json",
+          "title": "Registry metadata for the Business Registry"
+        }
+      ]
+    }
+  ]
+}
+```
 
-Declarations are scoped to the intended metadata audience. Missing declarations establish neither the absence of an undisclosed service nor a consumer's entitlement to use it.
+An entry in an external catalogue, such as a national data portal, can repeat the metadata but does not replace the well-known resource. Declarations are scoped to the intended metadata audience. Missing declarations establish neither the absence of an undisclosed service nor a consumer's entitlement to use it.
 
 ### Informative JSON-LD example
 
 This JSON-LD document describes a business Registry, its authority and governed dataset, and three logical services supporting Consultation, Write, and Evidence at a shared API endpoint. The GovStack context maps JSON properties to the RDF vocabulary and identifies IRI-valued properties. The specification IRI is illustrative; publication status is listed under [coverage and limitations](../12-other-resources.md#121-coverage-and-limitations).
 
-The Consultation entry illustrates publication of the [business Registry OpenAPI](../../api/examples/business-registry.openapi.yaml) with its local dependencies at the example contract URL. It supports Retrieve, Lookup, List, and Search.
+The Consultation entry illustrates publication of the [business Registry OpenAPI](../../api/examples/business-registry.openapi.yaml) with its local dependencies at the example contract URL. It supports Retrieve, Lookup, List, and Search. The document is also available as a [file](../../api/examples/registry-metadata.jsonld) and validates against the metadata document schema. Its own URI, `https://registry.example/catalog`, is the `service-meta` target of the linkset above.
 
 ```json
 {
@@ -223,10 +271,10 @@ Catalogue entries contain descriptive metadata only. Services govern disclosure 
 
 ### Client discovery workflow
 
-A client using the illustrated DCAT publication arrangement can discover declared API families without knowing an implementation's API paths in advance:
+A client can discover declared API families without knowing an implementation's API paths in advance:
 
-1. Locate the canonical catalogue from a configured URI, the optional RFC 9727 well-known resource, or the recommended `/catalog` convention.
-2. Request a documented RDF representation of the catalogue, such as JSON-LD, and check that the response uses that media type.
+1. Request `/.well-known/api-catalog` at the API origin as `application/linkset+json`, or start from a configured metadata document URI.
+2. Follow the `service-meta` link to the metadata document, request it as `application/ld+json`, and check that the response uses that media type.
 3. Select the required `govreg:Registry` by its stable Registry Identifier.
 4. Follow `govreg:dataService` to each associated `dcat:DataService`.
 5. Read each service's `dct:type` values from the Digital Registries API Families scheme, then follow `dcat:endpointDescription` for the exact operations and invocation contract.
@@ -234,22 +282,21 @@ A client using the illustrated DCAT publication arrangement can discover declare
 The following language-neutral pseudocode illustrates the process for a JSON-LD client:
 
 ```text
-catalogUri = configuredCatalogUri
+metadataUri = configuredMetadataUri
 
-if catalogUri is absent:
-    catalogUri = discoverCatalogUsingRfc9727(apiOrigin)
+if metadataUri is absent:
+    linkset = get(resolve(apiOrigin, "/.well-known/api-catalog"), accept = "application/linkset+json")
+    requireMediaType(linkset, "application/linkset+json")
+    metadataUri = firstLink(linkset, rel = "service-meta", type = "application/ld+json").href
 
-if catalogUri is absent:
-    catalogUri = resolve(apiOrigin, "/catalog")
-
-response = get(catalogUri, accept = "application/ld+json")
+response = get(metadataUri, accept = "application/ld+json")
 requireMediaType(response, "application/ld+json")
-catalog = loadJsonLd(response.body)
-registry = catalog.resourceWithId(requiredRegistryId)
+metadata = loadJsonLd(response.body)
+registry = metadata.resourceWithId(requiredRegistryId)
 discoveredServices = []
 
 for each serviceReference in asList(registry.dataService):
-    service = catalog.resourceWithId(serviceReference)
+    service = metadata.resourceWithId(serviceReference)
 
     for each family in asList(service.serviceType):
         if DigitalRegistriesApiFamilies contains family:
@@ -282,18 +329,18 @@ An adopting profile adds types and properties where their semantics apply. Any e
 
 ## Common Record context
 
-Every returned Record representation has the following context. The binding defines where it is conveyed: in the representation, response metadata, or the versioned operational contract and its association with the Registry. A consumer can determine that context without knowing the source's internal storage. Registry-wide information need not be repeated in every Record or collection item.
+Every returned Record representation has the following context. The binding defines where it is conveyed: in the representation, response metadata, or the versioned operational contract and its association with the Registry. The HTTP binding conveys it through the contract: the `x-govstack-digital-registries` extension on each operation names the Registry, collection, capability, and view, and the operation's response schema is the representation schema. A consumer can determine that context without knowing the source's internal storage. Registry-wide information need not be repeated in every Record or collection item.
 
 | Concept | Baseline contract |
 |---|---|
-| Registry Identifier | The request and published service metadata establish one Registry context, or the returned Record explicitly identifies its Registry. |
+| Registry Identifier | The operational contract binds the operation to one Registry, or the returned Record explicitly identifies its Registry. |
 | Record Identifier | A stable reference unique within that Registry, included in each returned Record. |
 | Representation Format | The binding identifies the serialisation or media type. |
 | Representation Schema | A resolvable, versioned machine-readable schema identifies the permitted representation; schema selection is unambiguous. |
 | Field meanings | Schema descriptions or linked domain documentation explain field meanings, units, code lists, and relevant absence or null semantics. |
 | Registry Authority | The Registry context resolves to the authority and authoritative scope published in Registry metadata. |
 
-The applicable capability determines which domain data and metadata the consumer may receive. A fixed public view is sufficient where it meets the applicable policy. Different consumer views are optional; each exposed view has a valid, documented schema. The HTTP binding uses the same Record object for single results and collection members within a declared view.
+The applicable capability determines which domain data and metadata the consumer may receive. Each operation returns exactly one declared view, named in its Registry context declaration and defined by its response schema. A deployment that needs a different view for another audience exposes it as a separate operation or a separate API; one operation does not select among views per request. Access policy can withhold optional fields of the declared view; it does not substitute another schema. A fixed public view is sufficient where it meets the applicable policy. The HTTP binding uses the same Record object for single results and collection members within a declared view.
 
 Collections organise access to Records within the Registry's identity scope. The same Record retains its identifier across collections and views. Distinct Records have distinct identifiers within that Registry, including when their source collections use overlapping keys. An adapter can qualify such keys with a stable namespace; consumers continue to treat the resulting identifiers as opaque.
 
@@ -313,7 +360,7 @@ Record schemas define [structured values and references](#structured-values-and-
 }
 ```
 
-The metadata above associates that service with Registry `https://registry.example/registries/business` and the Business Registration Authority. The linked OpenAPI associates the `businesses` collection with that Registry and selects the `business-public` view and its `BusinessData` schema. A consumer retaining this Record's identity stores the Registry Identifier together with `r_42`.
+The metadata above associates that service with Registry `https://registry.example/registries/business` and the Business Registration Authority. The Retrieve operation in the linked OpenAPI declares that Registry, the `businesses` collection, and the `business-public` view; its response schema is `BusinessRecord`, whose `data` follows `BusinessData`. A consumer retaining this Record's identity stores the Registry Identifier together with `r_42`.
 
 ## Revisions and lifecycle
 
@@ -363,6 +410,8 @@ The same schema document defines `IndividualReference`, whose target Registry is
 
 `govstack-bb-digital-registries-fr-core#req-1`
 
+`KF: Registry Core`
+
 An implementation publishes machine-readable Registry metadata containing a globally unique and stable Registry Identifier, a human-readable Registry name, the identity of the Registry Authority, a description of its authoritative scope, and a reference identifying the Digital Registries specification version used to describe the implementation. The publication URI and access conditions are made available to the intended API consumers.
 
 **Purpose:** An adopter can determine which Registry and authority stand behind a service, what information that authority accepts responsibility for, and which specification version the description references.
@@ -374,6 +423,8 @@ An implementation publishes machine-readable Registry metadata containing a glob
 ### #2 Identify each returned Record (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-2`
+
+`KF: Registry Core`
 
 Every returned Record representation includes a Record Identifier that is unique within an unambiguous Registry context. The applicable binding defines how the consumer determines the Registry Identifier from the request, published contract and service metadata, or the representation itself. Together, the two identifiers uniquely identify the Record.
 
@@ -387,17 +438,21 @@ Every returned Record representation includes a Record Identifier that is unique
 
 `govstack-bb-digital-registries-fr-core#req-3`
 
-An implementation keeps a Record Identifier unchanged throughout that Record's lifecycle and revisions and never reassigns the identifier to a different Record.
+`KF: Registry Core`
+
+An implementation keeps a Record Identifier unchanged throughout that Record's lifecycle and revisions and never reassigns the identifier to a different Record. An adaptor over an existing source can satisfy this by declaring that it inherits the source's identifier policy, when that policy meets these conditions.
 
 **Purpose:** A Record reference remains unambiguous after changes, retirement, archival, or deletion.
 
-**Prerequisite:** The implementation has a documented Record Identifier lifecycle policy.
+**Prerequisite:** The implementation has a documented Record Identifier lifecycle policy, which can be the source system's policy adopted by an adaptor.
 
 **Verification:** Review the identifier policy and evidence showing that successive revisions retain the same identifier, distinct Records do not share an identifier, and retired identifiers are not returned to the allocation pool.
 
 ### #4 Identify the representation schema and field meanings (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-4`
+
+`KF: Registry Core`
 
 Every returned Record representation has an unambiguously identified, resolvable machine-readable schema and documented field meanings. The applicable binding identifies its representation format and how the consumer selects the schema. A formal semantic-model reference is provided when required by the selected capability or profile.
 
@@ -411,6 +466,8 @@ Every returned Record representation has an unambiguously identified, resolvable
 
 `govstack-bb-digital-registries-fr-core#req-5`
 
+`KF: Registry Core`
+
 When an implemented capability exposes revision or lifecycle metadata, it defines those fields in the representation schema and returns values with the declared source semantics. A capability or profile requiring those fields supplies its additional guarantees; baseline Record reads do not require them.
 
 **Purpose:** Consumers can interpret available revision and lifecycle information without inferring guarantees that the source does not provide.
@@ -422,6 +479,8 @@ When an implemented capability exposes revision or lifecycle metadata, it define
 ### #6 Describe provided Record provenance (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-6`
+
+`KF: Registry Core`
 
 The Registry context identifies the responsible Registry Authority through published metadata. When additional Record provenance is exposed, the contract defines its meaning and the implementation returns values supported by the source. A revision recording time is required only when the selected capability or profile requires it; retrieval time is not substituted for recording time.
 
@@ -435,10 +494,26 @@ The Registry context identifies the responsible Registry Authority through publi
 
 `govstack-bb-digital-registries-fr-core#req-7`
 
-For each service exposed through the Digital Registries capability model, an implementation publishes a machine-readable service description associated with the Registry. The description identifies the service, its supported API families from the Digital Registries API Families concept scheme, its endpoint, and a link to its machine-readable operational contract. HTTP operations use OpenAPI, or a protocol-native machine-readable description where the selected binding defines one. Declarations reflect the families and endpoints available for that Registry to the metadata's intended audience and are kept current when those services change.
+`KF: Registry Core`
+
+For each service exposed through the Digital Registries capability model, an implementation publishes a machine-readable service description associated with the Registry. The description identifies the service, its supported API families from the Digital Registries API Families concept scheme, its endpoint, and a link to its machine-readable operational contract. HTTP operations use OpenAPI, or a protocol-native machine-readable description where the selected binding defines one. The description is part of the Registry metadata document, and the origin hosting an HTTP service locates that document and each contract through `/.well-known/api-catalog` as defined under [discovery publication](#discovery-publication). Declarations reflect the families and endpoints available for that Registry to the metadata's intended audience and are kept current when those services change.
 
 **Purpose:** An API Consumer can discover relevant Registry services and follow their contracts to determine the supported operations and invocation details.
 
 **Prerequisite:** The Registry publishes at least one service under the capability model and makes the metadata and contract access conditions available to intended consumers.
 
-**Verification:** Obtain the metadata as an intended consumer. For every service exposed to that audience, verify its Registry association, service identifier, valid family classifications, endpoint, and resolvable machine-readable contract. Check that the contract describes the advertised endpoint and contains operations belonging to each declared family. Check declarations against the implementation's published service inventory, including different Registry contexts when an endpoint is shared. A missing required service description or contract fails this check; unrelated internal services are outside its scope.
+**Verification:** Request `/.well-known/api-catalog` at each HTTP service origin, check the `application/linkset+json` response, and follow its `service-meta` link to the metadata document as an intended consumer. For every service exposed to that audience, verify its Registry association, service identifier, valid family classifications, endpoint, and resolvable machine-readable contract, and check that the linkset carries a `service-desc` link to that contract. Check that the contract describes the advertised endpoint and contains operations belonging to each declared family. Check declarations against the implementation's published service inventory, including different Registry contexts when an endpoint is shared. A missing required service description or contract fails this check; unrelated internal services are outside its scope.
+
+### #8 Declare the Registry context of each operation (DRAFT EXTENSIBLE OBSERVABLE)
+
+`govstack-bb-digital-registries-fr-core#req-8`
+
+`KF: Registry Core`
+
+Every operation in a published OpenAPI contract that returns Records declares its Registry Identifier, collection, capability, and view with the `x-govstack-digital-registries` extension, valid against the [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json). The Registry Identifier equals the identifier of a Registry described in the published Registry metadata, and the collection equals the collection segment of the operation path. Operations of one collection that declare the same view use the same Record schema.
+
+**Purpose:** A consumer or validator can determine from the contract alone which Registry and authority a Record read belongs to and which representation it returns.
+
+**Prerequisite:** The Registry metadata and the OpenAPI contract are published.
+
+**Verification:** Validate the extension of every Record-returning operation against the schema. Check that its Registry Identifier resolves to a Registry in the published metadata and that its collection matches the path. Compare the response schemas of operations that share a collection and view and confirm they are identical.

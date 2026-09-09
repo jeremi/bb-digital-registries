@@ -22,7 +22,10 @@ draftRequirements:
     rationale: Review any provided provenance against source evidence and declared semantics; the minimal read binding requires no provenance enrichment.
   - id: govstack-bb-digital-registries-fr-core#req-7
     disposition: non-api
-    rationale: Verify that published service discovery metadata identifies the scoped registry, selected capabilities and operational contract.
+    rationale: Verify that published service discovery metadata identifies the scoped registry, selected capabilities and operational contract, and that /.well-known/api-catalog links the metadata document and the contract.
+  - id: govstack-bb-digital-registries-fr-core#req-8
+    disposition: operation
+    operations: [retrieveRecord, lookupRecord, listRecords, searchRecords]
   - id: govstack-bb-digital-registries-fr-consultation#req-1
     disposition: operation
     operations: [retrieveRecord]

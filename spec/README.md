@@ -10,7 +10,7 @@ The Digital Registries Building Block defines interoperable behaviour for softwa
 
 The conformance model combines Registry Core, including machine-readable Registry and service metadata, with at least one declared Registry capability. API families and operations are optional. The specification does not prescribe a database product, administrative user interface, storage model, deployment topology, or domain data model.
 
-The current draft defines Consultation Retrieve, Lookup, List, and Search as independently optional capabilities, with a common Record representation and bounded collection pagination. [Service Interfaces](09-service-interfaces.md) introduces the canonical draft HTTP contract. Registry and schema context can be supplied through the response, endpoint, or versioned contract as the binding specifies. Source revision, lifecycle, and recording-time metadata are optional unless a selected profile or capability requires them.
+The current draft defines Consultation Retrieve, Lookup, List, and Search as independently optional capabilities, with a common Record representation and bounded collection pagination. [Service Interfaces](09-service-interfaces.md) introduces the canonical draft HTTP contract. The HTTP binding supplies Registry and schema context through a declaration on each operation of the versioned contract. Source revision, lifecycle, and recording-time metadata are optional unless a selected profile or capability requires them.
 
 For this alpha's maturity and conformance status, see [Requirement Maturity](04-conformance.md#41-requirement-maturity). [Coverage and Limitations](12-other-resources.md#121-coverage-and-limitations) describes the available specifications and artifacts.
 

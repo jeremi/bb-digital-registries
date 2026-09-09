@@ -12,24 +12,26 @@ Consultation defines read access to Registry Records for independently implement
 
 | Capability | Input | Successful result |
 |---|---|---|
-| `consultation.retrieve` | Record Identifier | One Record |
-| `consultation.lookup` | Declared exact selector and its complete key | One Record |
-| `consultation.list` | Declared collection and supported public filters | Page of Records |
-| `consultation.search` | Declared search and typed criteria | Page of Records |
+| Retrieve | Record Identifier | One Record |
+| Lookup | Declared exact selector and its complete key | One Record |
+| List | Declared collection and its supported equality filters | Page of Records |
+| Search | Declared search and typed criteria | Page of Records |
 
 Shared requirements apply to every selected capability; operation requirements apply when that capability is selected. Each operation applies to a declared collection with an unambiguous Registry context, representation schema, and access policy.
 
+Consultation interoperates at the level Core defines: operation shapes, the Record envelope, error outcomes, pagination, and discovery are the same for every Registry, while domain fields, selectors, searches, and filters are declared per contract. A consumer reads any conforming Registry with the same client code once it has loaded that Registry's contract. See the [interoperability boundary](registry-core.md#purpose-and-applicability) in Core.
+
 ## Common read contract
 
-A read preserves the source Records. Current information is the information accepted by the authoritative source and available under the service's declared currency contract, including replication or cache delay. Domain schemas define the meaning of status and validity fields.
+A read preserves the source Records. Current information is the information accepted by the authoritative source and available under the service's declared currency contract, including replication or cache delay. The contract documents currency; verification reviews that documentation and the source arrangement rather than measuring delay. Domain schemas define the meaning of status and validity fields.
 
 <a id="retrieve-representation"></a>
 
-**Record representation.** A Record contains `recordId` and `data`. The identifier is stable, unique within its Registry, and never reassigned. Registry context and the selected representation schema are unambiguous from the published contract, request context, or response. Retrieve and Lookup return one Record; List and Search use the same Record shape for each item in a Page.
+**Record representation.** A Record contains `recordId` and `data`. The identifier is stable, unique within its Registry, and never reassigned. The [Common Record context](registry-core.md#common-record-context) defines how the contract establishes the Registry and the representation schema: each operation declares its Registry, collection, capability, and view with the `x-govstack-digital-registries` extension, and its response schema defines the view. Retrieve and Lookup return one Record; List and Search use the same Record shape for each item in a Page.
 
-The `data` schema defines domain fields, structured values, references, and their meanings. A declared view selects the information represented by that schema. Revision, lifecycle, and provenance metadata are optional in the baseline; profiles can require source-backed metadata with defined semantics.
+The `data` schema defines domain fields, structured values, references, and their meanings. Revision, lifecycle, and provenance metadata are optional in the baseline; profiles can require source-backed metadata with defined semantics.
 
-**Example: Record representation.** Examples on this page use the [illustrative business Registry binding](../../api/examples/business-registry.openapi.yaml), which defines the domain fields, status values, and query names. Its published contract selects the Registry and the `business-public` view. A Record response contains:
+**Example: Record representation.** Examples on this page use the [illustrative business Registry binding](../../api/examples/business-registry.openapi.yaml), which defines the domain fields, status values, and query names. Its operations declare Registry `https://registry.example/registries/business`, collection `businesses`, and view `business-public`. A Record response contains:
 
 ```json
 {
@@ -41,30 +43,24 @@ The `data` schema defines domain fields, structured values, references, and thei
 }
 ```
 
-**Consumer behavior.** Consumers retain Registry context when storing or forwarding Record references, treat Record Identifiers as opaque, and interpret `data` using the declared schema. They accept additional response-envelope members and use only the inputs supported by the published contract.
+**Consumer guidance (informative).** Consumers retain Registry context when storing or forwarding Record references, treat Record Identifiers as opaque, and interpret `data` using the declared schema. They accept additional response-envelope members and use only the inputs supported by the published contract. This specification places no conformance requirements on consumers.
 
-## Domain models and service declarations
+## Service declarations
 
-Implementations should reuse suitable schemas and vocabularies, including [Schema.org](https://schema.org/), [EU SEMIC Core Vocabularies](https://interoperable-europe.ec.europa.eu/collection/semic-support-centre/solution/core-vocabularies), [PublicSchema](https://publicschema.org/), and models defined or adopted by national or sector authorities.
-
-A domain profile records reusable agreements about schemas, terminology, and query semantics. A service contract applies those agreements to the operations it exposes. An implementation can adopt an existing profile or publish a concrete domain binding directly. Both preserve the shared Consultation behavior.
-
-The published service contract supplies the following information for its selected capabilities and applicable representation features, directly or through versioned references:
+The published service contract supplies the following information for its selected capabilities, directly or through versioned references:
 
 | Topic | Declared information |
 |---|---|
-| Registry and capabilities | Registry association and implemented operations for each collection, linked from Core metadata. |
+| Registry context | Registry Identifier, collection, capability, and view of each operation, through the Core [extension](registry-core.md#api-composition). |
 | Representation | JSON Schemas for the Record view and responses; adopted models and versions; mappings, local constraints, and extensions. |
 | Field meanings | Meaning, units, code lists, and omitted, null, or empty values, preserving the semantics of adopted models. |
 | Lookup and Search | Names, typed inputs, required components, comparison and normalization rules, uniqueness scope, and matching semantics. |
-| Collections | Names, membership, operation paths, supported filters and sorting, deterministic order, page-size limits, and cursor expiry. |
-| Access and currency | Authentication requirements, permitted views, and source currency, including material replication or cache delay. |
+| List | Supported equality filters and sorting, deterministic order, page-size limits, and cursor expiry. |
+| Access and currency | Authentication requirements, access policy for the declared view, and source currency, including material replication or cache delay. |
 
-An API can expose several collections, such as individuals, households, and land parcels. Each collection selects Records within a declared Registry; different collections can belong to the same Registry or to different Registries. The contract associates each operation with its collection and response schema. Record identity remains the pair of Registry Identifier and Record Identifier across collections and views.
+A domain profile records reusable agreements about schemas, terminology, and query semantics. A service contract applies those agreements to the operations it exposes. An implementation can adopt an existing profile or publish a concrete domain binding directly. Both preserve the shared Consultation behaviour. Reuse of domain models, the treatment of structured values, Record references, and embedded collections, and schema evolution follow [Registry Core](registry-core.md#domain-semantics-and-extensions).
 
-Domain references identify their target Record and Registry. When a target read is offered, the field binding identifies its collection, operational contract, operation, and mapping from the reference to the required inputs. Consumers use that binding to resolve the reference. Embedded data declares its ownership and currency; embedded collections declare bounds, completeness, and overflow outcomes. The [Core representation conventions](registry-core.md#structured-values-and-references) provide the shared model, and OpenAPI supplies reusable reference schemas.
-
-Published schema versions remain resolvable while their contracts are supported. The service identifies changes to schemas, queries, and views through its contract version, following the API design guide's compatibility rules.
+**List and Search.** List and Search both return Pages, and the split between them follows the API design guide. List carries equality filters on declared non-personal fields as query parameters, one parameter per field (guide §12.8). Personal criteria, composite keys, and non-equality matching belong to Search, whose request body keeps them out of URLs and logs (guide §8.6 and §12.9). A contract that needs neither can select List alone; a contract whose every useful criterion is personal selects Search alone.
 
 ## Read requirements
 
@@ -78,7 +74,9 @@ Published schema versions remain resolvable while their contracts are supported.
 
 Given a valid Record Identifier for a Record in the selected collection and a permitted request, Retrieve returns the current representation of that Record. An unknown identifier or a Record outside that collection receives the binding's unavailable-Record outcome, subject to protected-existence handling.
 
-**Verification:** Retrieve a known source fixture and check its identity, schema, currency, and declared metadata. Confirm that the source Record is unchanged; exercise an unknown identifier and, where applicable, an identifier belonging to another collection.
+**Prerequisite:** Retrieve is selected and the collection declares its Registry context and view.
+
+**Verification:** Retrieve a known source fixture and check its identity, schema, currency documentation, and declared metadata. Confirm that the source Record is unchanged; exercise an unknown identifier and, where applicable, an identifier belonging to another collection.
 
 ### #2 Apply disclosure rules to the returned representation (DRAFT EXTENSIBLE OBSERVABLE)
 
@@ -86,7 +84,9 @@ Given a valid Record Identifier for a Record in the selected collection and a pe
 
 `KF: Consultation`
 
-For every selected read, the service returns a schema-valid representation containing only the Records, fields, metadata, and result information permitted for the consumer and request context. Disclosure applies to references, embedded data, counts, errors, and continuation information.
+For every selected read, the service returns a representation valid against the declared view schema and containing only the Records, fields, metadata, and result information permitted for the consumer and request context. Disclosure applies to references, embedded data, counts, errors, and continuation information. Withholding applies to optional fields of the declared view; it does not substitute another schema.
+
+**Prerequisite:** The access policy for the declared view is documented.
 
 **Verification:** Exercise each selected read with fixtures for the service's applicable access policies. Check representation validity and permitted information, including different entitlements where offered.
 
@@ -96,9 +96,11 @@ For every selected read, the service returns a schema-valid representation conta
 
 `KF: Consultation`
 
-When policy protects Record existence, Retrieve and Lookup return the same unresolved outcome for unknown and protected Records. Equivalence covers protocol status, security-relevant metadata, error type, response structure, and non-Record-specific values. Trace and correlation values are generated independently of Record existence; the outcome contains no Record-specific data.
+When policy protects Record existence, Retrieve and Lookup return the same unresolved outcome for unknown and protected Records. Equivalence covers protocol status, security-relevant metadata, error type, response structure, and non-Record-specific values. Trace and correlation values are generated independently of Record existence; the outcome contains no Record-specific data. A Lookup failure caused by a source uniqueness violation on a protected key is indistinguishable from the unresolved outcome.
 
-**Verification:** Compare protected and unknown fixtures under the same consumer context for each selected operation. Check equivalent outcomes and independent trace values.
+**Prerequisite:** The access policy declares which Records or keys have protected existence.
+
+**Verification:** Compare protected and unknown fixtures under the same consumer context for each selected operation, including a uniqueness violation on a protected key where Lookup is selected. Check equivalent outcomes and independent trace values.
 
 ### #4 Resolve a Record by a declared exact selector (DRAFT EXTENSIBLE OBSERVABLE)
 
@@ -108,9 +110,11 @@ When policy protects Record existence, Retrieve and Lookup return the same unres
 
 Lookup accepts a published selector and all required key components. The key can be composite. Its declared comparison and normalization rules resolve at most one Record within the uniqueness scope. A permitted unique match in the selected collection returns that Record; zero matches in the collection produce the unresolved outcome. A source uniqueness violation produces a failure governed by disclosure policy.
 
-Invalid, incomplete, or unsupported inputs are rejected. A selector can derive key components from verified consumer context when its contract defines that mode; a fully context-derived selector accepts an empty caller-supplied `values` object.
+Invalid, incomplete, or unsupported inputs are rejected. A **context-derived Lookup** derives some or all key components from verified consumer context, such as the authenticated subject, when its selector contract defines that mode; a fully context-derived selector accepts an empty caller-supplied `values` object.
 
-**Verification:** Exercise known, unknown, incomplete, incorrectly typed, and unsupported inputs, plus a source uniqueness violation. Verify comparison rules, composite keys where supported, and protected-existence handling.
+**Prerequisite:** Lookup is selected and each selector declares its key components, comparison rules, uniqueness scope, and any context-derived components.
+
+**Verification:** Exercise known, unknown, incomplete, incorrectly typed, and unsupported inputs, plus a source uniqueness violation. Verify comparison rules, composite keys where supported, context-derived components where declared, and protected-existence handling.
 
 ### #5 List a bounded Record collection (DRAFT EXTENSIBLE OBSERVABLE)
 
@@ -118,7 +122,9 @@ Invalid, incomplete, or unsupported inputs are rejected. A selector can derive k
 
 `KF: Consultation`
 
-List returns a bounded Page of permitted Records from its declared collection, applying supported filters and ordering. Zero and single-result collections retain the Page shape. Unsupported filters or sorting produce a validation error.
+List returns a bounded Page of permitted Records from its declared collection, applying its supported equality filters and ordering. Filters address declared non-personal fields only. Zero and single-result collections retain the Page shape. Unsupported filters or sorting produce a validation error.
+
+**Prerequisite:** List is selected and the collection declares its order, tie-breaker, filters, and sorting.
 
 **Verification:** Use fixtures with zero, one, and multiple results, including tied sort values where applicable. Check membership, schemas, order, size bounds, and rejection of unsupported inputs.
 
@@ -129,6 +135,8 @@ List returns a bounded Page of permitted Records from its declared collection, a
 `KF: Consultation`
 
 Search accepts a published search name and its typed criteria. It applies the declared matching rules to the selected collection and returns a bounded Page of permitted matching Records, retaining the Page shape for zero or one result. Unsupported searches, unknown criteria, and invalid inputs produce a validation error.
+
+**Prerequisite:** Search is selected and each search declares its criteria schema and matching rules.
 
 **Verification:** Execute declared searches with valid and invalid inputs. Check matching results, empty Pages, applicable disclosure contexts, and use of the binding's protected request locations for personal criteria.
 
@@ -148,20 +156,21 @@ Pagination observes live data: source changes can move, add, or remove Records a
 
 Consumers treat cursors as opaque and return them unchanged with the original query inputs. They follow the completion signal, including when an intermediate Page is empty. The [HTTP binding](#http-binding) defines the continuation fields and fixed page-size policy.
 
+**Prerequisite:** List or Search is selected and the collection declares its cursor expiry and page-size bounds.
+
 **Verification:** Traverse unchanged multi-page fixtures to completion, checking complete membership without duplicates, identity, order, size bounds, progress, and termination. Exercise malformed, expired, and mismatched cursors, source changes, and applicable access changes. Check permitted page patterns and any total against the full permitted query.
 
 ## HTTP binding
 
-The [canonical OpenAPI](../../api/openapi.yaml) defines the HTTPS/JSON contract, version `1.0.0-draft`, using API design guide and ruleset `0.2.0-draft`. It uses `records` as the reference collection name. Deployments publish concrete collection names, selected operations, Registry associations, and schemas in OpenAPI.
+The [canonical OpenAPI](../../api/openapi.yaml) defines the synchronous HTTPS/JSON contract, version `1.0.0-draft`, using API design guide and ruleset `0.2.0-draft`. It uses `records` as the reference collection name and `/v1` as the HTTP compatibility line. The BB requirements remain DRAFT. The [read API design decisions](../12-other-resources/read-api-design-decisions.md) record the binding choices and the shared guide refinements.
 
-| Capability | Request | Successful body |
-|---|---|---|
-| Retrieve | `GET /v1/records/{recordId}` | `{recordId, data}` |
-| Lookup | `POST /v1/records:lookup` with `{selector, values}` | `{recordId, data}` |
-| List | `GET /v1/records` with pagination and supported public query parameters | `{items, pageInfo}` |
-| Search | `POST /v1/records:search` with `{search, criteria}` and pagination controls | `{items, pageInfo}` |
+### Deployment contract
 
-The major API version precedes collection paths. An OpenAPI server URL identifies the deployment root, optionally including a stable routing prefix, such as `https://example.org/registry`. API-family classifications are declared in Core metadata and operation tags. A shared API can therefore expose:
+The server URL identifies the deployment root, optionally including a stable routing prefix such as `/registry`. The major version precedes each collection: `/v1/households` or, with that prefix, `/registry/v1/households`.
+
+A deployment publishes a concrete OpenAPI contract containing its selected operations, service and authentication endpoints, versioned JSON Schemas for `data` and the complete response, selectors, searches, supported filters and ordering, source currency, access policy, and continuation policy. Every Record-returning operation carries the `x-govstack-digital-registries` extension required by [Core requirement #8](registry-core.md#registry-core-functional-requirements); it names the Registry, collection, capability, and view, and the operation's response schema defines that view. The extension is the binding's answer to the Common Record context: the Registry Identifier is not repeated in requests or Records.
+
+One API can expose several collections. A shared API can therefore expose:
 
 ```http
 GET /v1/individuals/{recordId}
@@ -171,9 +180,18 @@ POST /v1/households:lookup
 POST /v1/households:search
 ```
 
-These are illustrative collection names; the published contract defines the supported paths. The `:lookup` and `:search` suffixes distinguish collection methods from item identifiers, including valid IDs such as `lookup` and `search`.
+These are illustrative collection names; the published contract defines the supported paths. Different collections can belong to the same Registry or to different Registries. A Record retains its `(registryId, recordId)` identity across collections and views within its Registry. [API composition](registry-core.md#api-composition) describes how collections and families share an API; Consultation and Write can share a resource URI with separate methods, schemas, and permissions. The [OpenAPI examples](../../api/examples/README.md) illustrate concrete collections, domain schemas, and response payloads.
 
-Lookup and Search are synchronous reads returning `200`; selector and search values remain in the request body. The binding also defines the operational `/health` endpoint. [API composition](registry-core.md#api-composition) describes how collections and families share an API.
+### Operations
+
+| Capability | HTTP operation, relative to the deployment root | Successful body | Input contract |
+|---|---|---|---|
+| Retrieve | `GET /v1/records/{recordId}` | `{recordId, data}` | Record Identifier encoded as one path segment. |
+| Lookup | `POST /v1/records:lookup` | `{recordId, data}` | JSON object with `selector` and `values`. |
+| List | `GET /v1/records` | `{items, pageInfo}` | Optional `pageSize`, `cursor`, declared equality filters as query parameters, and declared sort parameters. |
+| Search | `POST /v1/records:search` | `{items, pageInfo}` | JSON object with `search`, `criteria`, and optional `pageSize`, `cursor`, and declared `sort`. |
+
+The `:lookup` and `:search` suffixes distinguish collection methods from item identifiers, including valid IDs such as `lookup` and `search`. Lookup and Search are synchronous reads returning `200`; selector and search values remain in the request body. Lookup uses a declared unique key within its documented scope; Search uses declared typed criteria. The concrete contract defines comparison and normalization rules and rejects unsupported inputs. The binding also exposes the guide's unversioned `/health` operation.
 
 **Example: exact Lookup.** The business binding names its collection `businesses`. To resolve a business by its declared registration-number key, send this body to `POST /v1/businesses:lookup`:
 
@@ -221,15 +239,35 @@ With one permitted match and traversal complete, the `200` response is:
 
 List uses the same Page shape for its declared collection.
 
-**Continuation.** The first request selects `pageSize`, defaulting to 20 and bounded to 100 in the canonical contract. A continuation repeats the original criteria, search name where applicable, sorting, and view with the cursor. It can omit `pageSize` to retain the bound value or supply that same value. Cursors bind the operation, Registry, collection, query, view, effective size, and applicable access context. The service rejects continuations whose declared semantics it can no longer preserve.
+### Representation and schema context
 
-A non-null `pageInfo.nextCursor` enables continuation; `null` marks completion. Optional `pageInfo.total` is the exact count of the full permitted query at the documented page evaluation time, before applying the continuation boundary. Services omit an unavailable total.
+Retrieve and Lookup return `{recordId, data}`. List and Search return `{items, pageInfo}`, with each item using the same Record schema for the declared view. Empty and single-result collections retain the Page shape.
 
-**Outcomes.** OpenAPI defines the status codes and Problem Details for each operation. Retrieve and Lookup share `404 record-not-available` for unknown Records, Records outside the selected collection, and Records whose existence is protected. Structural input errors, invalid query parameters, and invalid pagination controls use `400`. Structurally valid Lookup and Search bodies with unknown selector or search names or invalid domain values use `422`. Malformed, expired, or mismatched cursors use `400 invalid-cursor`. Authentication, authorization, source failures, caching, and optional conditional Retrieve follow the declared OpenAPI responses and the API design guide.
+The operation's Registry context declaration and response schema provide Registry and schema context. Additional source metadata follows [Registry Core](registry-core.md#common-record-context). A schema linked with `rel="describedby"` describes the complete response, including its envelope. An operation exposing a different view is a separate operation with its own declared schema and field meanings.
+
+### Continuation
+
+The first request selects `pageSize`, defaulting to 20 and bounded to 100 in the canonical contract. A continuation repeats the original criteria, search name where applicable, sorting, and view with the cursor. It can omit `pageSize` to retain the bound value or supply that same value; a different value produces `400 invalid-cursor`. Cursors bind the operation, Registry, collection, query, view, effective size, and applicable access context. The deployment declares expiry and rejects malformed, expired, or mismatched cursors, including continuations whose declared semantics it can no longer preserve. A short or empty Page can carry a non-null `nextCursor` when source processing advances.
+
+A non-null `pageInfo.nextCursor` enables continuation; `null` marks completion. Optional `pageInfo.total` is the exact count of the full permitted query at the documented page evaluation time, before applying the continuation boundary. Because the count is of permitted Records only, disclosure policy decides whether it is offered at all. Services omit an unavailable total. OpenAPI defines the cursor format, limits, and error responses.
+
+### Outcomes, errors, and caching
+
+OpenAPI defines the status codes and RFC 9457 Problem Details for each operation. Retrieve and Lookup share `404 record-not-available` for unknown Records, Records outside the selected collection, and Records whose existence is protected under [requirement #3](#retrieve-functional-requirements). Structural input errors, invalid query parameters, and invalid pagination controls use `400`. Structurally valid Lookup and Search bodies with unknown selector or search names or invalid domain values use `422`. Malformed, expired, or mismatched cursors use `400 invalid-cursor`.
+
+Protected reads and errors use `Cache-Control: no-store`. Deployments may declare caching for public or isolated representations. Optional conditional Retrieve evaluates authorization before returning `304`; its ETag validates the selected HTTP representation. Authentication, authorization, and source failures follow the declared OpenAPI responses and the API design guide.
+
+### Record references and expansion
+
+The [Core representation rules](registry-core.md#structured-values-and-references) govern nested data and related Records. The reusable `RecordReference` schema carries `recordId` and, where the field schema leaves the target Registry open, required `registryId`. A field with a fixed target Registry permits omission of `registryId` and accepts an explicit value only when it matches that target.
+
+When a related read is offered, the field binding identifies its target collection, read operation, and operational contract, including how the reference supplies the operation's inputs. Consumers follow that binding and the target's access requirements. Record Identifiers remain opaque; reference identity is independent of the target's current availability.
+
+Optional client-selected expansion declares its supported paths, bounds, source currency, and disclosure behaviour in the deployment contract. Expansion embeds related representations inside the declared view; it does not select a different view. The [OpenAPI examples](../../api/examples/README.md) demonstrate concrete nested schemas and references.
 
 ## Conformance
 
-Evaluation identifies the service, specification and contract versions, selected capabilities, and any adopted domain profile. The service satisfies the common read contract, declaration rules, HTTP binding, and the requirements applicable to each selected capability.
+Evaluation identifies the service, specification and contract versions, selected capabilities, and any adopted domain profile. The service satisfies the common read contract, service declarations, HTTP binding, and the requirements applicable to each selected capability.
 
 | Selected capability | Applicable Consultation requirements |
 |---|---|
@@ -238,4 +276,4 @@ Evaluation identifies the service, specification and contract versions, selected
 | List | #2, #5, #7 |
 | Search | #2, #6, #7 |
 
-Consumers follow the shared representation rules and the input, outcome, and continuation contracts for the capabilities they use. Verification checks published contracts and observable exchanges under the stated fixture conditions. The [OpenAPI examples](../../api/examples/README.md) and [artifact validation](../../api/README.md#validation) support review; deployed behavior is evaluated separately.
+Verification checks published contracts and observable exchanges under the stated fixture conditions. The [OpenAPI examples](../../api/examples/README.md) and [artifact validation](../../api/README.md#validation) support review; deployed behaviour is evaluated separately.

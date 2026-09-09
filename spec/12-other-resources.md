@@ -12,7 +12,7 @@ The 3.0.0-alpha.2 specification provides the Registry model, DRAFT Core requirem
 |---|---|---|
 | Conformance | DRAFT model of Registry Core plus at least one declared capability, with capability-specific applicability | Approved conformance claims and named multi-family conformance profiles |
 | Registry Core | DRAFT requirements for metadata, scoped Record identity, schema context, documented field meanings, and the interpretation of optional source metadata | Complete schema lifecycle and domain-specific compatibility policies |
-| Metadata and discovery | DCAT-based model, vocabulary, JSON-LD context, and examples | Vocabulary and context publication at the assigned `vocab.govstack.global` IRIs; canonical specification-version IRIs; metadata HTTP binding and executable validation shape |
+| Metadata and discovery | DCAT-based model, vocabulary, JSON-LD context, metadata document schema, RFC 9727 discovery linkset, OpenAPI Registry context extension, and examples | Vocabulary, context, and schema publication at the assigned `vocab.govstack.global` IRIs; canonical specification-version IRIs |
 | Authority | Registry Authority identity and declared authoritative scope | Delegation, shared responsibility, and a machine-readable mandate model |
 | Capabilities | DRAFT Consultation Retrieve, Lookup, List, and Search requirements; informative descriptions of other capabilities | Requirements, contracts, and tests for other capabilities, including Revision History |
 | Service interfaces | [Canonical draft Consultation OpenAPI](../api/openapi.yaml), shared schemas, and [concrete example contracts](../api/examples/README.md) | Canonical contracts for other API families |
@@ -34,7 +34,7 @@ Identity Federation profile ownership and binding remain subject to agreement wi
 | Shared Record context and domain semantics | [Registry Core](05-api-families/registry-core.md#common-record-context) |
 | Capability boundaries and selection | [API Families](05-key-functionalities.md) |
 | Retrieve, exact Lookup, List, Search, and additional read patterns | [Consultation](05-api-families/consultation.md) |
-| HTTP contract and shared representation/pagination rules | [Service Interfaces](09-service-interfaces.md) and [canonical OpenAPI](../api/openapi.yaml) |
+| HTTP contract and shared representation/pagination rules | [Consultation HTTP binding](05-api-families/consultation.md#http-binding) and [canonical OpenAPI](../api/openapi.yaml) |
 | Structured values and references | [Core representation rules](05-api-families/registry-core.md#structured-values-and-references) and [OpenAPI examples](../api/examples/README.md) |
 | Concrete adopter schema and fixtures | [Business Registry schema](../api/examples/business-registry.schema.json) and [request/response fixtures](../api/examples/consultation-exchanges.json) |
 | Sectoral authentication and cross-Building-Block ownership | [Identity Federation](05-api-families/identity-federation.md) |

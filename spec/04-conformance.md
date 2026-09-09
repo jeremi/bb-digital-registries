@@ -32,7 +32,7 @@ An implementation claiming conformance:
 4. publishes the API-family classifications, endpoints, and linked machine-readable operational contracts for the services it exposes through the Registry BB interface; and
 5. satisfies the applicable `govstack-cfr-2.1.0` requirements.
 
-Core requirements concerning returned Records apply when a selected capability returns Records. The Consultation Retrieve, Lookup, List, and Search requirements and shared HTTP binding apply only to the selected capabilities. Retrieve resolves a stable Record Identifier; Lookup resolves a declared exact selector; List and Search return bounded Pages. An authorised API consumer receives the current permitted representation or a policy-appropriate unsuccessful outcome. The permitted representation is governed by access policy.
+Core requirements concerning returned Records apply when a selected capability returns Records. The Consultation Retrieve, Lookup, List, and Search requirements and shared HTTP binding apply only to the selected capabilities. Retrieve resolves a stable Record Identifier; Lookup resolves a declared exact selector; List and Search return bounded Pages. An authorised API consumer receives the current permitted representation or a policy-appropriate unsuccessful outcome. The permitted representation is governed by access policy. Consumer guidance in the capability pages is informative; conformance applies to implementations only.
 
 Registry metadata can describe a Registry for directory participation without establishing functional Registry BB conformance. A specification reference or family classification in metadata is not, by itself, a conformance claim.
 

@@ -5,3 +5,4 @@ PyYAML==6.0.3
 referencing==0.37.0
 # Enables JSON Schema's IRI format assertion instead of silently skipping it.
 rfc3987-syntax==1.1.0
+PyLD==2.0.4

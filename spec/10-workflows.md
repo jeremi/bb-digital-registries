@@ -6,7 +6,7 @@ description: Registry service discovery, current Record reads, exact lookup, and
 
 ## 10.1 Discover Registry services and their contracts
 
-This workflow applies to every Registry BB implementation. A publisher can provide the metadata as static documents at a stable URI or through a metadata service.
+This workflow applies to every Registry BB implementation. The publisher serves the Registry metadata document and locates it, with each contract, through the RFC 9727 `/.well-known/api-catalog` linkset at the API origin.
 
 ### Actors
 
@@ -15,16 +15,16 @@ This workflow applies to every Registry BB implementation. A publisher can provi
 
 ### Preconditions
 
-1. The consumer has a metadata entry point, such as a configured URI or a directory entry.
+1. The consumer knows the API origin or has a configured metadata document URI.
 2. The consumer has any access needed to read the metadata and linked contracts.
 3. The publisher provides the Registry metadata and service discovery required by Registry Core.
 
 ### Interaction
 
-1. The consumer reads the machine-readable Registry description and selects the Registry by its stable identifier.
+1. The consumer requests `/.well-known/api-catalog` at the API origin, follows its `service-meta` link to the Registry metadata document, and selects the Registry by its stable identifier.
 2. The consumer inspects its authority, authoritative scope statement, and referenced Digital Registries specification version.
 3. The consumer follows the Registry's service associations and reads each service's identifier, API-family labels, endpoint URL, and operational-contract reference for the services available to that consumer's audience.
-4. The consumer follows the operational contract to determine the collections, their Registry associations, exact operations, inputs, outputs, and access requirements. For HTTP APIs, this is an OpenAPI description unless the applicable binding defines an established protocol-native description.
+4. The consumer follows the operational contract to determine the collections, the Registry context declared on each operation, exact operations, inputs, outputs, and access requirements. For HTTP APIs, this is an OpenAPI description unless the applicable binding defines an established protocol-native description.
 5. The consumer selects a suitable operation, or determines that the required operation is unavailable.
 
 ### Outcomes
@@ -34,6 +34,7 @@ This workflow applies to every Registry BB implementation. A publisher can provi
 | Required operation appears in a service's linked contract | The consumer can inspect how to invoke that operation. |
 | A service declares a family but its contract does not offer the required operation | The consumer does not infer that operation from the family label. |
 | A Registry BB service exposed to the metadata's intended audience is missing from the Registry description, or lacks its identifier, valid family labels, endpoint, or machine-readable contract | The service discovery requirement is not satisfied. |
+| The API origin serves no `/.well-known/api-catalog` linkset, or the linkset lacks a `service-meta` link to the metadata document | The discovery publication rules are not satisfied. |
 
 ### Postconditions
 

@@ -12,8 +12,9 @@ This specification uses the [GovStack Common Terminology](https://specs.govstack
 | API Family | A coherent group of related Registry capabilities and operations. |
 | Authoritative Source | A source for which a named authority accepts responsibility within a declared domain and scope. Authoritative does not imply error-free. |
 | Binding | A mapping of abstract operations to a transport or established protocol. |
+| Capability | An independently selectable operation pattern within an API family, such as Retrieve or Search. |
 | Capability Declaration | Discovery metadata identifying a supported API family and its service contract. |
-| Capability Claim | A declaration that an implementation supports a specified API family, sub-pattern, and binding and meets the requirements attached to that claim. |
+| Capability Claim | A declaration that an implementation supports a specified API family, capability, and binding and meets the requirements attached to that claim. |
 | Conformance Profile | A defined combination of core requirements and capability claims. |
 | Functional Identifier | An identifier issued and lifecycle-managed for a sector-specific purpose, such as a farmer, student, health, or professional identifier. |
 | Lifecycle State | When supplied, the state of a Record under a documented vocabulary. A current Record is not necessarily active. |
@@ -34,4 +35,4 @@ This specification uses the [GovStack Common Terminology](https://specs.govstack
 | Search | Retrieval of a bounded collection using criteria declared by the service contract or applicable domain profile. It does not imply a generic query engine. |
 | Semantic Model | A published vocabulary or domain model for interpreting Registry data. A formal semantic-model reference is optional unless the selected profile requires it; field meanings remain documented. |
 | Source Recorded At | When supplied, the time at which the source recorded the represented information or revision, with the precise meaning declared by the contract. It is not the time at which an adapter retrieved the information. |
-| Sub-pattern | An independently claimable capability within an API family. |
+| Sub-pattern | See Capability. |

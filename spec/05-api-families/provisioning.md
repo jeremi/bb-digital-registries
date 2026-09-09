@@ -18,7 +18,7 @@ A Registry can publish its metadata without a Provisioning API. Its authority an
 |---|---|
 | Metadata administration | Creates or revises the Registry's machine-readable identity and capability declarations through an administrative interface. Registry Core separately requires publication of the current Registry metadata. |
 | Schema lifecycle | Publishes, revises, or retires a representation schema under defined compatibility rules. |
-| Interface publication | Declares supported families, sub-patterns, bindings, and access conditions. |
+| Interface publication | Declares supported families, capabilities, bindings, and access conditions. |
 | Bulk transfer | Initiates a controlled import or export of data and metadata. |
 
 Provisioning administers service metadata and contracts independently of the storage engine and administrative tooling. Registry Core requires metadata publication whether or not Provisioning is supported. Establishing a Registry Authority remains a legal or governance act outside this API family.

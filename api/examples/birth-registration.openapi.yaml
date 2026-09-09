@@ -53,6 +53,11 @@ paths:
         optional related Record identity. Absent Records, Records outside this collection
         and protected existence share 404 record-not-available.
       tags: [Consultation]
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/birth-registrations
+        collection: birth-registrations
+        capability: retrieve
+        view: birth-registration-with-recorded-parents
       parameters:
         - $ref: '../openapi.yaml#/components/parameters/RecordId'
         - $ref: '../openapi.yaml#/components/parameters/Traceparent'
