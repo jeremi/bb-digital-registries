@@ -38,55 +38,29 @@ The model describes externally observable concepts. An implementation can operat
 
 ## Registry metadata
 
-Registry metadata describes the institutionally governed Registry and its relationships to datasets, technical services, and catalogues.
+Registry metadata describes the institutionally governed Registry and its relationships to datasets, technical services, and catalogues. An implementation publishes it as one JSON document, as described under [Discovery publication](#discovery-publication). The keys below are defined by the [metadata document schema](../../api/extensions/registry-metadata.schema.json). The [metadata vocabulary appendix](../12-other-resources/metadata-vocabulary.md) explains their DCAT and RDF meaning for catalogue integrators; producing or consuming the document does not require RDF tooling.
 
 ### Minimal metadata
 
-| Concept | Status | RDF alignment | Meaning |
+| Concept | JSON key | Status | Meaning |
 |---|---|---|---|
-| Registry Identifier | Required | Registry resource IRI | Globally unique and stable identifier for the Registry. |
-| Registry Name | Required | [`dct:title`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#title) | Human-readable name used by adopters and consumers. |
-| Registry Authority | Required | `govreg:authority` with a [`prov:Agent`](https://www.w3.org/TR/prov-o/#Agent) value | Institution accountable for the Registry and its declared authoritative scope. |
-| Digital Registries specification reference | Required | [`dct:references`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#references) | Identifies the versioned Digital Registries specification used to describe the implementation. |
-| Description and authoritative scope | Required | [`dct:description`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#description) | Describes the information for which the named authority accepts responsibility, including relevant domain or jurisdictional boundaries. |
-| Governed dataset | Optional and repeatable | `govreg:dataset` with a [`dcat:Dataset`](https://www.w3.org/TR/vocab-dcat-3/#Class:Dataset) value | A governed collection of Registry Records described for discovery or exchange. |
-| Data service | Required for each exposed Registry service; repeatable | `govreg:dataService` with a [`dcat:DataService`](https://www.w3.org/TR/vocab-dcat-3/#Class:Data_Service) value | Associates the Registry with each interface exposed through the Digital Registries capability model. |
+| Registry Identifier | `@id` of the Registry | Required | Globally unique and stable identifier for the Registry. |
+| Registry Name | `title` | Required | Human-readable name used by adopters and consumers. |
+| Registry Authority | `authority` | Required | Institution accountable for the Registry and its declared authoritative scope. |
+| Digital Registries specification reference | `specification` | Required | Identifies the versioned Digital Registries specification used to describe the implementation. |
+| Description and authoritative scope | `description` | Required | Describes the information for which the named authority accepts responsibility, including relevant domain or jurisdictional boundaries. |
+| Governed dataset | `governedDataset` | Optional and repeatable | A governed collection of Registry Records described for discovery or exchange. |
+| Data service | `dataService` | Required for each exposed Registry service; repeatable | Associates the Registry with each interface exposed through the Digital Registries capability model. |
 
 The scope description states the information for which the Registry Authority accepts responsibility and can reference a fuller scope or mandate document. The Registry Authority, Registry Operator, and catalogue publisher are distinct roles that can be held by the same or different organisations. The adopting ecosystem determines how it accepts or verifies authority declarations. Publication alone does not establish institutional responsibility.
 
-In the JSON-LD context, `specification` maps to `dct:references` and identifies the specification version. A formal claim against an applicable approved specification or profile uses `conformsTo`, mapped to `dct:conformsTo`. [Conformance](../04-conformance.md) defines the conditions for such claims.
-
-The GovStack vocabulary defines these Registry terms:
-
-| Term | Meaning |
-|---|---|
-| `govreg:Registry` | A specialisation of `dcat:Resource` for an institutionally governed system that maintains authoritative Records within a declared scope. |
-| `govreg:authority` | Relates a Registry to the institution accountable for it and its authoritative scope. |
-| `govreg:dataset` | Relates a Registry to a governed collection described as a DCAT Dataset. |
-| `govreg:dataService` | Relates a Registry to a technical interface described as a DCAT Data Service. |
-
-The [Turtle vocabulary](registry-core-vocabulary.ttl) provides machine-readable definitions of these terms and the API-family concept scheme.
-
-The vocabulary uses two namespace documents: `https://vocab.govstack.global/digital-registries` for Registry Core and `https://vocab.govstack.global/digital-registries/api-families` for the API-family concept scheme. Terms use stable, version-independent fragment IRIs. Namespace documents can provide HTML, Turtle, and JSON-LD representations through HTTP content negotiation. These vocabulary representations do not prescribe the format of an implementation's metadata.
-
-The [JSON-LD context](registry-core-context.jsonld) has the assigned publication URI `https://vocab.govstack.global/digital-registries/context/v1` and media type `application/ld+json`. Context versions are immutable and versioned independently of vocabulary terms, preserving the interpretation of existing JSON. See [publication coverage and limitations](../12-other-resources.md#121-coverage-and-limitations) for namespace availability and validation status.
-
-### DCAT composition
-
-The model composes Registry metadata with [Data Catalog Vocabulary 3](https://www.w3.org/TR/vocab-dcat-3/) resources:
-
-- the institutionally governed Registry is a `govreg:Registry`;
-- each governed collection can be a [`dcat:Dataset`](https://www.w3.org/TR/vocab-dcat-3/#Class:Dataset);
-- each technical API or query interface can be a [`dcat:DataService`](https://www.w3.org/TR/vocab-dcat-3/#Class:Data_Service); and
-- a directory that lists Registries can be a [`dcat:Catalog`](https://www.w3.org/TR/vocab-dcat-3/#Class:Catalog).
-
-Catalogues can be operated by a Registry or by a national or sector directory serving multiple authorities.
+`specification` identifies the specification version used to describe the implementation. A formal claim against an applicable approved specification or profile uses `conformsTo`. [Conformance](../04-conformance.md) defines the conditions for such claims.
 
 ### API family discovery
 
-Each service exposed through the Digital Registries capability model identifies its supported API families using [`dct:type`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#type) on its `dcat:DataService` description. Each family value is a concept from the **Digital Registries API Families** scheme, abbreviated by the `apif:` prefix. Declarations cover Registry services available to the metadata's intended audience.
+Each service exposed through the Digital Registries capability model identifies its supported API families with `serviceType` values on its data service description. Each value is a concept from the **Digital Registries API Families** scheme, abbreviated by the `apif:` prefix. Declarations cover Registry services available to the metadata's intended audience.
 
-| Concept | API family |
+| `serviceType` value | API family |
 |---|---|
 | `apif:consultation` | Consultation |
 | `apif:provisioning` | Provisioning |
@@ -97,17 +71,17 @@ Each service exposed through the Digital Registries capability model identifies 
 | `apif:access-transparency` | Access Transparency |
 | `apif:identity-federation` | Identity Federation |
 
-An API-family type means that the Data Service exposes at least one operation assigned to that family. Supported operations are defined in the contract linked by `dcat:endpointDescription`. Family classification alone establishes neither support for every operation in the family nor conformance to a profile.
+An API-family value means that the data service exposes at least one operation assigned to that family. Supported operations are defined in the contract linked by `endpointDescription`. Family classification alone establishes neither support for every operation in the family nor a conformance claim.
 
-Service metadata includes the service identifier, family classifications, `dcat:endpointURL`, and `dcat:endpointDescription`. The linked contract is machine-readable. HTTP operations use OpenAPI, or a protocol-native machine-readable description where the selected binding defines one. Parameters, request and response schemas, outcomes, and access requirements are defined in that contract. The catalogue supports service discovery; automatic selection and invocation of equivalent operations across implementations is outside this discovery model.
+Service metadata includes the service identifier, family classifications, `endpointURL`, and `endpointDescription`. The linked contract is machine-readable. HTTP operations use OpenAPI, or a protocol-native machine-readable description where the selected binding defines one. Parameters, request and response schemas, outcomes, and access requirements are defined in that contract. The metadata supports service discovery; automatic selection and invocation of equivalent operations across implementations is outside this discovery model.
 
-A service description declares only the families available for its associated Registry. Where a shared API offers different families for different Registries, each Registry uses a separate logical Data Service description. Those descriptions can share an endpoint or contract URI.
+A service description declares only the families available for its associated Registry. Where a shared API offers different families for different Registries, each Registry uses a separate logical data service description. Those descriptions can share an endpoint or contract URI.
 
 ### API composition
 
 One API can expose several Record collections and operations from several families. Its contract documents each collection's membership and each operation's inputs, representation, and access requirements. API-family classifications describe capabilities independently of URL structure.
 
-An OpenAPI contract declares the Registry context of each operation that returns Records with the `x-govstack-digital-registries` extension on the Operation Object. The extension carries four values: `registry`, the Registry Identifier, equal to the `@id` of a `govreg:Registry` in the published metadata; `collection`, equal to the collection segment of the operation path; `capability`, one of `retrieve`, `lookup`, `list` and `search`; and `view`, the name of the Record view the operation returns. The [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json) is its normative definition. Operations of one collection that declare the same view return the same Record schema. The extension is the machine-readable link between a Record read and the metadata that identifies its Registry and authority; the [Common Record context](#common-record-context) relies on it.
+An OpenAPI contract declares the Registry context of each operation that returns Records with the `x-govstack-digital-registries` extension on the Operation Object. The extension carries four values: `registry`, the Registry Identifier, equal to the `@id` of a Registry in the published metadata; `collection`, equal to the collection segment of the operation path; `capability`, one of `retrieve`, `lookup`, `list` and `search`; and `view`, the name of the Record view the operation returns. The [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json) is its normative definition. Operations of one collection that declare the same view return the same Record schema. The extension is the machine-readable link between a Record read and the metadata that identifies its Registry and authority; the [Common Record context](#common-record-context) relies on it.
 
 ```yaml
   /v1/businesses/{recordId}:
@@ -126,7 +100,7 @@ The major version applies to the API contract exposed at that root. Separately e
 
 ### Discovery publication
 
-An implementation publishes its Registry metadata as one document compacted with the version 1 JSON-LD context and served as `application/ld+json`. The [metadata document schema](../../api/extensions/registry-metadata.schema.json) defines the compacted shape; the JSON-LD context defines its RDF meaning. The document describes one or more Registries, their governed datasets, and their services. The document URI identifies the document; each Registry has its own Registry Identifier. The document URI is chosen by the deployment, is stable, and is not part of the versioned API surface.
+An implementation publishes its Registry metadata as one document compacted with the version 1 JSON-LD context and served as `application/ld+json`. The [metadata document schema](../../api/extensions/registry-metadata.schema.json) defines the compacted shape; the JSON-LD context defines its RDF meaning for consumers that want it. The [adopter kit](../12-other-resources/adopter-kit.md) lists this document alongside the other published artifacts. The document describes one or more Registries, their governed datasets, and their services. The document URI identifies the document; each Registry has its own Registry Identifier. The document URI is chosen by the deployment, is stable, and is not part of the versioned API surface.
 
 Consumers locate the document through the [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727.html) API catalog. The origin that hosts a Digital Registries API serves `/.well-known/api-catalog` as an [RFC 9264 linkset](https://www.rfc-editor.org/rfc/rfc9264.html) in `application/linkset+json`, following the GET, HEAD, and HTTPS requirements of RFC 9727. For every Digital Registries API at that origin, the linkset carries a `service-desc` link to the OpenAPI contract and a `service-meta` link, typed `application/ld+json`, to the Registry metadata document. Both link relations are defined by [RFC 8631](https://www.rfc-editor.org/rfc/rfc8631.html). The well-known path is one of the unversioned paths the GovStack API Design Guide permits, so no other root path is needed for discovery.
 
@@ -255,17 +229,7 @@ The Consultation entry illustrates publication of the [business Registry OpenAPI
 
 The example uses untagged strings for readability. Deployments can use JSON-LD language maps, such as `"title": {"en": "Business Registry"}`, when publishing multilingual labels.
 
-The Registry has both `govreg:Registry` and [`dcat:Resource`](https://www.w3.org/TR/vocab-dcat-3/#Class:Resource) types. This explicitly expresses the vocabulary's subclass relationship and lets the catalogue list the Registry with [`dcat:resource`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_resource), without relying on ontology inference.
-
-The relationships have different scopes. `dcat:resource`, `dcat:dataset`, and `dcat:service` state what is listed in this catalogue. `govreg:dataset` and `govreg:dataService` state which datasets and services belong to this Registry. `dcat:servesDataset` states which dataset a technical service exposes, when applicable.
-
-An implementation exposing only Evidence uses the same pattern with just the Evidence service in the Registry's `dataService` list and the catalogue's `catalogService` list.
-
-The same graph pattern covers common deployment arrangements:
-
-- a single-Registry deployment publishes one Registry, its datasets, and its services in the catalogue;
-- a multi-Registry implementation adds more Registry resources and their related datasets and services to the same catalogue; and
-- an aggregating national catalogue can list resources from multiple Registry Authorities or use [`dcat:catalog`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_catalog) to include catalogues published by those authorities.
+The [metadata vocabulary appendix](../12-other-resources/metadata-vocabulary.md) explains the RDF types and catalogue relationships used in the example and how the same pattern covers multi-Registry implementations and aggregating national catalogues. An implementation exposing only Evidence uses the same pattern with just the Evidence service in the Registry's `dataService` list and the catalogue's `catalogService` list.
 
 Catalogue entries contain descriptive metadata only. Services govern disclosure of Record information through their access policies.
 
@@ -275,11 +239,11 @@ A client can discover declared API families without knowing an implementation's 
 
 1. Request `/.well-known/api-catalog` at the API origin as `application/linkset+json`, or start from a configured metadata document URI.
 2. Follow the `service-meta` link to the metadata document, request it as `application/ld+json`, and check that the response uses that media type.
-3. Select the required `govreg:Registry` by its stable Registry Identifier.
-4. Follow `govreg:dataService` to each associated `dcat:DataService`.
-5. Read each service's `dct:type` values from the Digital Registries API Families scheme, then follow `dcat:endpointDescription` for the exact operations and invocation contract.
+3. Select the required Registry by its `@id`, the stable Registry Identifier.
+4. Follow `dataService` to each associated data service.
+5. Read each service's `serviceType` values, then follow `endpointDescription` for the exact operations and invocation contract.
 
-The following language-neutral pseudocode illustrates the process for a JSON-LD client:
+The following language-neutral pseudocode illustrates the process:
 
 ```text
 metadataUri = configuredMetadataUri
@@ -310,22 +274,9 @@ for each serviceReference in asList(registry.dataService):
 return discoveredServices
 ```
 
-`loadJsonLd` applies the versioned context and normalises properties that can contain one or several values. `DigitalRegistriesApiFamilies` contains the concepts defined in the [API-family vocabulary](registry-core-vocabulary.ttl); membership is determined by those definitions, not by an IRI prefix. The example returns three Data Services supporting Consultation, Write, and Evidence.
+`loadJsonLd` parses the document and normalises properties that can contain one or several values; because the document is compacted with the pinned context, a plain JSON parser is sufficient. `DigitalRegistriesApiFamilies` contains the eight `serviceType` values listed under [API family discovery](#api-family-discovery). The example returns three data services supporting Consultation, Write, and Evidence.
 
 The example assumes the selected Registry and its service descriptions are present in the returned graph. Deployments using external descriptions document their retrieval. A service description missing a required family classification or contract reference is incomplete under Core. Operation names alone establish neither a family classification nor a conformance claim.
-
-### External alignments
-
-Adopting profiles can use external vocabularies to add jurisdictional or discovery semantics. These alignments are optional.
-
-| Alignment | Intended use |
-|---|---|
-| Schema.org [`Service`](https://schema.org/Service) or [`GovernmentService`](https://schema.org/GovernmentService) | Web discovery when the Registry or its service facet meets the selected Schema.org type. |
-| [Core Public Service Vocabulary Application Profile](https://github.com/SEMICeu/CPSV-AP) | Public-service description in implementations using CPSV or CPSV-AP. |
-| [BRegDCAT-AP](https://github.com/SEMICeu/BRegDCAT-AP) | European base-registry catalogue interoperability. |
-| National or sector profiles | Additional legal, organisational, service, or dataset metadata required by an adopter. |
-
-An adopting profile adds types and properties where their semantics apply. Any equivalence between `govreg:Registry` and an external class is specific to that profile.
 
 ## Common Record context
 

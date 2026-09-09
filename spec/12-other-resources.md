@@ -12,7 +12,7 @@ The 3.0.0-alpha.2 specification provides the Registry model, DRAFT Core requirem
 |---|---|---|
 | Conformance | DRAFT model of Registry Core plus at least one declared capability, with capability-specific applicability | Approved conformance claims and named multi-family conformance profiles |
 | Registry Core | DRAFT requirements for metadata, scoped Record identity, schema context, documented field meanings, and the interpretation of optional source metadata | Complete schema lifecycle and domain-specific compatibility policies |
-| Metadata and discovery | DCAT-based model, vocabulary, JSON-LD context, metadata document schema, RFC 9727 discovery linkset, OpenAPI Registry context extension, and examples | Vocabulary, context, and schema publication at the assigned `vocab.govstack.global` IRIs; canonical specification-version IRIs |
+| Metadata and discovery | JSON metadata document with schema, RFC 9727 discovery linkset, OpenAPI Registry context extension, examples, and an informative DCAT vocabulary appendix | Vocabulary, context, and schema publication at the assigned `vocab.govstack.global` IRIs; canonical specification-version IRIs |
 | Authority | Registry Authority identity and declared authoritative scope | Delegation, shared responsibility, and a machine-readable mandate model |
 | Capabilities | DRAFT Consultation Retrieve, Lookup, List, and Search requirements; informative descriptions of other capabilities | Requirements, contracts, and tests for other capabilities, including Revision History |
 | Service interfaces | [Canonical draft Consultation OpenAPI](../api/openapi.yaml), shared schemas, and [concrete example contracts](../api/examples/README.md) | Canonical contracts for other API families |
@@ -29,7 +29,9 @@ Identity Federation profile ownership and binding remain subject to agreement wi
 |---|---|
 | Service boundary, implementation choices, and neighbouring Building Blocks | [Description and Scope](02-description-and-scope.md) |
 | Minimum conformance and capability claims | [Conformance](04-conformance.md) |
-| Registry identity, authoritative scope, datasets, and DCAT composition | [Registry Core metadata](05-api-families/registry-core.md#registry-metadata) |
+| The artifacts an implementation publishes | [Adopter kit](12-other-resources/adopter-kit.md) |
+| Registry identity, authoritative scope, and metadata keys | [Registry Core metadata](05-api-families/registry-core.md#registry-metadata) |
+| DCAT, RDF vocabulary, and JSON-LD context | [Metadata vocabulary](12-other-resources/metadata-vocabulary.md) (informative) |
 | Service discovery and linked operational contracts | [API family discovery](05-api-families/registry-core.md#api-family-discovery) and [Service Interfaces](09-service-interfaces.md) |
 | Shared Record context and domain semantics | [Registry Core](05-api-families/registry-core.md#common-record-context) |
 | Capability boundaries and selection | [API Families](05-key-functionalities.md) |

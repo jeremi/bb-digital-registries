@@ -38,9 +38,7 @@ Registry metadata can describe a Registry for directory participation without es
 
 ## 4.4 Capability claims
 
-A capability claim identifies the selected families and capability patterns. Every applicable REQUIRED requirement, operation, contract, and test for a claimed capability forms part of the claim. Consumers determine whether an implementation meets their needs from its declared capabilities and linked operational contracts.
-
-Publication of a family label and an operational contract describes the service. A conformance claim additionally requires approved capability requirements, contracts, and tests, subject to [Requirement Maturity](#41-requirement-maturity).
+A capability claim names the selected families and capabilities; every applicable REQUIRED requirement, operation, contract, and test for a claimed capability forms part of the claim. Publishing a family label and an operational contract describes a service. A conformance claim additionally requires approved capability requirements, contracts, and tests, subject to [Requirement Maturity](#41-requirement-maturity).
 
 ## 4.5 Adaptors
 

@@ -8,11 +8,6 @@ description: Registry service discovery, current Record reads, exact lookup, and
 
 This workflow applies to every Registry BB implementation. The publisher serves the Registry metadata document and locates it, with each contract, through the RFC 9727 `/.well-known/api-catalog` linkset at the API origin.
 
-### Actors
-
-- **API Consumer:** discovers a Registry and determines which operations it exposes.
-- **Registry metadata publisher:** publishes the Registry description and service descriptions.
-
 ### Preconditions
 
 1. The consumer knows the API origin or has a configured metadata document URI.
@@ -29,12 +24,7 @@ This workflow applies to every Registry BB implementation. The publisher serves 
 
 ### Outcomes
 
-| Condition | Observable outcome |
-|---|---|
-| Required operation appears in a service's linked contract | The consumer can inspect how to invoke that operation. |
-| A service declares a family but its contract does not offer the required operation | The consumer does not infer that operation from the family label. |
-| A Registry BB service exposed to the metadata's intended audience is missing from the Registry description, or lacks its identifier, valid family labels, endpoint, or machine-readable contract | The service discovery requirement is not satisfied. |
-| The API origin serves no `/.well-known/api-catalog` linkset, or the linkset lacks a `service-meta` link to the metadata document | The discovery publication rules are not satisfied. |
+The linked contract, not the family label, tells the consumer which operations exist. Discovery is not satisfied when an exposed service is missing from the Registry description or lacks its identifier, valid family labels, endpoint, or machine-readable contract, or when the origin serves no `/.well-known/api-catalog` linkset with a `service-meta` link to the metadata document.
 
 ### Postconditions
 
@@ -45,11 +35,6 @@ This workflow applies to every Registry BB implementation. The publisher serves 
 ## 10.2 Retrieve the current permitted Record representation
 
 This workflow applies to implementations selecting Retrieve. The [HTTP binding](../api/openapi.yaml) defines request and response details.
-
-### Actors
-
-- **API Consumer:** requests a Record.
-- **Registry implementation:** resolves the Record and applies access and disclosure policy.
 
 ### Preconditions
 

@@ -12,7 +12,7 @@ Family classifications identify a service's broad capabilities. The linked contr
 
 Every Record-returning operation of an OpenAPI contract declares its Registry context with the `x-govstack-digital-registries` extension defined under [API composition](05-api-families/registry-core.md#api-composition). Each API family owns the HTTP binding of its operations and documents it on its own page.
 
-[Coverage and Limitations](12-other-resources.md#121-coverage-and-limitations) records binding availability. [Requirement Maturity](04-conformance.md#41-requirement-maturity) defines conformance status.
+The [adopter kit](12-other-resources/adopter-kit.md) lists the artifacts an implementation publishes. [Coverage and Limitations](12-other-resources.md#121-coverage-and-limitations) records binding availability. [Requirement Maturity](04-conformance.md#41-requirement-maturity) defines conformance status.
 
 ## 9.2 Consultation
 

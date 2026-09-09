@@ -24,16 +24,23 @@ Registry Core requires publication of machine-readable Registry and service meta
 
 ## 5.3 Family catalogue
 
-| Family | Adopter outcome | Capability patterns | Status in this release |
+Consultation is the only family with requirements and a contract in this release.
+
+| Family | Adopter outcome | Capabilities | Status in this release |
 |---|---|---|---|
-| [Consultation](05-api-families/consultation.md) | Obtain a permitted representation of Registry information. | Retrieve, Lookup, List, Search, Existence Check, Revision History, Record Match, GIS Query | Retrieve, Lookup, List, and Search have DRAFT requirements and a draft HTTP contract; other patterns are informative. |
-| [Provisioning](05-api-families/provisioning.md) | Configure a Registry service and publish its externally visible contracts. | Metadata administration, schemas, capability publication, bulk transfer | Informative |
-| [Evidence](05-api-families/evidence.md) | Obtain a signed assertion derived from authoritative Registry information. | Direct attestation, wallet-mediated credential, status | Informative |
-| [Write](05-api-families/write.md) | Create a Record or accept a new authoritative revision. | Direct write, governed write, correction | Informative |
-| [Notification](05-api-families/notification.md) | Inform authorised subscribers that Registry state changed. | Subscribe, filter, deliver, retry, replay | Informative |
-| [Aggregate Data](05-api-families/aggregate-data.md) | Obtain approved statistics derived from Registry Records. | Aggregate query, dataset metadata, published release | Informative |
-| [Access Transparency](05-api-families/access-transparency.md) | Obtain a permitted view of access to a related Record. | Access-history consultation | Informative |
-| [Identity Federation](05-api-families/identity-federation.md) | Authenticate a person represented by a sectoral Registry Record to a Relying Service and release authorised claims. | Profile ownership and binding to be decided with the Identity team | Informative; cross-BB ownership unresolved |
+| [Consultation](05-api-families/consultation.md) | Obtain a permitted representation of Registry information. | Retrieve, Lookup, List, Search | DRAFT requirements and a draft HTTP contract. Existence Check, Revision History, Record Match, and GIS Query are described informatively. |
+
+The remaining families are informative roadmap descriptions. They have no requirements, contracts, or tests in this release.
+
+| Family | Adopter outcome | Capabilities |
+|---|---|---|
+| [Provisioning](05-api-families/provisioning.md) | Configure a Registry service and publish its externally visible contracts. | Metadata administration, schemas, capability publication, bulk transfer |
+| [Evidence](05-api-families/evidence.md) | Obtain a signed assertion derived from authoritative Registry information. | Direct attestation, wallet-mediated credential, status |
+| [Write](05-api-families/write.md) | Create a Record or accept a new authoritative revision. | Direct write, governed write, correction |
+| [Notification](05-api-families/notification.md) | Inform authorised subscribers that Registry state changed. | Subscribe, filter, deliver, retry, replay |
+| [Aggregate Data](05-api-families/aggregate-data.md) | Obtain approved statistics derived from Registry Records. | Aggregate query, dataset metadata, published release |
+| [Access Transparency](05-api-families/access-transparency.md) | Obtain a permitted view of access to a related Record. | Access-history consultation |
+| [Identity Federation](05-api-families/identity-federation.md) | Authenticate a person represented by a sectoral Registry Record to a Relying Service and release authorised claims. | Profile ownership and binding to be decided with the Identity team; cross-BB ownership unresolved |
 
 ## 5.4 Selecting families
 

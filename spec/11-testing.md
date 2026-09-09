@@ -61,41 +61,7 @@ The abbreviated references in this table use the full `govstack-bb-digital-regis
 
 ## 11.4 Behaviour scenarios
 
-The discovery scenarios apply to every implementation. Read scenarios apply to their selected capabilities. Disclosure differences, protected existence, exposed metadata, and bounded-scan behavior additionally require the corresponding conditions in section 11.2.
-
-```gherkin
-Feature: Discover Registry services and their operational contracts
-
-  Scenario: Every exposed service can be discovered
-    Given an inventory of the Registry BB services exposed to an intended metadata audience
-    When a consumer reads the published Registry metadata
-    Then the metadata identifies the Registry, its authority, authoritative scope, and specification version
-    And every exposed service is associated with that Registry
-    And each service has an identifier and declares valid API-family concepts, an endpoint URL, and a machine-readable operational contract
-    And each linked contract describes the advertised endpoint and operations belonging to each declared family
-    And the declarations reflect the services currently available to that audience
-
-  Scenario: Discover the operations offered by an Evidence service
-    Given a Registry description linked to an Evidence service
-    And the service contract exposes Evidence operations without Retrieve
-    When a consumer inspects the service metadata and contract
-    Then the consumer identifies the Evidence operations offered by that service
-    And no Retrieve operation is identified in that service's contract
-    And the Evidence family label is treated as a service classification rather than a capability conformance claim
-
-  Scenario: The operational contract determines operation availability
-    Given a service labelled with the Consultation API family
-    And its operational contract does not include Retrieve
-    When a consumer checks whether Retrieve is available
-    Then the consumer finds no Retrieve operation in that service's contract
-
-  Scenario: A missing operational contract fails service discovery verification
-    Given an exposed Registry BB service associated with its Registry
-    And the service declares an API-family concept and endpoint URL
-    But it does not provide a machine-readable operational contract
-    When its metadata is evaluated against the service discovery requirement
-    Then that requirement is not satisfied
-```
+Discovery is verified through `fr-core#req-7` in the traceability table: every exposed service is reachable through the linkset and the metadata document, a family label does not by itself establish that any particular operation exists, and a service without a machine-readable contract fails the requirement. Read scenarios apply to their selected capabilities. Disclosure differences, protected existence, exposed metadata, and bounded-scan behavior additionally require the corresponding conditions in section 11.2.
 
 The following cases apply to the selected read capabilities. Run them against each operation and view to which their fixtures apply.
 

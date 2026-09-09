@@ -40,6 +40,9 @@ METADATA_EXAMPLE = API / "examples/registry-metadata.jsonld"
 LINKSET_EXAMPLE = API / "examples/api-catalog.linkset.json"
 CONTEXT = Path(__file__).resolve().parents[1] / "spec/05-api-families/registry-core-context.jsonld"
 CORE_PAGE = Path(__file__).resolve().parents[1] / "spec/05-api-families/registry-core.md"
+SPEC = Path(__file__).resolve().parents[1] / "spec"
+ADOPTER_KIT = SPEC / "12-other-resources/adopter-kit.md"
+VOCABULARY_APPENDIX = SPEC / "12-other-resources/metadata-vocabulary.md"
 CONTEXT_URI = "https://vocab.govstack.global/digital-registries/context/v1"
 API_FAMILY_PREFIX = "apif:"
 CAPABILITY_BY_ROUTE = {
@@ -532,6 +535,25 @@ class ConsultationContractTests(unittest.TestCase):
         self.assertEqual(metadata_blocks, [json.loads(METADATA_EXAMPLE.read_text())])
         linkset_blocks = fenced_json_blocks(page, "### Discovery publication")
         self.assertEqual(linkset_blocks, [json.loads(LINKSET_EXAMPLE.read_text())])
+
+    def test_adopter_kit_names_the_published_artifacts_and_links_resolve(self):
+        page = ADOPTER_KIT.read_text()
+        for artifact in ("openapi.yaml", "registry-metadata.jsonld", "registry-metadata.schema.json",
+                         "api-catalog.linkset.json", "/.well-known/api-catalog", "/health", "validate_consultation.py"):
+            self.assertIn(artifact, page)
+        for source in (ADOPTER_KIT, VOCABULARY_APPENDIX):
+            for target in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", source.read_text()):
+                if target.startswith("http"):
+                    continue
+                self.assertTrue((source.parent / target).exists(), f"{source.name} links to missing {target}")
+        for navigation in (SPEC / "SUMMARY.md", SPEC / "README.md", SPEC / "12-other-resources.md", CORE_PAGE):
+            self.assertIn("adopter-kit.md", navigation.read_text(), navigation.name)
+        for navigation in (SPEC / "SUMMARY.md", SPEC / "12-other-resources.md", CORE_PAGE):
+            self.assertIn("metadata-vocabulary.md", navigation.read_text(), navigation.name)
+        core = CORE_PAGE.read_text()
+        self.assertIn("| Concept | JSON key | Status | Meaning |", core, "Core describes metadata by JSON key")
+        self.assertNotIn("### External alignments", core, "RDF alignments live in the appendix")
+        self.assertIn("### External alignments", VOCABULARY_APPENDIX.read_text())
 
 
 if __name__ == "__main__":

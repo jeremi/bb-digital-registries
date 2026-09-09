@@ -18,7 +18,7 @@ For this alpha's maturity and conformance status, see [Requirement Maturity](04-
 
 - **Government architects** should begin with [Description and Scope](02-description-and-scope.md) and [Conformance](04-conformance.md) to determine where a Registry fits within a digital government architecture.
 - **Procurement teams** should use [Conformance](04-conformance.md) to understand capability claims and cite an approved specification version in a tender or acceptance contract.
-- **Implementers** should begin with [Registry Core](05-api-families/registry-core.md), then consult the selected [API families](05-key-functionalities.md) and [Service Interfaces](09-service-interfaces.md). The [illustrative business Registry contract](../api/examples/business-registry.openapi.yaml) shows a concrete mapping.
+- **Implementers** should begin with the [Adopter kit](12-other-resources/adopter-kit.md), which lists the four artifacts to publish, then read [Registry Core](05-api-families/registry-core.md), the selected [API families](05-key-functionalities.md), and [Service Interfaces](09-service-interfaces.md). The [illustrative business Registry contract](../api/examples/business-registry.openapi.yaml) shows a concrete mapping.
 - **Conformance testers** should use [Testing](11-testing.md) for verification scenarios and their applicability.
 
 ## Authorship
