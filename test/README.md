@@ -1,5 +1,7 @@
 # Test artifacts
 
-The `openAPI/` directory contains the conformance harness for the generated CRUD interface used by earlier Digital Registries releases. It is retained as migration evidence and is not the 3.0.0-alpha.2 conformance suite.
+The [Consultation validator](../tools/validate_consultation.py) checks the canonical transport and the Business, Household and Birth Registration contracts. It also checks domain schemas, inline examples and exchange fixtures, including rejection cases for invalid inputs and references.
 
-Draft verification intent and requirement traceability are documented in [the Testing chapter](../spec/11-testing.md). No executable conformance tests for the 3.0.0-alpha.2 specification are published.
+Run the [documented validation commands](../api/README.md#validation). Deployment behavior and audit evidence are covered by [the Testing chapter](../spec/11-testing.md).
+
+The `openAPI/` directory retains the earlier generated CRUD harness as migration evidence.

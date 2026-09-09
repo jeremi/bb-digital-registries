@@ -4,31 +4,29 @@ description: Sectoral subject authentication and authorised claim release.
 
 # Identity Federation
 
-> **Status:** Informative and not claimable in this release. Cross-Building-Block ownership is unresolved. No Identity Federation requirements, claim profile, protocol profile, or tests are published.
+> **Status:** Informative. Cross-Building-Block profile ownership is unresolved. See [Conformance](../04-conformance.md#44-capability-claims) and [Coverage and limitations](../12-other-resources.md#121-coverage-and-limitations).
 
 ## Purpose and applicability
 
 Identity Federation enables a sectoral Registry containing Records about people, or a service acting for its authority, to authenticate the person represented by a Registry Record to a Relying Service and release authorised claims. It applies to sector populations such as farmers, students, health-service users, or licensed professionals.
 
-## Cross-Building-Block ownership
+## Relationship to the Identity Building Block
 
-GovStack has not decided whether an Identity Federation profile for a functional sector identity is defined by Digital Registries, by the Identity Building Block, or jointly. The current [Identity Building Block description](https://github.com/GovStackWorkingGroup/bb-identity/blob/main/spec/2-description.md) scopes that Building Block to foundational identity while also discussing integration with functional identities. That provides context for the discussion but does not settle profile ownership.
+The [Identity Building Block description](https://github.com/GovStackWorkingGroup/bb-identity/blob/main/spec/2-description.md) scopes that Building Block to foundational identity and includes integration with functional identities. Identity Federation concerns authentication and claim release for a functional sector identity.
 
-Until the Digital Registries and Identity teams agree the boundary, this page records only the candidate capability outcome. It does not assign specification ownership or establish a protocol binding.
+## Profile scope
 
-## Profile considerations
+A sector identity profile covers the relationship between the authenticated subject and the Registry Record, the lifecycle of the functional identifier, authorised claim release, subject-identifier policy, suspension or termination of the sector relationship, assurance expectations, and issuer topology.
 
-Any eventual profile needs to define the relationship between the authenticated subject and the Registry Record, the lifecycle of the functional identifier, authorised claim release, subject-identifier policy, suspension or termination of the sector relationship, assurance expectations, and issuer topology.
-
-The functional identifier remains issued and lifecycle-managed by the responsible Registry Authority. The eventual profile also needs to define the use of issuer-scoped and pairwise subject identifiers where required to limit correlation.
+The responsible Registry Authority issues and manages the lifecycle of the functional identifier. Subject-identifier policy addresses issuer-scoped and pairwise identifiers where needed to limit correlation.
 
 ## Capability boundary
 
 Identity Federation is an outward-facing service to a Relying Service. It is separate from authentication and authorisation used to protect Registry APIs. It does not issue or replace foundational identity. An Identity service can provide upstream authentication or identity proofing without taking ownership of the sectoral identifier.
 
-## Binding status
+## Implementation options
 
-This release does not select a protocol binding for Identity Federation. OpenID Connect can be evaluated during the cross-Building-Block discussion, but this specification does not adopt it for this family or create a GovStack capability claim.
+OpenID Connect is an illustrative, non-normative implementation option. No protocol binding is selected for this family.
 
 ## Example
 

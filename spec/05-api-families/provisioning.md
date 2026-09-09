@@ -4,13 +4,13 @@ description: Programmatic configuration and publication of a Registry service.
 
 # Provisioning
 
-> **Status:** Informative and not claimable in this release. No Provisioning requirements, contract, or tests are published.
+> **Status:** Informative. See [Conformance](../04-conformance.md#44-capability-claims).
 
 ## Purpose and applicability
 
 Provisioning configures a Registry service and publishes its externally visible contracts. It is useful where schemas, capabilities, bindings, or controlled bulk data flows are administered programmatically.
 
-Many authoritative registries do not need this family. Their authority and schema may be established by law, governance, or an operational process outside an API.
+A Registry can publish its metadata without a Provisioning API. Its authority and schema may be established by law, governance, or an operational process outside an API.
 
 ## Capability areas
 
@@ -21,15 +21,15 @@ Many authoritative registries do not need this family. Their authority and schem
 | Interface publication | Declares supported families, sub-patterns, bindings, and access conditions. |
 | Bulk transfer | Initiates a controlled import or export of data and metadata. |
 
-These areas do not require dynamic database creation, a no-code builder, an administrative user interface, or a particular storage engine. Provisioning manages metadata programmatically; it does not make the Core publication requirement optional. It also does not perform the legal or governance act that establishes a Registry Authority.
+Provisioning administers service metadata and contracts independently of the storage engine and administrative tooling. Registry Core requires metadata publication whether or not Provisioning is supported. Establishing a Registry Authority remains a legal or governance act outside this API family.
 
 ## Adoption considerations
 
-An adopting authority that includes Provisioning in its deployment needs to define administrative authorisation, schema compatibility, publication lifecycle, bulk-operation validation, provenance, and failure recovery. This release does not supply those deployment rules.
+Deployment rules cover administrative authorisation, schema compatibility, publication lifecycle, bulk-operation validation, provenance, and failure recovery.
 
-## Binding status
+## Implementation options
 
-This release does not specify a Provisioning binding. An adopter evaluating implementation options can use synchronous HTTP described by OpenAPI for administrative operations and an asynchronous job or messaging pattern for long-running bulk work, but those choices do not create a GovStack capability claim.
+Illustrative, non-normative options include synchronous HTTP described by OpenAPI for administrative operations and an asynchronous job or messaging pattern for long-running bulk work.
 
 ## Example
 

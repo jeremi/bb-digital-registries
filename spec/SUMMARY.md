@@ -21,4 +21,5 @@
 * [11 Testing](11-testing.md)
 * [12 Other Resources](12-other-resources.md)
   * [Migration from 3.0.0-alpha.1](12-other-resources/migration-from-3.0.md)
+  * [Read API design decisions](12-other-resources/read-api-design-decisions.md)
   * [References](12-other-resources/references.md)

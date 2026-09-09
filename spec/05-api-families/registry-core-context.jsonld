@@ -31,6 +31,10 @@
       "@id": "dcat:service",
       "@type": "@id"
     },
+    "specification": {
+      "@id": "dct:references",
+      "@type": "@id"
+    },
     "conformsTo": {
       "@id": "dct:conformsTo",
       "@type": "@id"

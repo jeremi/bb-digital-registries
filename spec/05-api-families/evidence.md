@@ -4,7 +4,7 @@ description: Signed assertions derived from authoritative Registry information.
 
 # Evidence
 
-> **Status:** Informative and not claimable in this release. No Evidence requirements, credential profile, contract, or tests are published.
+> **Status:** Informative. See [Conformance](../04-conformance.md#44-capability-claims).
 
 ## Purpose and applicability
 
@@ -18,15 +18,15 @@ Evidence enables a Registry Authority to issue a signed assertion derived from a
 | Wallet-mediated credential | The issuer delivers a credential to a holder-controlled wallet for later presentation to a verifier. |
 | Status and trust metadata | A verifier obtains the information needed to evaluate issuer trust, proof validity, schema, and current Evidence status. |
 
-Evidence can express a narrowly scoped fact, including a yes-or-no assertion, or a defined set of claims. An adopting authority that includes Evidence in its deployment needs to define claim minimisation, subject binding, validity, status, revocation or supersession, and verifier trust discovery.
+Evidence can express a narrowly scoped fact, including a yes-or-no assertion, or a defined set of claims. Deployment rules cover claim minimisation, subject binding, validity, status, revocation or supersession, and verifier trust discovery.
 
 ## Capability boundary
 
 [Consultation](consultation.md) returns current Registry information. Evidence produces a signed assertion whose validity and status are interpreted under an Evidence profile. A Wallet can hold and present a credential but is not the authoritative source. An E-Signature service can perform cryptographic operations, while the Registry Authority remains responsible for the meaning of the assertion.
 
-## Binding status
+## Implementation options
 
-This release does not specify an Evidence binding, credential format, or status mechanism. An adopter evaluating wallet-mediated Evidence can consider OpenID for Verifiable Credential Issuance and Presentation with the W3C Verifiable Credentials model. Direct delivery can be described through an OpenAPI operation returning a signed attestation. These choices do not create a GovStack capability claim.
+Illustrative, non-normative options for wallet-mediated Evidence include OpenID for Verifiable Credential Issuance and Presentation with the W3C Verifiable Credentials model. Direct delivery can use an OpenAPI operation returning a signed attestation.
 
 ## Example
 

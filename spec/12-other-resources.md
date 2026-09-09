@@ -1,41 +1,53 @@
 ---
-description: Coverage, decisions, migration material, and references.
+description: Coverage, reader guidance, migration material, and references.
 ---
 
 # 12 Other Resources
 
 ## 12.1 Coverage and limitations
 
-The 3.0.0-alpha.2 specification provides a minimum Registry model and DRAFT requirements. It does not provide a certification-ready API contract.
+The 3.0.0-alpha.2 specification provides the Registry model, DRAFT Core requirements, and DRAFT requirements and an HTTP contract for Consultation Retrieve, Lookup, List, and Search. Additional capabilities remain informative. [Requirement Maturity](04-conformance.md#41-requirement-maturity) defines its conformance status and dependency on the GovStack Common Requirements Framework.
 
-| Included in this release | Not specified in this release |
+| Area | Published material | Not specified or published |
+|---|---|---|
+| Conformance | DRAFT model of Registry Core plus at least one declared capability, with capability-specific applicability | Approved conformance claims and named multi-family conformance profiles |
+| Registry Core | DRAFT requirements for metadata, scoped Record identity, schema context, documented field meanings, and the interpretation of optional source metadata | Complete schema lifecycle and domain-specific compatibility policies |
+| Metadata and discovery | DCAT-based model, vocabulary, JSON-LD context, and examples | Vocabulary and context publication at the assigned `vocab.govstack.global` IRIs; canonical specification-version IRIs; metadata HTTP binding and executable validation shape |
+| Authority | Registry Authority identity and declared authoritative scope | Delegation, shared responsibility, and a machine-readable mandate model |
+| Capabilities | DRAFT Consultation Retrieve, Lookup, List, and Search requirements; informative descriptions of other capabilities | Requirements, contracts, and tests for other capabilities, including Revision History |
+| Service interfaces | [Canonical draft Consultation OpenAPI](../api/openapi.yaml), shared schemas, and [concrete example contracts](../api/examples/README.md) | Canonical contracts for other API families |
+| Verification | Discovery, Retrieve, Lookup, and pagination workflows; verification scenarios; contract and example checks | End-to-end implementation conformance suite |
+| Migration | Disposition of every previous DRS requirement | None |
+
+Domain-specific semantic models and jurisdiction-specific governance or legal compliance are outside the Building Block's standardisation scope. Registry Authorities and adopting ecosystems supply these as appropriate to their services. Field meanings must be documented even when no formal semantic model is selected. Source revision, lifecycle state, and source recording time remain optional unless a selected profile or capability requires them.
+
+Identity Federation profile ownership and binding remain subject to agreement with the Identity team.
+
+## 12.2 Reading guide
+
+| Topic | Reference |
 |---|---|
-| Registry scope and exclusions | Final capability-discovery format |
-| Base Registry Profile | Canonical HTTP path and JSON schema |
-| Registry Core DRAFT requirements | Revision History contract and tests |
-| Consultation Retrieve DRAFT requirements | Optional-family requirements and tests |
-| Conceptual external data model | Named multi-family conformance profiles |
-| Retrieve workflow and verification intent | Domain-specific semantic models |
-| Complete disposition of previous DRS requirements | Jurisdiction-specific governance or legal compliance |
-
-## 12.2 Specification decisions
-
-- The specification defines the external service behaviour of a Digital Registries implementation for records under a Registry Authority's declared scope. It does not prescribe a database platform.
-- The target Base Registry Profile consists of Registry Core plus Consultation Retrieve.
-- Retrieve returns a permitted representation and does not imply public or complete-record access.
-- Existence Check, List, Search, Revision History, Record Match, and GIS Query are distinct optional Consultation sub-patterns.
-- Additional API families remain informative until each has requirements, a contract, and tests.
-- DCAT 3 is the primary candidate for a future Registry and service discovery profile. Specialised DCAT profiles may inform individual mappings but are not conformance dependencies for this alpha.
-- Internal storage, administrative UI, deployment topology, multi-tenancy, and automatic API generation are implementation choices.
-- Domain data models are selected and declared by the Registry Authority rather than standardised by the Building Block.
-- Authentication protecting Registry APIs is distinct from the candidate Identity Federation family. Ownership of that family remains subject to agreement with the Identity team.
+| Service boundary, implementation choices, and neighbouring Building Blocks | [Description and Scope](02-description-and-scope.md) |
+| Minimum conformance and capability claims | [Conformance](04-conformance.md) |
+| Registry identity, authoritative scope, datasets, and DCAT composition | [Registry Core metadata](05-api-families/registry-core.md#registry-metadata) |
+| Service discovery and linked operational contracts | [API family discovery](05-api-families/registry-core.md#api-family-discovery) and [Service Interfaces](09-service-interfaces.md) |
+| Shared Record context and domain semantics | [Registry Core](05-api-families/registry-core.md#common-record-context) |
+| Capability boundaries and selection | [API Families](05-key-functionalities.md) |
+| Retrieve, exact Lookup, List, Search, and additional read patterns | [Consultation](05-api-families/consultation.md) |
+| HTTP contract and shared representation/pagination rules | [Service Interfaces](09-service-interfaces.md) and [canonical OpenAPI](../api/openapi.yaml) |
+| Structured values and references | [Core representation rules](05-api-families/registry-core.md#structured-values-and-references) and [OpenAPI examples](../api/examples/README.md) |
+| Concrete adopter schema and fixtures | [Business Registry schema](../api/examples/business-registry.schema.json) and [request/response fixtures](../api/examples/consultation-exchanges.json) |
+| Sectoral authentication and cross-Building-Block ownership | [Identity Federation](05-api-families/identity-federation.md) |
+| Verification scenarios | [Testing](11-testing.md) |
 
 ## 12.3 Migration and history
 
 - [Migration from the 3.0.0-alpha.1 Draft](12-other-resources/migration-from-3.0.md) records the disposition of every previous DRS requirement.
 - [Release Notes](01-version-history/release-notes.md) preserve detailed historical contributors and changes.
 
-The OpenAPI files under `api/legacy/generated-crud/` and Cucumber scenarios under `test/openAPI/` describe the previous generated CRUD interface. They are legacy artifacts and are not service contracts or conformance tests for this release.
+The OpenAPI files under `api/legacy/generated-crud/` and Cucumber scenarios under `test/openAPI/` describe the previous generated CRUD interface. They are legacy artifacts and are not service contracts or conformance tests for this release. The legacy OpenAPI files do not contain a Retrieve-by-Identifier operation.
+
+The [Testing chapter](11-testing.md) distinguishes artifact validation from deployed implementation evidence.
 
 ## 12.4 Reference architecture and implementation guidance
 

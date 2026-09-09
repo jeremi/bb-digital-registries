@@ -14,7 +14,15 @@ description: Standards and related material relevant to Digital Registries.
 
 These references inform the capability direction. Only the requirements and canonical service contracts published by this specification determine conformance.
 
-- [OpenAPI Specification](https://spec.openapis.org/oas/)
+- [OpenAPI Specification 3.1.2](https://spec.openapis.org/oas/v3.1.2.html)
+- [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12)
+- [Schema.org data model](https://schema.org/docs/datamodel.html)
+- [EU SEMIC Core Vocabularies](https://interoperable-europe.ec.europa.eu/collection/semic-support-centre/solution/core-vocabularies)
+- [PublicSchema](https://publicschema.org/about/) and its [published schema formats](https://publicschema.org/docs/jsonld-vc-guide/)
+- [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
+- [RFC 9457: Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457.html)
+- [RFC 10008: The HTTP QUERY Method](https://www.rfc-editor.org/rfc/rfc10008.html), considered for a future binding
+- [JSON:API 1.1](https://jsonapi.org/format/1.1/), considered as an alternative representation convention
 - [RFC 9727: api-catalog Well-Known URI and Link Relation](https://www.rfc-editor.org/rfc/rfc9727.html)
 - [RFC 9264: Linkset Media Types and Link Relation](https://www.rfc-editor.org/rfc/rfc9264.html)
 - [W3C Data Catalog Vocabulary (DCAT) 3](https://www.w3.org/TR/vocab-dcat-3/)

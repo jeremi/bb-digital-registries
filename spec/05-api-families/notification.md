@@ -4,7 +4,7 @@ description: Authorised delivery of Registry change events.
 
 # Notification
 
-> **Status:** Informative and not claimable in this release. No Notification requirements, event schema, delivery profile, or tests are published.
+> **Status:** Informative. See [Conformance](../04-conformance.md#44-capability-claims).
 
 ## Purpose and applicability
 
@@ -23,11 +23,11 @@ A change event is not necessarily the authoritative Record. A consumer that need
 
 ## Adoption considerations
 
-An adopting authority that includes Notification in its deployment needs to define event identifiers, Registry and Record context, revision references, event types, occurrence and publication time, subscription authorisation, minimisation, ordering, duplicate handling, delivery guarantees, and replay.
+Deployment rules cover event identifiers, Registry and Record context, revision references, event types, occurrence and publication time, subscription authorisation, minimisation, ordering, duplicate handling, delivery guarantees, and replay.
 
-## Binding status
+## Implementation options
 
-This release does not specify a Notification binding. An adopter evaluating HTTP push can consider OpenAPI webhooks, while event-driven transports such as AMQP, MQTT, Kafka, or WebSockets can be described with AsyncAPI. A Messaging or Information Mediator component can carry events without owning their Registry meaning. These choices do not create a GovStack capability claim.
+Illustrative, non-normative options include OpenAPI webhooks for HTTP push and AsyncAPI descriptions for event-driven transports such as AMQP, MQTT, Kafka, or WebSockets. A Messaging or Information Mediator component can carry events without owning their Registry meaning.
 
 ## Example
 

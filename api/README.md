@@ -1,11 +1,79 @@
 # API artifacts
 
-The JSON and YAML files under `legacy/generated-crud/` describe the generated CRUD interface from earlier Digital Registries releases. They are retained for migration analysis and are not service contracts for the 3.0.0-alpha.2 specification.
+[openapi.yaml](openapi.yaml) defines the DRAFT Consultation HTTP contract:
+OpenAPI **3.1.2**, API version **1.0.0-draft**, targeting API Design Guide and
+ruleset **0.2.0-draft**. The `/v1` path identifies the HTTP compatibility line;
+the Building Block specification has its own version.
 
-Their original release status, contributor acknowledgements, and publication context are preserved in the [legacy API README](legacy/generated-crud/README.md).
+| Capability | HTTP path | Success |
+| --- | --- | --- |
+| Retrieve | `GET /v1/records/{recordId}` | Record |
+| List | `GET /v1/records` | RecordPage |
+| Exact Lookup | `POST /v1/records:lookup` | Record |
+| Named Search | `POST /v1/records:search` | RecordPage |
 
-The `gitbook-copies/` subdirectory contains additional copies previously embedded as publication assets. They remain separated from current API artifacts because their content is not identical in every case.
+`records` is the reference collection name. Deployments publish concrete names,
+such as `/v1/businesses` or `/v1/households`, and select capabilities for each
+collection. One API can expose several collections, each with a declared Registry,
+membership scope, and operation schemas. Success responses share
+`Record {recordId, data}` and `RecordPage {items, pageInfo}`.
+Lookup and Search are synchronous reads. `/health` provides operational liveness.
 
-In particular, the legacy interface does not provide the `consultation.retrieve` operation, which retrieves a Record directly by its stable Record Identifier. Its `POST /read` operation performs search-by-example instead.
+The server URL identifies the deployment root, optionally with a stable prefix
+such as `/registry`. The major version precedes the collection in each operation
+path. API-family labels describe capabilities; families can share resource paths
+with distinct HTTP methods, schemas, and access requirements.
 
-No canonical OpenAPI contract for the 3.0.0-alpha.2 specification is published. An implementation therefore cannot claim API-contract conformance with this alpha.
+The shared Record schemas apply the [Registry Core](../spec/05-api-families/registry-core.md)
+representation rules. Core metadata is published separately as a static document or
+catalogue entry. It identifies the Registry and its authority and links each service
+to its deployed OpenAPI contract. Together, the metadata and selected Consultation
+operations provide the Core + Consultation contract.
+
+A deployment publishes its selected operations with concrete schemas for
+`data`, selector values, search criteria, and supported sorting. Its contract
+declares collection scope, source currency, security, limits, and continuation rules.
+The [OpenAPI examples](examples/README.md) show business reads, household
+memberships, and birth-registration parent details.
+
+[coverage.yaml](coverage.yaml) maps DRAFT requirements to operations or review
+evidence. [Common component provenance](common/README.md) pins the vendored
+schemas for local reference resolution.
+
+## Validation
+
+From the repository root, validate the four OpenAPI documents, domain schemas,
+inline examples, and positive and negative fixtures:
+
+```sh
+uv run --with-requirements tools/requirements-api.txt python tools/validate_consultation.py
+```
+
+With the sibling `bb-template` checkout at guide/ruleset `0.2.0-draft` and its
+documented linter dependencies installed, run the canonical artifact gate:
+
+```sh
+uv run --with-requirements tools/requirements-api.txt node ../bb-template/api-design-guide/linter/cli.mjs --repo-root .
+```
+
+The checks validate current artifacts and local dependencies. The guide gate
+checks canonical discovery, requirement coverage, OpenAPI, and Spectral rules.
+[Implementation tests](../spec/11-testing.md) cover runtime authorization,
+source behavior, and cursor guarantees.
+
+The canonical contract has these reviewed advisory findings:
+
+- **8.7:** The contract assigns quotas to the gateway and declares `Retry-After`.
+  The linter's proxy recommends BB-owned `RateLimit` headers on the Record,
+  RecordPage, and TooManyRequests responses.
+- **7.16:** List uses `Cache-Control: no-store` with live pagination.
+  The linter recommends ETag and `304` support. Conditional Retrieve is optional.
+
+These findings are advisory; no rule exceptions are declared.
+
+## Historical artifacts
+
+`legacy/generated-crud/` preserves APIs from earlier releases for migration
+analysis. Release context and contributor credits are in the
+[legacy API README](legacy/generated-crud/README.md). Current Consultation
+validation uses the artifacts listed above.

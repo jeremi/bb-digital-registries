@@ -4,7 +4,7 @@ description: Approved statistics derived from Registry Records.
 
 # Aggregate Data
 
-> **Status:** Informative and not claimable in this release. No Aggregate Data requirements, statistical model, contract, or tests are published.
+> **Status:** Informative. See [Conformance](../04-conformance.md#44-capability-claims).
 
 ## Purpose and applicability
 
@@ -20,11 +20,11 @@ Aggregate Data provides approved statistics derived from Registry Records, such 
 
 ## Capability boundary
 
-Aggregate Data is not Record-level [Consultation](consultation.md), a mandatory analytics engine, or a dashboard. It is not automatically public. Aggregation is not itself anonymisation. An adopting authority that includes Aggregate Data in its deployment needs to define disclosure thresholds, suppression, legal controls, revisions, and indicators of applied protection.
+Aggregate Data returns statistical outputs rather than the individual Records provided by [Consultation](consultation.md). Analytics engines and dashboards are deployment choices. Access depends on the release policy, and aggregation alone does not ensure anonymity. Deployment rules cover disclosure thresholds, suppression, legal controls, revisions, and indicators of applied protection.
 
-## Binding status
+## Implementation options
 
-This release does not specify an Aggregate Data binding. An adopter evaluating implementation options can use synchronous HTTP described by OpenAPI or SDMX where outputs need to participate in national or international statistical ecosystems. These choices do not create a GovStack capability claim.
+Illustrative, non-normative options include synchronous HTTP described by OpenAPI, or SDMX for outputs that participate in national or international statistical ecosystems.
 
 ## Example
 

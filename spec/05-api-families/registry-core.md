@@ -4,13 +4,19 @@ description: Shared identity, metadata, semantics, lifecycle, and provenance for
 
 # Registry Core
 
-> **Status:** The Registry Core requirements are DRAFT and form part of the target Base Registry Profile. They do not establish a certification claim in this release.
+> **Status:** DRAFT. See [requirement maturity](../04-conformance.md#41-requirement-maturity).
 
 ## Purpose and applicability
 
-Registry Core is the shared foundation for every Digital Registries capability. It is not an API family. It defines how an implementation identifies the Registry and its authority and how returned Records identify their schema, semantic model, revision, lifecycle state, and minimum provenance.
+Registry Core defines the common behaviour and metadata shared by the API families. It identifies the Registry, its authority and scope, and its available services. Returned Records have stable identity within an unambiguous Registry context and a documented representation schema. A capability or domain profile can additionally require revision, lifecycle, provenance, or formal semantic-model information.
 
-Every Registry implementation publishes its current metadata. [Provisioning](provisioning.md) can optionally provide an administrative interface for creating or revising that metadata, but Provisioning is not required for publication and does not establish the Registry Authority.
+The [conformance model](../04-conformance.md) combines Core with at least one selected capability. Core requirements apply as follows:
+
+- Registry metadata and service discovery apply to every implementation.
+- Record representation requirements apply to implemented capabilities that return Records.
+- Identifier preservation applies where the implementation assigns or maintains Record Identifiers.
+
+[Provisioning](provisioning.md) provides optional administrative operations for creating or revising metadata. Publication can also use a static document or an external catalogue.
 
 ## Conceptual model
 
@@ -25,11 +31,11 @@ flowchart LR
     MODEL[Schema and Semantic Model] -->|governs| REPRESENTATION
 ```
 
-The model describes externally observable concepts rather than database tables, internal modules, or a deployment topology. An implementation can operate one Registry or many Registries and can expose one or more technical services without changing the meaning of the Registry itself.
+The model describes externally observable concepts. An implementation can operate one or more Registries, each with one or more technical services.
 
 ## Registry metadata
 
-The Registry metadata description identifies the institutionally governed Registry. It keeps the Registry distinct from its governed datasets, technical interfaces, and any catalogue in which it is listed.
+Registry metadata describes the institutionally governed Registry and its relationships to datasets, technical services, and catalogues.
 
 ### Minimal metadata
 
@@ -38,12 +44,16 @@ The Registry metadata description identifies the institutionally governed Regist
 | Registry Identifier | Required | Registry resource IRI | Globally unique and stable identifier for the Registry. |
 | Registry Name | Required | [`dct:title`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#title) | Human-readable name used by adopters and consumers. |
 | Registry Authority | Required | `govreg:authority` with a [`prov:Agent`](https://www.w3.org/TR/prov-o/#Agent) value | Institution accountable for the Registry and its declared authoritative scope. |
-| Digital Registries specification version | Required | [`dct:conformsTo`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#conformsTo) | Versioned Digital Registries specification implemented by the service. |
-| Description | Optional | [`dct:description`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#description) | Human-readable description of the Registry and its scope. |
+| Digital Registries specification reference | Required | [`dct:references`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#references) | Identifies the versioned Digital Registries specification used to describe the implementation. |
+| Description and authoritative scope | Required | [`dct:description`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#description) | Describes the information for which the named authority accepts responsibility, including relevant domain or jurisdictional boundaries. |
 | Governed dataset | Optional and repeatable | `govreg:dataset` with a [`dcat:Dataset`](https://www.w3.org/TR/vocab-dcat-3/#Class:Dataset) value | A governed collection of Registry Records described for discovery or exchange. |
-| Data service | Optional and repeatable | `govreg:dataService` with a [`dcat:DataService`](https://www.w3.org/TR/vocab-dcat-3/#Class:Data_Service) value | A technical interface that provides access to Registry data or operations. |
+| Data service | Required for each exposed Registry service; repeatable | `govreg:dataService` with a [`dcat:DataService`](https://www.w3.org/TR/vocab-dcat-3/#Class:Data_Service) value | Associates the Registry with each interface exposed through the Digital Registries capability model. |
 
-The proposed GovStack vocabulary is intentionally small:
+The scope description states the information for which the Registry Authority accepts responsibility and can reference a fuller scope or mandate document. The Registry Authority, Registry Operator, and catalogue publisher are distinct roles that can be held by the same or different organisations. The adopting ecosystem determines how it accepts or verifies authority declarations. Publication alone does not establish institutional responsibility.
+
+In the JSON-LD context, `specification` maps to `dct:references` and identifies the specification version. A formal claim against an applicable approved specification or profile uses `conformsTo`, mapped to `dct:conformsTo`. [Conformance](../04-conformance.md) defines the conditions for such claims.
+
+The GovStack vocabulary defines these Registry terms:
 
 | Term | Meaning |
 |---|---|
@@ -52,30 +62,26 @@ The proposed GovStack vocabulary is intentionally small:
 | `govreg:dataset` | Relates a Registry to a governed collection described as a DCAT Dataset. |
 | `govreg:dataService` | Relates a Registry to a technical interface described as a DCAT Data Service. |
 
-The companion [Turtle vocabulary](registry-core-vocabulary.ttl) provides machine-readable definitions of these terms and the API-family concept scheme. It keeps the vocabulary separate from the instance data in the example below.
+The [Turtle vocabulary](registry-core-vocabulary.ttl) provides machine-readable definitions of these terms and the API-family concept scheme.
 
-The selected publication namespace is the dedicated `vocab.govstack.global` host. The Registry Core namespace document is `https://vocab.govstack.global/digital-registries`, and the API-family concept-scheme document is `https://vocab.govstack.global/digital-registries/api-families`. Terms use fragment IRIs so each small vocabulary can be retrieved as one document. These version-independent IRIs remain stable when the vocabulary evolves.
+The vocabulary uses two namespace documents: `https://vocab.govstack.global/digital-registries` for Registry Core and `https://vocab.govstack.global/digital-registries/api-families` for the API-family concept scheme. Terms use stable, version-independent fragment IRIs. Namespace documents can provide HTML, Turtle, and JSON-LD representations through HTTP content negotiation. These vocabulary representations do not prescribe the format of an implementation's metadata.
 
-> **Editorial note:** Before release, GovStack needs to provision the namespace host so that both namespace documents dereference. This note can be removed once the host is operational.
-
-The namespace can provide HTML, Turtle, and JSON-LD representations through HTTP content negotiation without changing the term IRIs. The companion Turtle file does not require Registry implementations to publish Turtle or claim RDF conformance. This release does not define a SHACL shape.
-
-The versioned [JSON-LD context](registry-core-context.jsonld) is assigned the publication URI `https://vocab.govstack.global/digital-registries/context/v1`. When the vocabulary host is provisioned, this URI serves the context with the `application/ld+json` media type. Context versions are immutable because changing a context can change how existing JSON is interpreted. Versioning the context does not version or otherwise change the vocabulary term IRIs.
+The [JSON-LD context](registry-core-context.jsonld) has the assigned publication URI `https://vocab.govstack.global/digital-registries/context/v1` and media type `application/ld+json`. Context versions are immutable and versioned independently of vocabulary terms, preserving the interpretation of existing JSON. See [publication coverage and limitations](../12-other-resources.md#121-coverage-and-limitations) for namespace availability and validation status.
 
 ### DCAT composition
 
-The [Data Catalog Vocabulary 3](https://www.w3.org/TR/vocab-dcat-3/) describes the resources around a Registry rather than replacing the Registry concept:
+The model composes Registry metadata with [Data Catalog Vocabulary 3](https://www.w3.org/TR/vocab-dcat-3/) resources:
 
 - the institutionally governed Registry is a `govreg:Registry`;
 - each governed collection can be a [`dcat:Dataset`](https://www.w3.org/TR/vocab-dcat-3/#Class:Dataset);
 - each technical API or query interface can be a [`dcat:DataService`](https://www.w3.org/TR/vocab-dcat-3/#Class:Data_Service); and
 - a directory that lists Registries can be a [`dcat:Catalog`](https://www.w3.org/TR/vocab-dcat-3/#Class:Catalog).
 
-The base model does not require a Registry to operate its own catalogue. A national or sector directory can catalogue Registry descriptions, datasets, or services maintained by multiple authorities.
+Catalogues can be operated by a Registry or by a national or sector directory serving multiple authorities.
 
 ### API family discovery
 
-A `dcat:DataService` can identify the Digital Registries API families that it supports using [`dct:type`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#type). Each value is a concept from the **Digital Registries API Families** concept scheme. The `apif:` prefix abbreviates the concept namespace.
+Each service exposed through the Digital Registries capability model identifies its supported API families using [`dct:type`](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/#type) on its `dcat:DataService` description. Each family value is a concept from the **Digital Registries API Families** scheme, abbreviated by the `apif:` prefix. Declarations cover Registry services available to the metadata's intended audience.
 
 | Concept | API family |
 |---|---|
@@ -88,21 +94,37 @@ A `dcat:DataService` can identify the Digital Registries API families that it su
 | `apif:access-transparency` | Access Transparency |
 | `apif:identity-federation` | Identity Federation |
 
-An API-family type means that the Data Service exposes at least one operation assigned to that family. It does not imply support for every capability pattern in the family and does not establish a GovStack conformance claim. The service's `dcat:endpointDescription` identifies the operational contract and exact operations. A separate `dct:conformsTo` statement identifies a formal profile that the service claims to satisfy.
+An API-family type means that the Data Service exposes at least one operation assigned to that family. Supported operations are defined in the contract linked by `dcat:endpointDescription`. Family classification alone establishes neither support for every operation in the family nor conformance to a profile.
+
+Service metadata includes the service identifier, family classifications, `dcat:endpointURL`, and `dcat:endpointDescription`. The linked contract is machine-readable. HTTP operations use OpenAPI, or a protocol-native machine-readable description where the selected binding defines one. Parameters, request and response schemas, outcomes, and access requirements are defined in that contract. The catalogue supports service discovery; automatic selection and invocation of equivalent operations across implementations is outside this discovery model.
+
+A service description declares only the families available for its associated Registry. Where a shared API offers different families for different Registries, each Registry uses a separate logical Data Service description. Those descriptions can share an endpoint or contract URI.
+
+### API composition
+
+One API can expose several Record collections and operations from several families. Its contract declares each collection's Registry association and membership, and each operation's family, inputs, representation, and access requirements. API-family classifications describe capabilities independently of URL structure.
+
+Operations from different families can share a resource URI through distinct HTTP methods. For example, Consultation can retrieve a Record at a URI where Write accepts an update. Each operation defines its own request and response schemas and permissions. The API contract coordinates collection, action, and supporting-resource paths, including any schema, subscription, or asynchronous-operation resources.
+
+The major version applies to the API contract exposed at that root. Separately exposed APIs can evolve under their own versions. Protocol-specific bindings follow their protocol's endpoint and versioning conventions.
 
 ### Discovery publication
 
-Registry metadata and API discovery serve related but distinct purposes. A Registry description identifies the governed Registry and its authority. An API catalogue provides an entry point for finding the technical interfaces published on an HTTPS origin.
+An implementation publishes the required metadata at a stable URI made available to its intended API consumers. Publication can use a statically hosted document or an entry in an external catalogue. Implementations document the publication URI, supported representations, and access conditions.
 
-An implementation can publish its canonical DCAT catalogue at a stable HTTPS URI. The recommended default is the root-relative `/catalog` URI on the public API origin, with DCAT representations available through HTTP content negotiation. The catalogue can describe one or more Registries, their governed datasets, and their data services. The catalogue URI is not itself a Registry Identifier, and deployments can select a different stable path.
+For a DCAT catalogue on an HTTPS origin, the recommended default is the root-relative `/catalog` URI, with DCAT representations available through HTTP content negotiation. Deployments can select another stable path. The catalogue describes one or more Registries, their governed datasets, and their services. The catalogue URI identifies the catalogue; each Registry has its own Registry Identifier.
 
-For standardised API discovery, an implementation can use [RFC 9727, *api-catalog: A Well-Known URI and Link Relation to Help Discovery of APIs*](https://www.rfc-editor.org/rfc/rfc9727.html). RFC 9727 defines `/.well-known/api-catalog` and the `api-catalog` link relation. It provides indirection from the well-known URI to the deployment's canonical catalogue, whether that catalogue is published at `/catalog` or another path. A deployment using RFC 9727 follows its GET, HEAD, HTTPS, and [`application/linkset+json`](https://www.rfc-editor.org/rfc/rfc9264.html) requirements.
+The optional [RFC 9727 API discovery mechanism](https://www.rfc-editor.org/rfc/rfc9727.html) defines `/.well-known/api-catalog` and the `api-catalog` link relation for locating the canonical API catalogue. Deployments using it follow its GET, HEAD, HTTPS, and [`application/linkset+json`](https://www.rfc-editor.org/rfc/rfc9264.html) requirements.
 
-The current alpha treats this publication layout as discovery guidance rather than an additional Registry Core conformance requirement. A future HTTP and metadata binding can define required representations, content negotiation, caching, access policy, and validation.
+A deployment supporting the JSON-LD workflow below provides `application/ld+json` at the configured or discovered catalogue URI. When using RFC 9727, it also provides the required Linkset representation. Clients request JSON-LD explicitly and check the response media type before parsing; RFC 9727 alone guarantees only Linkset support.
+
+Declarations are scoped to the intended metadata audience. Missing declarations establish neither the absence of an undisclosed service nor a consumer's entitlement to use it.
 
 ### Informative JSON-LD example
 
-The following JSON-LD document describes one business Registry, accountable authority, governed dataset, and three services supporting the Consultation, Write, and Evidence API families. It references the versioned GovStack context, which maps readable JSON property names to the RDF vocabulary and identifies properties whose values are IRIs. The versioned GovStack specification IRIs are illustrative because this alpha does not publish canonical IRIs for them.
+This JSON-LD document describes a business Registry, its authority and governed dataset, and three logical services supporting Consultation, Write, and Evidence at a shared API endpoint. The GovStack context maps JSON properties to the RDF vocabulary and identifies IRI-valued properties. The specification IRI is illustrative; publication status is listed under [coverage and limitations](../12-other-resources.md#121-coverage-and-limitations).
+
+The Consultation entry illustrates publication of the [business Registry OpenAPI](../../api/examples/business-registry.openapi.yaml) with its local dependencies at the example contract URL. It supports Retrieve, Lookup, List, and Search.
 
 ```json
 {
@@ -117,7 +139,7 @@ The following JSON-LD document describes one business Registry, accountable auth
       "catalogResource": "https://registry.example/registries/business",
       "catalogDataset": "https://registry.example/datasets/business-records",
       "catalogService": [
-        "https://registry.example/services/business-retrieve",
+        "https://registry.example/services/business-consultation",
         "https://registry.example/services/business-write",
         "https://registry.example/services/business-evidence"
       ]
@@ -129,12 +151,12 @@ The following JSON-LD document describes one business Registry, accountable auth
         "dcat:Resource"
       ],
       "title": "Business Registry",
-      "description": "Registry maintained for authoritative business registration records.",
-      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
+      "description": "Authoritative business registrations in Example Jurisdiction, including registered names and registration status. Tax status is outside this Registry's scope.",
+      "specification": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
       "authority": "https://registry.example/organisations/business-authority",
       "governedDataset": "https://registry.example/datasets/business-records",
       "dataService": [
-        "https://registry.example/services/business-retrieve",
+        "https://registry.example/services/business-consultation",
         "https://registry.example/services/business-write",
         "https://registry.example/services/business-evidence"
       ]
@@ -152,24 +174,22 @@ The following JSON-LD document describes one business Registry, accountable auth
       "publisher": "https://registry.example/organisations/business-authority"
     },
     {
-      "@id": "https://registry.example/services/business-retrieve",
+      "@id": "https://registry.example/services/business-consultation",
       "@type": "dcat:DataService",
-      "title": "Business Registry Retrieve API",
-      "description": "Retrieves the current permitted representation of a business Record.",
-      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
+      "title": "Business Registry Consultation API",
+      "description": "Retrieves, looks up, lists, and searches permitted business Records.",
       "serviceType": "apif:consultation",
       "servesDataset": "https://registry.example/datasets/business-records",
-      "endpointURL": "https://registry.example/api/business",
-      "endpointDescription": "https://registry.example/contracts/business-retrieve.openapi.json"
+      "endpointURL": "https://registry.example",
+      "endpointDescription": "https://registry.example/contracts/1.0.0-draft/examples/business-registry.openapi.yaml"
     },
     {
       "@id": "https://registry.example/services/business-write",
       "@type": "dcat:DataService",
       "title": "Business Registry Write API",
       "description": "Accepts governed requests to create or revise business Records.",
-      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
       "serviceType": "apif:write",
-      "endpointURL": "https://registry.example/api/business/write",
+      "endpointURL": "https://registry.example",
       "endpointDescription": "https://registry.example/contracts/business-write.openapi.json"
     },
     {
@@ -177,9 +197,8 @@ The following JSON-LD document describes one business Registry, accountable auth
       "@type": "dcat:DataService",
       "title": "Business Registry Evidence API",
       "description": "Produces signed assertions derived from permitted business registration information.",
-      "conformsTo": "https://specs.govstack.example/digital-registries/3.0.0-alpha.2",
       "serviceType": "apif:evidence",
-      "endpointURL": "https://registry.example/api/business/evidence",
+      "endpointURL": "https://registry.example",
       "endpointDescription": "https://registry.example/contracts/business-evidence.openapi.json"
     }
   ]
@@ -188,11 +207,11 @@ The following JSON-LD document describes one business Registry, accountable auth
 
 The example uses untagged strings for readability. Deployments can use JSON-LD language maps, such as `"title": {"en": "Business Registry"}`, when publishing multilingual labels.
 
-The Registry is also typed as [`dcat:Resource`](https://www.w3.org/TR/vocab-dcat-3/#Class:Resource) so that the catalogue can list it with [`dcat:resource`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_resource). This does not make the Registry a dataset or a data service. The vocabulary expresses `govreg:Registry` as a subclass of `dcat:Resource`, while explicit dual typing keeps an instance understandable without ontology inference.
+The Registry has both `govreg:Registry` and [`dcat:Resource`](https://www.w3.org/TR/vocab-dcat-3/#Class:Resource) types. This explicitly expresses the vocabulary's subclass relationship and lets the catalogue list the Registry with [`dcat:resource`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_resource), without relying on ontology inference.
 
 The relationships have different scopes. `dcat:resource`, `dcat:dataset`, and `dcat:service` state what is listed in this catalogue. `govreg:dataset` and `govreg:dataService` state which datasets and services belong to this Registry. `dcat:servesDataset` states which dataset a technical service exposes, when applicable.
 
-The `dct:type` statements let a client discover that the catalogue exposes Consultation, Write, and Evidence services. The client follows each service's `dcat:endpointDescription` to determine which operations are available and how to invoke them.
+An implementation exposing only Evidence uses the same pattern with just the Evidence service in the Registry's `dataService` list and the catalogue's `catalogService` list.
 
 The same graph pattern covers common deployment arrangements:
 
@@ -200,14 +219,14 @@ The same graph pattern covers common deployment arrangements:
 - a multi-Registry implementation adds more Registry resources and their related datasets and services to the same catalogue; and
 - an aggregating national catalogue can list resources from multiple Registry Authorities or use [`dcat:catalog`](https://www.w3.org/TR/vocab-dcat-3/#Property:catalog_catalog) to include catalogues published by those authorities.
 
-The catalogue contains descriptive metadata only. It does not publish the protected Records contained in a governed dataset.
+Catalogue entries contain descriptive metadata only. Services govern disclosure of Record information through their access policies.
 
 ### Client discovery workflow
 
-A client can discover supported API families without knowing an implementation's API paths in advance:
+A client using the illustrated DCAT publication arrangement can discover declared API families without knowing an implementation's API paths in advance:
 
 1. Locate the canonical catalogue from a configured URI, the optional RFC 9727 well-known resource, or the recommended `/catalog` convention.
-2. Retrieve a supported RDF representation of the catalogue, such as JSON-LD.
+2. Request a documented RDF representation of the catalogue, such as JSON-LD, and check that the response uses that media type.
 3. Select the required `govreg:Registry` by its stable Registry Identifier.
 4. Follow `govreg:dataService` to each associated `dcat:DataService`.
 5. Read each service's `dct:type` values from the Digital Registries API Families scheme, then follow `dcat:endpointDescription` for the exact operations and invocation contract.
@@ -223,30 +242,34 @@ if catalogUri is absent:
 if catalogUri is absent:
     catalogUri = resolve(apiOrigin, "/catalog")
 
-catalog = loadJsonLd(catalogUri)
+response = get(catalogUri, accept = "application/ld+json")
+requireMediaType(response, "application/ld+json")
+catalog = loadJsonLd(response.body)
 registry = catalog.resourceWithId(requiredRegistryId)
-supportedCapabilities = []
+discoveredServices = []
 
 for each serviceReference in asList(registry.dataService):
     service = catalog.resourceWithId(serviceReference)
 
     for each family in asList(service.serviceType):
         if DigitalRegistriesApiFamilies contains family:
-            supportedCapabilities.append({
+            discoveredServices.append({
                 family: family,
                 service: resourceIdentifier(service),
                 endpoint: service.endpointURL,
                 description: service.endpointDescription
             })
 
-return supportedCapabilities
+return discoveredServices
 ```
 
-Here, `loadJsonLd` applies the versioned context and normalises properties that can contain one or several values. `DigitalRegistriesApiFamilies` is populated from the published [API-family vocabulary](registry-core-vocabulary.ttl), not inferred from an IRI prefix. With the preceding example, the result identifies three Data Services supporting the Consultation, Write, and Evidence families. If a Data Service omits `serviceType`, a client cannot infer API-family support from the catalogue alone, even when its endpoint description happens to contain related operations.
+`loadJsonLd` applies the versioned context and normalises properties that can contain one or several values. `DigitalRegistriesApiFamilies` contains the concepts defined in the [API-family vocabulary](registry-core-vocabulary.ttl); membership is determined by those definitions, not by an IRI prefix. The example returns three Data Services supporting Consultation, Write, and Evidence.
+
+The example assumes the selected Registry and its service descriptions are present in the returned graph. Deployments using external descriptions document their retrieval. A service description missing a required family classification or contract reference is incomplete under Core. Operation names alone establish neither a family classification nor a conformance claim.
 
 ### External alignments
 
-External vocabularies and application profiles can add jurisdictional or discovery semantics without becoming dependencies of Registry Core.
+Adopting profiles can use external vocabularies to add jurisdictional or discovery semantics. These alignments are optional.
 
 | Alignment | Intended use |
 |---|---|
@@ -255,37 +278,84 @@ External vocabularies and application profiles can add jurisdictional or discove
 | [BRegDCAT-AP](https://github.com/SEMICeu/BRegDCAT-AP) | European base-registry catalogue interoperability. |
 | National or sector profiles | Additional legal, organisational, service, or dataset metadata required by an adopter. |
 
-An adopting profile can add types and properties when their semantics apply. Registry Core does not assert that `govreg:Registry` is universally equivalent to an external service or base-registry class.
+An adopting profile adds types and properties where their semantics apply. Any equivalence between `govreg:Registry` and an external class is specific to that profile.
 
 ## Common Record context
 
-Every returned Record representation carries a common context in addition to its permitted domain data.
+Every returned Record representation has the following context. The binding defines where it is conveyed: in the representation, response metadata, or the versioned operational contract and its association with the Registry. A consumer can determine that context without knowing the source's internal storage. Registry-wide information need not be repeated in every Record or collection item.
 
-| Concept | Purpose |
+| Concept | Baseline contract |
 |---|---|
-| Registry Identifier | Identifies the Registry that returned the representation. |
-| Record Identifier | Stable reference to the Record within the Registry. |
-| Revision Identifier | Identifies the current revision represented by the response. |
-| Lifecycle State | State permitted by the declared representation schema. |
-| Representation Format | Identifies the serialisation or media type through the applicable binding. |
-| Schema Reference | Resolves to the machine-readable structure used to validate the domain data. |
-| Semantic Model Reference | Identifies the vocabulary or domain model used to interpret the domain data. |
-| Registry Authority | Identifies the institution responsible for the authoritative source. |
-| Recorded At | Identifies when the current revision was recorded. |
+| Registry Identifier | The request and published service metadata establish one Registry context, or the returned Record explicitly identifies its Registry. |
+| Record Identifier | A stable reference unique within that Registry, included in each returned Record. |
+| Representation Format | The binding identifies the serialisation or media type. |
+| Representation Schema | A resolvable, versioned machine-readable schema identifies the permitted representation; schema selection is unambiguous. |
+| Field meanings | Schema descriptions or linked domain documentation explain field meanings, units, code lists, and relevant absence or null semantics. |
+| Registry Authority | The Registry context resolves to the authority and authoritative scope published in Registry metadata. |
 
-The applicable capability determines whether a representation contains domain data and which projection the consumer is permitted to receive. Protected metadata can be omitted or redacted only where the applicable representation schema and capability requirements keep the result unambiguous and valid.
+The applicable capability determines which domain data and metadata the consumer may receive. A fixed public view is sufficient where it meets the applicable policy. Different consumer views are optional; each exposed view has a valid, documented schema. The HTTP binding uses the same Record object for single results and collection members within a declared view.
+
+Collections organise access to Records within the Registry's identity scope. The same Record retains its identifier across collections and views. Distinct Records have distinct identifiers within that Registry, including when their source collections use overlapping keys. An adapter can qualify such keys with a stable namespace; consumers continue to treat the resulting identifiers as opaque.
+
+A service returning Records from different Registries or schemas makes the distinction explicit for each affected Record. A shared service URL alone does not establish a unique Registry context. An export or portable representation declares any additional context needed when it leaves its original request context.
+
+Record schemas define [structured values and references](#structured-values-and-references), including the identity, ownership, and meaning of embedded data.
+
+**Example: resolving Record context.** In the illustrative business binding, `GET https://registry.example/v1/businesses/r_42` returns:
+
+```json
+{
+  "recordId": "r_42",
+  "data": {
+    "legalName": "Example Ltd",
+    "registrationStatus": "DISSOLVED"
+  }
+}
+```
+
+The metadata above associates that service with Registry `https://registry.example/registries/business` and the Business Registration Authority. The linked OpenAPI associates the `businesses` collection with that Registry and selects the `business-public` view and its `BusinessData` schema. A consumer retaining this Record's identity stores the Registry Identifier together with `r_42`.
 
 ## Revisions and lifecycle
 
-The Record Identifier remains stable when a new revision is accepted. Revision identifiers distinguish successive representations of the same Record.
+The Record Identifier remains stable when the Record changes. Existing source identifiers may be reused when they satisfy the identity and stability requirements. Core does not require an adapter to introduce revision storage, maintain a journal, or mint aliases for already suitable source identifiers.
 
-The declared representation schema defines the supported lifecycle-state vocabulary. Terms such as active, inactive, superseded, archived, and deleted are examples, not a mandatory enumeration in this release.
+Revision identifiers, revision recording times, and lifecycle fields are optional in the baseline. When supplied or required by a selected capability or profile, their schema defines their meaning and availability. A source revision identifies a revision accepted by the source; a response hash or HTTP validator does not by itself establish such an identifier. A response timestamp is not the time a source revision was recorded.
+
+Current information is the current accepted information available through the source interface under its documented currency contract. It need not describe an active entity. Domain status fields retain their documented meaning; omitting a generic lifecycle field does not imply an active state. Capabilities such as Revision History need a stronger revision contract than current Consultation reads.
+
+**Example: stable identity through a status change.** Two current reads of the same business, before and after its dissolution is accepted by the source, return:
+
+| Read | `recordId` | `data.registrationStatus` |
+|---|---|---|
+| Before dissolution | `r_42` | `ACTIVE` |
+| After dissolution | `r_42` | `DISSOLVED` |
+
+The identifier continues to refer to the same Record; its current domain status changes.
 
 ## Domain semantics and extensions
 
-The Digital Registries Building Block does not define a universal person, business, parcel, vehicle, health, or programme schema. Each returned representation identifies its machine-readable schema and published semantic model. An adopter can use an appropriate sector model and map national extensions explicitly.
+Adopters should reuse established domain schemas and vocabularies where suitable, including [Schema.org](https://schema.org/), [EU SEMIC Core Vocabularies](https://interoperable-europe.ec.europa.eu/collection/semic-support-centre/solution/core-vocabularies), [PublicSchema](https://publicschema.org/), and schemas defined or adopted by national and sector authorities. The contract identifies adopted models and versions, preserves their concepts' meanings, and documents field meanings, source mappings, local constraints, and extensions. A separately published formal semantic model is optional unless a selected capability or profile requires it. Representations follow the applicable inherited cross-functional requirements.
 
-Extensions do not change the meaning of required Registry or Record metadata. Rules for unknown fields, compatibility, and schema evolution are not defined in this release.
+Extensions preserve the meaning of required Registry and Record metadata. Compatible schema evolution keeps existing fields and context interpretable; an incompatible representation is identified through a new version or an explicitly selected view. The status of broader compatibility rules is documented under [coverage and limitations](../12-other-resources.md#121-coverage-and-limitations).
+
+### Structured values and references
+
+Domain schemas distinguish values owned by the containing Record, references to other Records, and embedded representations of related Records. Component identifiers have schema-defined scope. Embedded related representations preserve the target Record's identity and Registry context and declare their source currency. Recorded values retain the meaning assigned by their owning source, including its correction rules.
+
+A Record reference identifies its target Record and Registry unambiguously through the field schema or explicit reference context. Adopted domain reference forms can be used with documented identity, target scope, and resolution semantics. When a target read is offered, the field binding identifies the target collection, operational contract and operation, and how the reference supplies the required inputs. A binding with several possible targets defines how to select the applicable read. Target reads follow the Registry's published capabilities and access policy. Profiles declare any referential-integrity guarantees.
+
+Embedded collection schemas declare bounds. Their contracts define complete permitted views, selected subsets, or pages with continuation; omitted, null, and empty values; and overflow outcomes. A collection declared complete contains every component permitted by that view. Each paginated collection has its own continuation context. Disclosure policy applies to references, embedded data, and completeness information.
+
+**Example: related Record identity.** A field using the illustrative `UnscopedRecordReference` [schema](../../api/examples/relationship-examples.schema.json) carries the target Registry explicitly:
+
+```json
+{
+  "recordId": "person_42",
+  "registryId": "https://registry.example/registries/individuals"
+}
+```
+
+The same schema document defines `IndividualReference`, whose target Registry is fixed to that IRI. A field using it can carry `{"recordId": "person_42"}`. Its illustrative field binding maps `recordId` to the path parameter of the target service's `GET /v1/individuals/{recordId}` operation. Reading that reference therefore uses `GET https://registry.example/v1/individuals/person_42`, subject to the target service's published contract and access conditions. The binding supplies the route; the identifier remains opaque.
 
 ## Registry Core functional requirements
 
@@ -293,25 +363,25 @@ Extensions do not change the meaning of required Registry or Record metadata. Ru
 
 `govstack-bb-digital-registries-fr-core#req-1`
 
-An implementation publishes machine-readable Registry metadata containing a globally unique and stable Registry Identifier, a human-readable Registry name, the identity of the Registry Authority, and the Digital Registries specification version it implements.
+An implementation publishes machine-readable Registry metadata containing a globally unique and stable Registry Identifier, a human-readable Registry name, the identity of the Registry Authority, a description of its authoritative scope, and a reference identifying the Digital Registries specification version used to describe the implementation. The publication URI and access conditions are made available to the intended API consumers.
 
-**Purpose:** An adopter can determine which Registry and authority stand behind a service and which versioned requirement set, including its inherited requirements, applies.
+**Purpose:** An adopter can determine which Registry and authority stand behind a service, what information that authority accepts responsibility for, and which specification version the description references.
 
 **Prerequisite:** The Registry Authority and authoritative scope have been established by the adopting organisation.
 
-**Verification:** Inspect the published Registry metadata, validate that all required values are present, and review evidence that the Registry Identifier is not shared with another Registry or changed between service revisions.
+**Verification:** Access the metadata as an intended consumer, validate that all required values are present, check that the description states the authoritative scope, and review evidence that the Registry Identifier is not shared with another Registry or changed between service revisions.
 
 ### #2 Identify each returned Record (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-2`
 
-Every returned Record representation includes the Registry Identifier and a Record Identifier that is unique within that Registry. Together, the two identifiers uniquely identify the Record.
+Every returned Record representation includes a Record Identifier that is unique within an unambiguous Registry context. The applicable binding defines how the consumer determines the Registry Identifier from the request, published contract and service metadata, or the representation itself. Together, the two identifiers uniquely identify the Record.
 
 **Purpose:** Consumers can distinguish Records from different Registries and refer to one Record without depending on mutable domain attributes.
 
 **Prerequisite:** A Record has been accepted into the Registry.
 
-**Verification:** Retrieve two distinct Record fixtures and verify that each response carries the expected Registry Identifier and a different Record Identifier.
+**Verification:** Obtain two distinct Record fixtures through an implemented capability that returns Records and verify their different Record Identifiers and the Registry context established by the binding. If a service spans multiple Registries, verify that identical local identifiers in those Registries remain distinguishable.
 
 ### #3 Preserve Record Identifiers (DRAFT EXTENSIBLE AUDITABLE)
 
@@ -325,38 +395,50 @@ An implementation keeps a Record Identifier unchanged throughout that Record's l
 
 **Verification:** Review the identifier policy and evidence showing that successive revisions retain the same identifier, distinct Records do not share an identifier, and retired identifiers are not returned to the allocation pool.
 
-### #4 Identify the Record schema, semantic model, and representation format (DRAFT EXTENSIBLE OBSERVABLE)
+### #4 Identify the representation schema and field meanings (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-4`
 
-Every returned Record representation identifies a resolvable machine-readable schema and the published semantic model that govern its domain data. It also identifies its representation format through the applicable binding.
+Every returned Record representation has an unambiguously identified, resolvable machine-readable schema and documented field meanings. The applicable binding identifies its representation format and how the consumer selects the schema. A formal semantic-model reference is provided when required by the selected capability or profile.
 
-**Purpose:** Consumers can decode and validate a representation and interpret its domain meaning without knowledge of the implementation's internal storage.
+**Purpose:** Consumers can decode, validate, and interpret a representation without knowledge of internal storage.
 
-**Prerequisite:** The Registry Authority has selected the applicable representation format, schema, and semantic model.
+**Prerequisite:** The implementation has published the applicable representation format, schema, and domain documentation.
 
-**Verification:** Retrieve a Record, verify that the representation format conveyed by the binding matches the returned representation, resolve the declared schema, validate the representation, and resolve the semantic-model identifier to its published definition.
+**Verification:** Obtain a Record representation through an implemented capability, identify its format and schema using only the published contract and response context, and validate it. Check adopted model versions, mappings, and extensions where used. Check the documentation for field meanings, units, code lists, and absence semantics, including whether nested objects are components, Record references, or embedded representations. For references, verify the target Registry context and any declared read binding. For embedded collections, verify the declared bounds and completeness semantics. Resolve a formal semantic-model reference when the selected contract requires one.
 
-### #5 Identify the current revision and lifecycle state (DRAFT EXTENSIBLE OBSERVABLE)
+### #5 Describe provided revision and lifecycle metadata (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-5`
 
-Every returned Record representation identifies its current revision and a lifecycle state permitted by the representation's declared schema.
+When an implemented capability exposes revision or lifecycle metadata, it defines those fields in the representation schema and returns values with the declared source semantics. A capability or profile requiring those fields supplies its additional guarantees; baseline Record reads do not require them.
 
-**Purpose:** Consumers can distinguish the current representation from earlier revisions and interpret its declared state.
+**Purpose:** Consumers can interpret available revision and lifecycle information without inferring guarantees that the source does not provide.
 
-**Prerequisite:** The selected representation schema defines the supported lifecycle-state vocabulary.
+**Prerequisite:** The selected contract exposes revision or lifecycle metadata. Otherwise, this requirement's metadata scenarios are not applicable.
 
-**Verification:** Retrieve fixtures in each lifecycle state exposed through Consultation, validate each state against the declared schema, and verify that each response identifies a current revision.
+**Verification:** Compare the provided metadata with source fixtures and the declared schema. Verify the meaning of revisions and exposed lifecycle states. Check that a representation validator is not presented as a source revision unless the source contract establishes that equivalence.
 
-### #6 Provide minimum Record provenance (DRAFT EXTENSIBLE OBSERVABLE)
+### #6 Describe provided Record provenance (DRAFT EXTENSIBLE OBSERVABLE)
 
 `govstack-bb-digital-registries-fr-core#req-6`
 
-Every returned Record representation identifies the Registry Authority as the responsible source and provides the time at which the current revision was recorded.
+The Registry context identifies the responsible Registry Authority through published metadata. When additional Record provenance is exposed, the contract defines its meaning and the implementation returns values supported by the source. A revision recording time is required only when the selected capability or profile requires it; retrieval time is not substituted for recording time.
 
-**Purpose:** A consumer can assess the institutional source and currency of the authoritative information.
+**Purpose:** A consumer can identify the institutional source and interpret available provenance without fabricated source facts.
 
-**Prerequisite:** The Registry captures provenance for each accepted revision.
+**Prerequisite:** Registry metadata identifies the authority. Additional provenance fixtures are required only for fields exposed by the selected contract.
 
-**Verification:** Retrieve a Record and verify that the representation contains the Registry Authority identifier and recording time. Additional protected provenance details are outside this minimum requirement.
+**Verification:** Resolve the Record's Registry context to its published authority. For every additional provenance field exposed by the contract, compare its value and meaning with source evidence. Verify that unavailable optional provenance is omitted rather than inferred from the adapter's response time.
+
+### #7 Publish service discovery metadata (DRAFT EXTENSIBLE OBSERVABLE)
+
+`govstack-bb-digital-registries-fr-core#req-7`
+
+For each service exposed through the Digital Registries capability model, an implementation publishes a machine-readable service description associated with the Registry. The description identifies the service, its supported API families from the Digital Registries API Families concept scheme, its endpoint, and a link to its machine-readable operational contract. HTTP operations use OpenAPI, or a protocol-native machine-readable description where the selected binding defines one. Declarations reflect the families and endpoints available for that Registry to the metadata's intended audience and are kept current when those services change.
+
+**Purpose:** An API Consumer can discover relevant Registry services and follow their contracts to determine the supported operations and invocation details.
+
+**Prerequisite:** The Registry publishes at least one service under the capability model and makes the metadata and contract access conditions available to intended consumers.
+
+**Verification:** Obtain the metadata as an intended consumer. For every service exposed to that audience, verify its Registry association, service identifier, valid family classifications, endpoint, and resolvable machine-readable contract. Check that the contract describes the advertised endpoint and contains operations belonging to each declared family. Check declarations against the implementation's published service inventory, including different Registry contexts when an endpoint is shared. A missing required service description or contract fails this check; unrelated internal services are outside its scope.

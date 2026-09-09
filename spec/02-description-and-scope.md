@@ -6,32 +6,34 @@ description: Purpose, scope, architecture, and exclusions of the Digital Registr
 
 ## 2.1 Purpose
 
-The GovStack Common Terminology defines the general concept of a Registry. A Digital Registries implementation exposes records for which a named authority accepts responsibility within a defined scope. Examples include business registrations, land titles, vehicle registrations, professional licences, programme enrolments, and civil events.
+The GovStack Common Terminology defines the general concept of a Registry. A Digital Registries implementation exposes services over records for which a named authority accepts responsibility within a defined scope. Examples include business registrations, land titles, vehicle registrations, professional licences, programme enrolments, and civil events. A service can provide a permitted Record representation, signed evidence, approved statistics, or another declared Registry capability.
 
-The Digital Registries Building Block defines the external behaviour that allows applications and other Building Blocks to use those records consistently. It separates that interoperability contract from the implementation's database technology, internal modules, administrative tools, and deployment model.
+The Digital Registries Building Block defines the external behaviour that allows applications and other Building Blocks to use those records consistently. Its interoperability contract is independent of database technology, internal modules, administrative tools, and deployment model.
 
-In this context, authoritative does not mean that a Record is necessarily complete or error-free. It means that a named Registry Authority is institutionally responsible for maintaining it within the declared scope.
+Authoritative means that a named Registry Authority is institutionally responsible for maintaining a Record within the declared scope. Completeness and accuracy are separate data-quality properties.
 
 ## 2.2 Scope
 
 This specification covers:
 
-- identification and description of a registry;
-- stable identification and lifecycle representation of registry records;
-- retrieval of the current permitted representation of a record;
-- declaration of representation formats, schemas, semantic models, supported capabilities, and protocol bindings;
-- registry-specific revision and provenance information; and
-- optional capabilities for provisioning, additional consultation patterns, evidence, writing, notifications, aggregate data, access transparency, and identity federation.
+- identification and description of a registry, its authority and scope, and its available services;
+- stable identification of Registry Records within a declared scope;
+- independently optional Retrieve, exact Lookup, List, and Search of permitted Record representations;
+- declaration of representation formats, schemas, documented field meanings, supported capabilities, and protocol bindings;
+- interpretation of source revision, lifecycle, and provenance information when supplied; and
+- optional capabilities for provisioning, consultation, evidence, writing, notifications, aggregate data, access transparency, and identity federation.
 
-The same specification can be applied to registries containing records about persons, organisations, places, assets, or events. Domain-specific meaning remains in a declared semantic model rather than being fixed by this Building Block.
+The specification applies to registries containing records about persons, organisations, places, assets, or events. Their contracts document the domain-specific field meanings and can reference a formal semantic model. A selected profile or capability can require additional source metadata or a specific semantic model.
+
+The [conformance model](04-conformance.md) combines Registry Core with at least one selected capability. Every implementation publishes discovery metadata for its exposed Registry services. Each capability defines its result, which can be a Record representation or another form of Registry information.
 
 ## 2.3 Architectural approach
 
 The specification separates four concerns:
 
 1. **Operations** describe what an API consumer can ask the registry to do.
-2. **Common metadata** identifies the registry, record, revision, lifecycle state, representation format, schema, and provenance relevant to an operation.
-3. **Semantic models** define the meaning of domain data.
+2. **Common context** identifies the Registry, scoped Record reference, representation format, and schema through the endpoint, versioned contract, or response as the binding specifies. Supplied source revision, lifecycle, and provenance metadata have documented meanings.
+3. **Domain semantics** document field meanings and can use a published semantic model.
 4. **Bindings** map operations to HTTP, event-driven messaging, or an established industry protocol.
 
 This separation lets an existing national registry, a commercial product, an open-source platform, or an adaptor conform to the same external contract without sharing an internal architecture.
@@ -54,7 +56,7 @@ A Registry can integrate with neighbouring Building Blocks without transferring 
 | Consent | Consent can provide evidence or policy signals used in a disclosure decision. The Registry enforces the decision applicable to each request and supports other lawful bases where relevant. |
 | E-Signature | E-Signature can perform signing operations. The Registry remains responsible for the meaning, issuance, status, and lifecycle of Registry Evidence. |
 | Wallet | A Wallet can hold and present credentials issued through Evidence. The Registry remains the source of the asserted facts and is not required to operate a Wallet. |
-| Identity | The [Identity Building Block](https://github.com/GovStackWorkingGroup/bb-identity/blob/main/spec/2-description.md) currently defines foundational identity services and discusses integration with functional identities. A sectoral Registry remains responsible for its functional identifiers. Ownership of an outward-facing functional Identity Federation profile remains an open cross-Building-Block decision, and Identity Federation does not replace API access control. |
+| Identity | The [Identity Building Block](https://github.com/GovStackWorkingGroup/bb-identity/blob/main/spec/2-description.md) defines foundational identity services and describes integration with functional identities. A sectoral Registry owns its functional identifiers. [Identity Federation](05-api-families/identity-federation.md) addresses authentication to Relying Services; Registry API access control is a separate responsibility. |
 | GIS | GIS can provide geospatial processing and visualisation. A spatial Registry remains responsible for its records and can expose an OGC-aligned GIS Query capability. |
 
 These integrations are optional unless a selected capability profile states otherwise.

@@ -23,7 +23,7 @@
   </text>
   <text x="500" y="82" text-anchor="middle" fill="#11186A" fill-opacity="0.7"
         font-size="14" font-weight="400">
-    Eight capability families with illustrative protocol options
+    Eight optional capability families with illustrative protocol options
   </text>
 
   <!-- Spokes: mint dotted lines from hub perimeter to nearest card edge -->
@@ -250,7 +250,7 @@
   <!-- Caption -->
   <text x="500" y="760" text-anchor="middle" fill="#11186A" fill-opacity="0.7"
         font-size="12">
-    The target Base Registry Profile combines Registry Core with Consultation Retrieve.
+    Conformance combines Registry Core with at least one selected capability.
   </text>
 
 </svg>

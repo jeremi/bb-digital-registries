@@ -4,7 +4,7 @@ description: Permitted outward views of access to Registry Records.
 
 # Access Transparency
 
-> **Status:** Informative and not claimable in this release. No Access Transparency requirements, entitlement model, event schema, contract, or tests are published.
+> **Status:** Informative. See [Conformance](../04-conformance.md#44-capability-claims).
 
 ## Purpose and applicability
 
@@ -24,11 +24,11 @@ A Record Principal can be a subject, owner, title holder, director, beneficiary,
 
 Internal security and audit logging is a cross-functional concern. Access Transparency is the outward-facing service derived from permitted audit information. Its representation can omit actor identities or operational details where disclosure would create a privacy, security, or investigation risk.
 
-An adopting authority that includes Access Transparency in its deployment needs to define entitlement, relationship verification, delegation, outward event vocabulary, retention, correction handling, and disclosure restrictions.
+Deployment rules cover entitlement, relationship verification, delegation, outward event vocabulary, retention, correction handling, and disclosure restrictions.
 
-## Binding status
+## Implementation options
 
-This release does not specify an Access Transparency binding, outward event schema, or API contract. An adopter evaluating implementation options can use synchronous HTTP described by OpenAPI, but that choice does not create a GovStack capability claim.
+Synchronous HTTP described by OpenAPI is an illustrative, non-normative implementation option.
 
 ## Example
 

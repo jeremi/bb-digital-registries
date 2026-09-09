@@ -1,48 +1,74 @@
 ---
-description: Read capabilities for permitted Registry information.
+description: Interoperable read access to Registry Records.
 ---
 
 # Consultation
 
-> **Status:** Retrieve is DRAFT and part of the target Base Registry Profile. Existence Check, List, Search, Revision History, Record Match, and GIS Query are informative and not claimable in this release.
+> **Status:** DRAFT requirements and HTTP binding, for review and implementation trials.
 
-## Purpose and applicability
+## Purpose and capability model
 
-Consultation enables an API Consumer operating under an applicable access and disclosure policy to obtain a permitted representation of Registry information. It applies when a consumer needs current information from the authoritative source rather than a portable signed assertion or a derived statistic.
+Consultation defines read access to Registry Records for independently implemented services and API Consumers. A service selects one or more capabilities and publishes its operational contract through [Registry Core metadata](registry-core.md#api-family-discovery). Consumers use that contract to determine available operations and their inputs.
 
-Retrieve is the minimum read capability. It lets a consumer that already knows a Record Identifier obtain the current permitted representation without requiring the Registry to expose enumeration or discovery by personal or domain attributes.
+| Capability | Input | Successful result |
+|---|---|---|
+| `consultation.retrieve` | Record Identifier | One Record |
+| `consultation.lookup` | Declared exact selector and its complete key | One Record |
+| `consultation.list` | Declared collection and supported public filters | Page of Records |
+| `consultation.search` | Declared search and typed criteria | Page of Records |
 
-Consultation inherits the shared [Registry Core model and requirements](registry-core.md). In this family, the current revision means the latest accepted revision of the Record. It is not necessarily an active Record; the declared lifecycle state and applicable disclosure policy determine whether and how it is returned.
+Shared requirements apply to every selected capability; operation requirements apply when that capability is selected. Each operation applies to a declared collection with an unambiguous Registry context, representation schema, and access policy.
 
-Consultation provides a common capability framework for domain-specific registries. The applicable registry or sector profile defines the Record schema, semantic model, lifecycle vocabulary, permitted representations, and any domain-specific query or matching semantics. This specification does not require a generic query layer over arbitrary stored fields.
+## Common read contract
 
-## Capability patterns
+A read preserves the source Records. Current information is the information accepted by the authoritative source and available under the service's declared currency contract, including replication or cache delay. Domain schemas define the meaning of status and validity fields.
 
-| Pattern | Outcome |
+<a id="retrieve-representation"></a>
+
+**Record representation.** A Record contains `recordId` and `data`. The identifier is stable, unique within its Registry, and never reassigned. Registry context and the selected representation schema are unambiguous from the published contract, request context, or response. Retrieve and Lookup return one Record; List and Search use the same Record shape for each item in a Page.
+
+The `data` schema defines domain fields, structured values, references, and their meanings. A declared view selects the information represented by that schema. Revision, lifecycle, and provenance metadata are optional in the baseline; profiles can require source-backed metadata with defined semantics.
+
+**Example: Record representation.** Examples on this page use the [illustrative business Registry binding](../../api/examples/business-registry.openapi.yaml), which defines the domain fields, status values, and query names. Its published contract selects the Registry and the `business-public` view. A Record response contains:
+
+```json
+{
+  "recordId": "r_42",
+  "data": {
+    "legalName": "Example Ltd",
+    "registrationStatus": "DISSOLVED"
+  }
+}
+```
+
+**Consumer behavior.** Consumers retain Registry context when storing or forwarding Record references, treat Record Identifiers as opaque, and interpret `data` using the declared schema. They accept additional response-envelope members and use only the inputs supported by the published contract.
+
+## Domain models and service declarations
+
+Implementations should reuse suitable schemas and vocabularies, including [Schema.org](https://schema.org/), [EU SEMIC Core Vocabularies](https://interoperable-europe.ec.europa.eu/collection/semic-support-centre/solution/core-vocabularies), [PublicSchema](https://publicschema.org/), and models defined or adopted by national or sector authorities.
+
+A domain profile records reusable agreements about schemas, terminology, and query semantics. A service contract applies those agreements to the operations it exposes. An implementation can adopt an existing profile or publish a concrete domain binding directly. Both preserve the shared Consultation behavior.
+
+The published service contract supplies the following information for its selected capabilities and applicable representation features, directly or through versioned references:
+
+| Topic | Declared information |
 |---|---|
-| `consultation.retrieve` | Returns the current permitted representation of one Record identified by its stable Record Identifier. |
-| Existence Check | Indicates whether a Record exists only when the consumer is permitted to learn that fact. |
-| List | Returns a bounded, paginated collection under an applicable domain profile, optionally filtered by declared attributes. |
-| Search | Finds Records using predicates declared by the applicable registry or sector profile. |
-| Revision History | Returns permitted revision metadata or a permitted historical representation of one Record. |
-| Record Match | Returns possible matching Records with confidence information under a domain-specific matching profile. It does not make an authoritative identity or acceptance decision. |
-| GIS Query | Applies domain-defined spatial predicates to geometric attributes maintained by the Registry. |
+| Registry and capabilities | Registry association and implemented operations for each collection, linked from Core metadata. |
+| Representation | JSON Schemas for the Record view and responses; adopted models and versions; mappings, local constraints, and extensions. |
+| Field meanings | Meaning, units, code lists, and omitted, null, or empty values, preserving the semantics of adopted models. |
+| Lookup and Search | Names, typed inputs, required components, comparison and normalization rules, uniqueness scope, and matching semantics. |
+| Collections | Names, membership, operation paths, supported filters and sorting, deterministic order, page-size limits, and cursor expiry. |
+| Access and currency | Authentication requirements, permitted views, and source currency, including material replication or cache delay. |
 
-## Capability boundary
+An API can expose several collections, such as individuals, households, and land parcels. Each collection selects Records within a declared Registry; different collections can belong to the same Registry or to different Registries. The contract associates each operation with its collection and response schema. Record identity remains the pair of Registry Identifier and Record Identifier across collections and views.
 
-Consultation returns live Registry information. [Evidence](evidence.md) produces a signed assertion with its own validity and status. [Aggregate Data](aggregate-data.md) returns derived statistics rather than Record representations.
+Domain references identify their target Record and Registry. When a target read is offered, the field binding identifies its collection, operational contract, operation, and mapping from the reference to the required inputs. Consumers use that binding to resolve the reference. Embedded data declares its ownership and currency; embedded collections declare bounds, completeness, and overflow outcomes. The [Core representation conventions](registry-core.md#structured-values-and-references) provide the shared model, and OpenAPI supplies reusable reference schemas.
 
-Consultation is read-only. It does not create a Record, accept a new revision, change lifecycle state, or perform an approval decision. The Retrieve requirements define permitted representations and protected-existence handling. An adopter selecting Existence Check, List, Search, Revision History, Match, or GIS Query needs an applicable profile that defines disclosure, bounded results, query limits, and result interpretation for that capability.
+Published schema versions remain resolvable while their contracts are supported. The service identifies changes to schemas, queries, and views through its contract version, following the API design guide's compatibility rules.
 
-## Retrieve representation
+## Read requirements
 
-A successful Retrieve returns the [common Record context](registry-core.md#common-record-context) together with the domain data that the API Consumer is permitted to receive. The representation can omit or redact domain data and additional protected provenance, but the resulting projection remains unambiguous and valid against its declared representation schema.
-
-The Base Registry Profile retrieves the current revision. Revision History is a separate informative Consultation capability and is not claimable in this release.
-
-## Retrieve functional requirements
-
-The following DRAFT requirements define the Consultation capability in the target Base Registry Profile. They do not establish a certification claim in this release.
+<a id="retrieve-functional-requirements"></a>
 
 ### #1 Retrieve the current Record by identifier (DRAFT EXTENSIBLE OBSERVABLE)
 
@@ -50,13 +76,9 @@ The following DRAFT requirements define the Consultation capability in the targe
 
 `KF: Consultation`
 
-Given an unambiguous Registry context, a valid Record Identifier, and a request permitted by applicable policy, an implementation returns the current permitted representation of that Record without modifying the Record.
+Given a valid Record Identifier for a Record in the selected collection and a permitted request, Retrieve returns the current representation of that Record. An unknown identifier or a Record outside that collection receives the binding's unavailable-Record outcome, subject to protected-existence handling.
 
-**Purpose:** An API Consumer that already knows a Record Identifier can obtain authoritative Registry information without using search or enumeration.
-
-**Prerequisite:** A permitted consumer context and an accessible Record fixture exist.
-
-**Verification:** Retrieve a known Record by identifier, verify the Registry and Record identifiers, current revision, lifecycle state, representation format, schema, semantic model, minimum provenance, and permitted domain data, and confirm that a subsequent Retrieve returns the same revision when no intervening change occurred.
+**Verification:** Retrieve a known source fixture and check its identity, schema, currency, and declared metadata. Confirm that the source Record is unchanged; exercise an unknown identifier and, where applicable, an identifier belonging to another collection.
 
 ### #2 Apply disclosure rules to the returned representation (DRAFT EXTENSIBLE OBSERVABLE)
 
@@ -64,13 +86,9 @@ Given an unambiguous Registry context, a valid Record Identifier, and a request 
 
 `KF: Consultation`
 
-An implementation returns only the Record fields and metadata permitted for the API Consumer and request context. The resulting projection remains valid against its declared representation schema.
+For every selected read, the service returns a schema-valid representation containing only the Records, fields, metadata, and result information permitted for the consumer and request context. Disclosure applies to references, embedded data, counts, errors, and continuation information.
 
-**Purpose:** Retrieve does not become an entitlement to the complete stored Record. The same Registry can expose different valid representations under different disclosure policies, including a public representation where applicable.
-
-**Prerequisite:** At least two test consumer contexts have different disclosure entitlements for the same Record.
-
-**Verification:** Retrieve the same Record using both consumer contexts and verify that each receives only its permitted projection, each projection validates against its declared schema, and omitted values are not exposed through errors or metadata returned to the consumer.
+**Verification:** Exercise each selected read with fixtures for the service's applicable access policies. Check representation validity and permitted information, including different entitlements where offered.
 
 ### #3 Hide protected Record existence (DRAFT EXTENSIBLE OBSERVABLE)
 
@@ -78,35 +96,146 @@ An implementation returns only the Record fields and metadata permitted for the 
 
 `KF: Consultation`
 
-For an API Consumer that is not authorised to learn whether a protected Record exists, an implementation returns an outcome that is indistinguishable under the published Retrieve contract from the outcome for an unknown Record Identifier. This includes the same status or protocol outcome, security-relevant response metadata, stable error type, response structure, and non-Record-specific values. Per-request trace or correlation values may differ when they are generated independently of Record existence. The response contains no Record-specific data.
+When policy protects Record existence, Retrieve and Lookup return the same unresolved outcome for unknown and protected Records. Equivalence covers protocol status, security-relevant metadata, error type, response structure, and non-Record-specific values. Trace and correlation values are generated independently of Record existence; the outcome contains no Record-specific data.
 
-**Purpose:** An unauthorised consumer cannot enumerate protected Record Identifiers through the Retrieve contract.
+**Verification:** Compare protected and unknown fixtures under the same consumer context for each selected operation. Check equivalent outcomes and independent trace values.
 
-**Prerequisite:** An unknown Record Identifier and a protected Record Identifier are available as test fixtures for the same consumer context.
+### #4 Resolve a Record by a declared exact selector (DRAFT EXTENSIBLE OBSERVABLE)
 
-**Verification:** Retrieve both identifiers using that consumer context and compare the status or protocol outcome, security-relevant response metadata, error type, response structure, non-Record-specific values, and data fields. Verify that any differing trace or correlation values are independent of Record existence and that neither response exposes Record-specific data.
+`govstack-bb-digital-registries-fr-consultation#req-4`
 
-## Selecting additional Consultation capabilities
+`KF: Consultation`
 
-An adopter may need Consultation capabilities beyond Retrieve. These capabilities are not part of the Base Registry Profile and are not claimable in this release. An adopter should select them only when they serve a defined consumer need and an applicable registry or sector profile supplies the required domain semantics.
+Lookup accepts a published selector and all required key components. The key can be composite. Its declared comparison and normalization rules resolve at most one Record within the uniqueness scope. A permitted unique match in the selected collection returns that Record; zero matches in the collection produce the unresolved outcome. A source uniqueness violation produces a failure governed by disclosure policy.
 
-| Capability | Select when | The applicable profile needs to define |
+Invalid, incomplete, or unsupported inputs are rejected. A selector can derive key components from verified consumer context when its contract defines that mode; a fully context-derived selector accepts an empty caller-supplied `values` object.
+
+**Verification:** Exercise known, unknown, incomplete, incorrectly typed, and unsupported inputs, plus a source uniqueness violation. Verify comparison rules, composite keys where supported, and protected-existence handling.
+
+### #5 List a bounded Record collection (DRAFT EXTENSIBLE OBSERVABLE)
+
+`govstack-bb-digital-registries-fr-consultation#req-5`
+
+`KF: Consultation`
+
+List returns a bounded Page of permitted Records from its declared collection, applying supported filters and ordering. Zero and single-result collections retain the Page shape. Unsupported filters or sorting produce a validation error.
+
+**Verification:** Use fixtures with zero, one, and multiple results, including tied sort values where applicable. Check membership, schemas, order, size bounds, and rejection of unsupported inputs.
+
+### #6 Search using declared criteria (DRAFT EXTENSIBLE OBSERVABLE)
+
+`govstack-bb-digital-registries-fr-consultation#req-6`
+
+`KF: Consultation`
+
+Search accepts a published search name and its typed criteria. It applies the declared matching rules to the selected collection and returns a bounded Page of permitted matching Records, retaining the Page shape for zero or one result. Unsupported searches, unknown criteria, and invalid inputs produce a validation error.
+
+**Verification:** Execute declared searches with valid and invalid inputs. Check matching results, empty Pages, applicable disclosure contexts, and use of the binding's protected request locations for personal criteria.
+
+<a id="pagination-contract"></a>
+
+### #7 Continue bounded result pages (DRAFT EXTENSIBLE OBSERVABLE)
+
+`govstack-bb-digital-registries-fr-consultation#req-7`
+
+`KF: Consultation`
+
+List and Search use a declared deterministic order with a unique tie-breaker. Each request performs bounded source work, returns a bounded Page, and applies current authorization. Continuation preserves the collection, query, and view and advances traversal to explicit completion. Invalid continuation produces an error.
+
+A completed traversal over unchanged data and access conditions contains each permitted matching Record once.
+
+Pagination observes live data: source changes can move, add, or remove Records and cause repeated results. A profile can define stronger snapshot guarantees. Disclosure policy governs counts, page sizes, and continuation patterns, including short or empty advancing Pages.
+
+Consumers treat cursors as opaque and return them unchanged with the original query inputs. They follow the completion signal, including when an intermediate Page is empty. The [HTTP binding](#http-binding) defines the continuation fields and fixed page-size policy.
+
+**Verification:** Traverse unchanged multi-page fixtures to completion, checking complete membership without duplicates, identity, order, size bounds, progress, and termination. Exercise malformed, expired, and mismatched cursors, source changes, and applicable access changes. Check permitted page patterns and any total against the full permitted query.
+
+## HTTP binding
+
+The [canonical OpenAPI](../../api/openapi.yaml) defines the HTTPS/JSON contract, version `1.0.0-draft`, using API design guide and ruleset `0.2.0-draft`. It uses `records` as the reference collection name. Deployments publish concrete collection names, selected operations, Registry associations, and schemas in OpenAPI.
+
+| Capability | Request | Successful body |
 |---|---|---|
-| Existence Check | A consumer needs to determine whether a Record exists without receiving its representation. | When existence may be disclosed and how protected and unknown Records are treated consistently. |
-| List | A consumer is permitted to browse a defined collection of Records. | Collection membership, filters, ordering, bounded pagination, collection metadata, and disclosure rules. |
-| Search | A consumer needs to find Records without already knowing their Record Identifiers. | Searchable domain concepts, predicates, result limits, and zero-match, multiple-match, and truncated-result outcomes. |
-| Revision History | A consumer needs permitted information about earlier revisions of a known Record. | Whether revision enumeration or historical representations are available, stable revision identifiers, ordering, retention, lifecycle interpretation, and disclosure or erasure rules for historical data. |
-| Record Match | A consumer supplies incomplete or variable domain information that may correspond to more than one Record. | Permitted inputs, matching rules, confidence interpretation, disclosure of possible matches, and ambiguous or no-match outcomes. A match is not an authoritative identity, eligibility, or acceptance decision. |
-| GIS Query | A spatial Registry exposes Records through geographic relationships. | Supported spatial predicates, coordinate and geometry semantics, spatial and result bounds, and disclosure of protected Records or locations. |
+| Retrieve | `GET /v1/records/{recordId}` | `{recordId, data}` |
+| Lookup | `POST /v1/records:lookup` with `{selector, values}` | `{recordId, data}` |
+| List | `GET /v1/records` with pagination and supported public query parameters | `{items, pageInfo}` |
+| Search | `POST /v1/records:search` with `{search, criteria}` and pagination controls | `{items, pageInfo}` |
 
-For every selected capability, disclosure applies to both Record content and result metadata. The applicable profile needs to ensure that counts, ordering, page boundaries, confidence values, suggestions, and geometries do not reveal information that the consumer is not permitted to learn.
+The major API version precedes collection paths. An OpenAPI server URL identifies the deployment root, optionally including a stable routing prefix, such as `https://example.org/registry`. API-family classifications are declared in Core metadata and operation tags. A shared API can therefore expose:
 
-## Binding status
+```http
+GET /v1/individuals/{recordId}
+GET /v1/households/{recordId}
+GET /v1/land-parcels/{recordId}
+POST /v1/households:lookup
+POST /v1/households:search
+```
 
-This release defines the abstract Retrieve operation but does not specify an HTTP binding or publish a canonical OpenAPI contract. An adopter prototyping Retrieve can use synchronous HTTP described by OpenAPI. A spatial Registry evaluating GIS Query can consider OGC API Features. These implementation choices do not create a GovStack capability claim.
+These are illustrative collection names; the published contract defines the supported paths. The `:lookup` and `:search` suffixes distinguish collection methods from item identifiers, including valid IDs such as `lookup` and `search`.
 
-See [Service Interfaces](../09-service-interfaces.md), [Workflows](../10-workflows.md), and [Testing](../11-testing.md).
+Lookup and Search are synchronous reads returning `200`; selector and search values remain in the request body. The binding also defines the operational `/health` endpoint. [API composition](registry-core.md#api-composition) describes how collections and families share an API.
 
-## Example
+**Example: exact Lookup.** The business binding names its collection `businesses`. To resolve a business by its declared registration-number key, send this body to `POST /v1/businesses:lookup`:
 
-A licensing service retrieves the current permitted representation of a business registration by its Record Identifier. The Registry returns only the fields and metadata that service is authorised to receive.
+```json
+{
+  "selector": "byRegistrationNumber",
+  "values": {
+    "registrationNumber": "BR-000042"
+  }
+}
+```
+
+For the permitted match, the `200` response is the Record shown above.
+
+**Example: Search and collection result.** To find businesses with a declared registration status, send this body to `POST /v1/businesses:search`:
+
+```json
+{
+  "search": "byRegistrationStatus",
+  "criteria": {
+    "registrationStatus": "DISSOLVED"
+  },
+  "pageSize": 20
+}
+```
+
+With one permitted match and traversal complete, the `200` response is:
+
+```json
+{
+  "items": [
+    {
+      "recordId": "r_42",
+      "data": {
+        "legalName": "Example Ltd",
+        "registrationStatus": "DISSOLVED"
+      }
+    }
+  ],
+  "pageInfo": {
+    "nextCursor": null
+  }
+}
+```
+
+List uses the same Page shape for its declared collection.
+
+**Continuation.** The first request selects `pageSize`, defaulting to 20 and bounded to 100 in the canonical contract. A continuation repeats the original criteria, search name where applicable, sorting, and view with the cursor. It can omit `pageSize` to retain the bound value or supply that same value. Cursors bind the operation, Registry, collection, query, view, effective size, and applicable access context. The service rejects continuations whose declared semantics it can no longer preserve.
+
+A non-null `pageInfo.nextCursor` enables continuation; `null` marks completion. Optional `pageInfo.total` is the exact count of the full permitted query at the documented page evaluation time, before applying the continuation boundary. Services omit an unavailable total.
+
+**Outcomes.** OpenAPI defines the status codes and Problem Details for each operation. Retrieve and Lookup share `404 record-not-available` for unknown Records, Records outside the selected collection, and Records whose existence is protected. Structural input errors, invalid query parameters, and invalid pagination controls use `400`. Structurally valid Lookup and Search bodies with unknown selector or search names or invalid domain values use `422`. Malformed, expired, or mismatched cursors use `400 invalid-cursor`. Authentication, authorization, source failures, caching, and optional conditional Retrieve follow the declared OpenAPI responses and the API design guide.
+
+## Conformance
+
+Evaluation identifies the service, specification and contract versions, selected capabilities, and any adopted domain profile. The service satisfies the common read contract, declaration rules, HTTP binding, and the requirements applicable to each selected capability.
+
+| Selected capability | Applicable Consultation requirements |
+|---|---|
+| Retrieve | #1, #2; also #3 when existence is protected |
+| Lookup | #2, #4; also #3 when existence is protected |
+| List | #2, #5, #7 |
+| Search | #2, #6, #7 |
+
+Consumers follow the shared representation rules and the input, outcome, and continuation contracts for the capabilities they use. Verification checks published contracts and observable exchanges under the stated fixture conditions. The [OpenAPI examples](../../api/examples/README.md) and [artifact validation](../../api/README.md#validation) support review; deployed behavior is evaluated separately.
