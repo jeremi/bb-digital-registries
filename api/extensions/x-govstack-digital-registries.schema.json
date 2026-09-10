@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "x-govstack-digital-registries",
-  "description": "Registry context declared on every Digital Registries operation of an OpenAPI Operation Object. The values bind the operation to the Registry Identifier published in Registry metadata, to the collection it serves, to its capability and to the single Record view it returns.",
+  "description": "Registry context declared on the OpenAPI Operation Object of every Consultation operation. The values bind the operation to the Registry Identifier published in Registry metadata, to the collection it serves, to its capability and to the single Record view it returns.",
   "type": "object",
   "required": ["registry", "collection", "capability", "view"],
   "additionalProperties": false,

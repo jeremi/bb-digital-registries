@@ -28,7 +28,7 @@ The shared Record schemas apply the [Registry Core](../spec/05-api-families/regi
 representation rules. Core metadata is published as a JSON-LD document that the
 RFC 9727 `/.well-known/api-catalog` linkset locates. It identifies the Registry and
 its authority and links each service to its deployed OpenAPI contract. Every
-Record-returning operation declares its Registry, collection, capability, and view
+Consultation operation declares its Registry, collection, capability, and view
 with the `x-govstack-digital-registries` extension. Together, the metadata and
 selected Consultation operations provide the Core + Consultation contract.
 

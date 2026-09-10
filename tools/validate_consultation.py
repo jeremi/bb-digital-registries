@@ -522,12 +522,28 @@ class ConsultationContractTests(unittest.TestCase):
                          "The linkset advertises exactly the contracts the metadata declares")
         catalog = next(n for n in metadata["@graph"] if "dcat:Catalog" in as_list(n["@type"]))
         self.assertEqual(metadata_links, {catalog["@id"]}, "service-meta points at the metadata document")
-        business = document(BUSINESS)
-        registry = next(n for n in metadata["@graph"] if "govreg:Registry" in as_list(n["@type"]))
-        for item in business["paths"].values():
+        self.assert_registry_associations(document(BUSINESS), metadata)
+
+    def assert_registry_associations(self, contract, metadata):
+        registry_ids = {n["@id"] for n in metadata["@graph"]
+                        if "govreg:Registry" in as_list(n["@type"])}
+        for route, item in contract["paths"].items():
             for method, operation in item.items():
-                if route_kind(next(iter(business["paths"])), method) and EXTENSION in operation:
-                    self.assertEqual(operation[EXTENSION]["registry"], registry["@id"])
+                if route_kind(route, method) and EXTENSION in operation:
+                    self.assertIn(operation[EXTENSION]["registry"], registry_ids)
+
+    def test_registry_association_rejects_undeclared_registry(self):
+        metadata = json.loads(METADATA_EXAMPLE.read_text())
+        business = document(BUSINESS)
+        for route, item in business["paths"].items():
+            for method, operation in item.items():
+                if EXTENSION not in operation:
+                    continue
+                with self.subTest(operation=operation["operationId"]):
+                    broken = deepcopy(business)
+                    broken["paths"][route][method][EXTENSION]["registry"] = "https://registry.example/registries/absent"
+                    with self.assertRaises(AssertionError):
+                        self.assert_registry_associations(broken, metadata)
 
     def test_core_page_examples_match_discovery_artifacts(self):
         page = CORE_PAGE.read_text()

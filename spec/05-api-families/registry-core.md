@@ -10,14 +10,14 @@ description: Shared identity, metadata, semantics, lifecycle, and provenance for
 
 Registry Core defines the common behaviour and metadata shared by the API families. It identifies the Registry, its authority and scope, and its available services. Returned Records have stable identity within an unambiguous Registry context and a documented representation schema. A capability or domain profile can additionally require revision, lifecycle, provenance, or formal semantic-model information.
 
-Core is the interoperability boundary of this specification. Two implementations that conform to Core and the same capability expose the same operation shapes, error model, pagination, discovery mechanism and Record envelope. They do not expose the same domain fields: each deployment declares its own Record schemas in its published contract, and a domain profile can narrow them. A consumer that reads one Registry can read another after loading that Registry's contract, not before.
+Core is the interoperability boundary of this specification. Two implementations that conform to Core and the same capability expose the same operation shapes, error model, pagination, discovery mechanism and Record envelope. They do not expose the same domain fields: each deployment declares its own Record schemas in its published contract, and a domain profile can narrow them. Consumers can reuse protocol and envelope handling across Registries; domain-specific inputs and interpretation still require integration against each published contract.
 
 The [conformance model](../04-conformance.md) combines Core with at least one selected capability. Core requirements apply as follows:
 
 - Registry metadata and service discovery apply to every implementation.
 - Record representation requirements apply to implemented capabilities that return Records.
 - Identifier preservation applies where the implementation assigns or maintains Record Identifiers.
-- Registry context declaration applies to every published OpenAPI contract.
+- The OpenAPI Registry context extension applies to the selected Consultation operations.
 
 [Provisioning](provisioning.md) provides optional administrative operations for creating or revising metadata. Publication can also use a static document or an external catalogue.
 
@@ -81,7 +81,7 @@ A service description declares only the families available for its associated Re
 
 One API can expose several Record collections and operations from several families. Its contract documents each collection's membership and each operation's inputs, representation, and access requirements. API-family classifications describe capabilities independently of URL structure.
 
-An OpenAPI contract declares the Registry context of each operation that returns Records with the `x-govstack-digital-registries` extension on the Operation Object. The extension carries four values: `registry`, the Registry Identifier, equal to the `@id` of a Registry in the published metadata; `collection`, equal to the collection segment of the operation path; `capability`, one of `retrieve`, `lookup`, `list` and `search`; and `view`, the name of the Record view the operation returns. The [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json) is its normative definition. Operations of one collection that declare the same view return the same Record schema. The extension is the machine-readable link between a Record read and the metadata that identifies its Registry and authority; the [Common Record context](#common-record-context) relies on it.
+An OpenAPI contract declares the Registry context of each Consultation operation with the `x-govstack-digital-registries` extension on the Operation Object. The extension carries four values: `registry`, the Registry Identifier, equal to the `@id` of a Registry in the published metadata; `collection`, equal to the collection segment of the operation path; `capability`, one of `retrieve`, `lookup`, `list` and `search`; and `view`, the name of the Record view the operation returns. The [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json) is its normative definition. Operations of one collection that declare the same view return the same Record schema. The extension is the machine-readable link between a Record read and the metadata that identifies its Registry and authority; the [Common Record context](#common-record-context) relies on it.
 
 ```yaml
   /v1/businesses/{recordId}:
@@ -280,7 +280,7 @@ The example assumes the selected Registry and its service descriptions are prese
 
 ## Common Record context
 
-Every returned Record representation has the following context. The binding defines where it is conveyed: in the representation, response metadata, or the versioned operational contract and its association with the Registry. The HTTP binding conveys it through the contract: the `x-govstack-digital-registries` extension on each operation names the Registry, collection, capability, and view, and the operation's response schema is the representation schema. A consumer can determine that context without knowing the source's internal storage. Registry-wide information need not be repeated in every Record or collection item.
+Every returned Record representation has the following context. The binding defines where it is conveyed: in the representation, response metadata, or the versioned operational contract and its association with the Registry. The Consultation HTTP binding conveys it through the contract: the `x-govstack-digital-registries` extension on each operation names the Registry, collection, capability, and view, and the operation's response schema is the representation schema. A consumer can determine that context without knowing the source's internal storage. Registry-wide information need not be repeated in every Record or collection item.
 
 | Concept | Baseline contract |
 |---|---|
@@ -291,7 +291,7 @@ Every returned Record representation has the following context. The binding defi
 | Field meanings | Schema descriptions or linked domain documentation explain field meanings, units, code lists, and relevant absence or null semantics. |
 | Registry Authority | The Registry context resolves to the authority and authoritative scope published in Registry metadata. |
 
-The applicable capability determines which domain data and metadata the consumer may receive. Each operation returns exactly one declared view, named in its Registry context declaration and defined by its response schema. A deployment that needs a different view for another audience exposes it as a separate operation or a separate API; one operation does not select among views per request. Access policy can withhold optional fields of the declared view; it does not substitute another schema. A fixed public view is sufficient where it meets the applicable policy. The HTTP binding uses the same Record object for single results and collection members within a declared view.
+The applicable capability determines which domain data and metadata the consumer may receive. Each operation returns exactly one declared view, defined by its response schema and, for Consultation, named in its Registry context declaration. A deployment that needs a different view for another audience exposes it as a separate operation or a separate API; one operation does not select among views per request. Access policy can withhold optional fields of the declared view; it does not substitute another schema. A fixed public view is sufficient where it meets the applicable policy. The HTTP binding uses the same Record object for single results and collection members within a declared view.
 
 Collections organise access to Records within the Registry's identity scope. The same Record retains its identifier across collections and views. Distinct Records have distinct identifiers within that Registry, including when their source collections use overlapping keys. An adapter can qualify such keys with a stable namespace; consumers continue to treat the resulting identifiers as opaque.
 
@@ -461,10 +461,10 @@ For each service exposed through the Digital Registries capability model, an imp
 
 `KF: Registry Core`
 
-Every operation in a published OpenAPI contract that returns Records declares its Registry Identifier, collection, capability, and view with the `x-govstack-digital-registries` extension, valid against the [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json). The Registry Identifier equals the identifier of a Registry described in the published Registry metadata, and the collection equals the collection segment of the operation path. Operations of one collection that declare the same view use the same Record schema.
+Every Consultation operation in a published OpenAPI contract declares its Registry Identifier, collection, capability, and view with the `x-govstack-digital-registries` extension, valid against the [extension schema](../../api/extensions/x-govstack-digital-registries.schema.json). The Registry Identifier equals the identifier of a Registry described in the published Registry metadata, and the collection equals the collection segment of the operation path. Operations of one collection that declare the same view use the same Record schema.
 
 **Purpose:** A consumer or validator can determine from the contract alone which Registry and authority a Record read belongs to and which representation it returns.
 
-**Prerequisite:** The Registry metadata and the OpenAPI contract are published.
+**Prerequisite:** At least one Consultation capability is selected, and the Registry metadata and OpenAPI contract are published.
 
-**Verification:** Validate the extension of every Record-returning operation against the schema. Check that its Registry Identifier resolves to a Registry in the published metadata and that its collection matches the path. Compare the response schemas of operations that share a collection and view and confirm they are identical.
+**Verification:** Validate the extension of every Consultation operation against the schema. Check that its Registry Identifier resolves to a Registry in the published metadata and that its collection matches the path. Compare the response schemas of operations that share a collection and view and confirm they are identical.

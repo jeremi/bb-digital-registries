@@ -19,7 +19,7 @@ Consultation defines read access to Registry Records for independently implement
 
 Shared requirements apply to every selected capability; operation requirements apply when that capability is selected. Each operation applies to a declared collection with an unambiguous Registry context, representation schema, and access policy.
 
-Consultation interoperates at the level Core defines: operation shapes, the Record envelope, error outcomes, pagination, and discovery are the same for every Registry, while domain fields, selectors, searches, and filters are declared per contract. A consumer reads any conforming Registry with the same client code once it has loaded that Registry's contract. See the [interoperability boundary](registry-core.md#purpose-and-applicability) in Core.
+Consultation interoperates at the level Core defines: operation shapes, the Record envelope, error outcomes, pagination, and discovery are the same for every Registry, while domain fields, selectors, searches, and filters are declared per contract. Consumers can reuse protocol and envelope handling; domain-specific selectors, field meanings, and reference bindings still require integration against the published contract. See the [interoperability boundary](registry-core.md#purpose-and-applicability) in Core.
 
 ## Common read contract
 
@@ -168,7 +168,7 @@ The [canonical OpenAPI](../../api/openapi.yaml) defines the synchronous HTTPS/JS
 
 The server URL identifies the deployment root, optionally including a stable routing prefix such as `/registry`. The major version precedes each collection: `/v1/households` or, with that prefix, `/registry/v1/households`.
 
-A deployment publishes a concrete OpenAPI contract containing its selected operations, service and authentication endpoints, versioned JSON Schemas for `data` and the complete response, selectors, searches, supported filters and ordering, source currency, access policy, and continuation policy. Every Record-returning operation carries the `x-govstack-digital-registries` extension required by [Core requirement #8](registry-core.md#registry-core-functional-requirements); it names the Registry, collection, capability, and view, and the operation's response schema defines that view. The extension is the binding's answer to the Common Record context: the Registry Identifier is not repeated in requests or Records.
+A deployment publishes a concrete OpenAPI contract containing its selected operations, service and authentication endpoints, versioned JSON Schemas for `data` and the complete response, selectors, searches, supported filters and ordering, source currency, access policy, and continuation policy. Every selected Consultation operation carries the `x-govstack-digital-registries` extension required by [Core requirement #8](registry-core.md#registry-core-functional-requirements); it names the Registry, collection, capability, and view, and the operation's response schema defines that view. The extension is the binding's answer to the Common Record context: the Registry Identifier is not repeated in requests or Records.
 
 One API can expose several collections. A shared API can therefore expose:
 

@@ -10,7 +10,7 @@ description: Operational contracts, the Consultation HTTP binding pointer, and p
 
 Family classifications identify a service's broad capabilities. The linked contract defines exact operations, parameters, schemas, outcomes, and access requirements. Catalogue descriptions link to these details without reproducing them. A static published description and contract are sufficient; discovery does not require a new runtime service.
 
-Every Record-returning operation of an OpenAPI contract declares its Registry context with the `x-govstack-digital-registries` extension defined under [API composition](05-api-families/registry-core.md#api-composition). Each API family owns the HTTP binding of its operations and documents it on its own page.
+Every Consultation operation of an OpenAPI contract declares its Registry context with the `x-govstack-digital-registries` extension defined under [API composition](05-api-families/registry-core.md#api-composition). Each API family owns the HTTP binding of its operations and documents it on its own page.
 
 The [adopter kit](12-other-resources/adopter-kit.md) lists the artifacts an implementation publishes. [Coverage and Limitations](12-other-resources.md#121-coverage-and-limitations) records binding availability. [Requirement Maturity](04-conformance.md#41-requirement-maturity) defines conformance status.
 
