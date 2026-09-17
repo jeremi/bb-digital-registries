@@ -12,10 +12,12 @@ the Building Block specification has its own version.
 | Exact Lookup | `POST /v1/records:lookup` | Record |
 | Named Search | `POST /v1/records:search` | RecordPage |
 
-`records` is the reference collection name. Deployments publish concrete names,
-such as `/v1/businesses` or `/v1/households`, and select capabilities for each
-collection. One API can expose several collections, each with a declared Registry,
-membership scope, and operation schemas. Success responses share
+`records` is the reference collection name, and
+`https://registry.example/registries/records` is a placeholder Registry Identifier.
+Deployments publish concrete names, such as `/v1/businesses` or `/v1/households`,
+declare the Registry Identifier from their Registry metadata, and select
+capabilities for each collection. One API can expose several collections, each
+with a declared Registry, membership scope, and operation schemas. Success responses share
 `Record {recordId, data}` and `RecordPage {items, pageInfo}`.
 Lookup and Search are synchronous reads. `/health` provides operational liveness.
 
@@ -63,8 +65,11 @@ documented linter dependencies installed, run the canonical artifact gate:
 uv run --with-requirements tools/requirements-api.txt node ../bb-template/api-design-guide/linter/cli.mjs --repo-root .
 ```
 
-The checks validate current artifacts and local dependencies. The guide gate
-checks canonical discovery, requirement coverage, OpenAPI, and Spectral rules.
+The checks validate current artifacts and local dependencies. Registry Identifiers
+are resolved against the metadata example only in the business contract, the one
+contract that example describes; the canonical, household, and birth-registration
+contracts use illustrative identifiers. The guide gate checks canonical discovery,
+requirement coverage, OpenAPI, and Spectral rules.
 [Implementation tests](../spec/11-testing.md) cover runtime authorization,
 source behavior, and cursor guarantees.
 

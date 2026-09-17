@@ -7,15 +7,18 @@ info:
     Records, supported operations and declared representation schemas or views. An API can expose
     several collections. Deployments select at least one capability: Retrieve, Lookup, List or
     Search. Their contracts declare typed data and input schemas, field meanings, source
-    currency, authorization and pagination policy. The records collection is the generic
-    reference binding; deployed contracts publish concrete collection paths and schemas.
+    currency, authorization and pagination policy. The records collection and the Registry
+    Identifier https://registry.example/registries/records are generic reference values;
+    deployed contracts publish concrete collection paths and schemas, and declare the Registry
+    Identifier from their Registry metadata.
     Registry Core metadata identifies the Registry, its name, authority, authoritative scope and
     specification version, and associates the service with its Registry, supported API
-    families, endpoint and deployed OpenAPI contract. Metadata can be published as a static
-    document or through an external catalogue. Each read applies the caller’s permitted
-    view. Public operations declare security: []. Transport uses TLS
-    1.3 or later. The /v1 paths identify this API compatibility line; info.version versions
-    the draft HTTP contract.
+    families, endpoint and deployed OpenAPI contract. The API origin serves the RFC 9727
+    /.well-known/api-catalog linkset, which links the deployed contract and the metadata
+    document. An external catalogue can repeat the metadata but does not replace the linkset.
+    Each read applies the caller’s permitted view. Public operations declare security: [].
+    Transport uses TLS 1.3 or later. The /v1 paths identify this API compatibility line;
+    info.version versions the draft HTTP contract.
   contact:
     name: GovStack Digital Registries Working Group
     url: https://github.com/GovStackWorkingGroup/bb-digital-registries
