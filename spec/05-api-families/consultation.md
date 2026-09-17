@@ -62,6 +62,8 @@ A domain profile records reusable agreements about schemas, terminology, and que
 
 **List and Search.** List and Search both return Pages, and the split between them follows the API design guide. List carries equality filters on declared non-personal fields as query parameters, one parameter per field (guide §12.8). Personal criteria, composite keys, and non-equality matching belong to Search, whose request body keeps them out of URLs and logs (guide §8.6 and §12.9). A contract that needs neither can select List alone; a contract whose every useful criterion is personal selects Search alone.
 
+**Field-equality Search (informative).** A contract whose searches need only exact matches on fields of its view can declare one search for them. Its criteria schema lists those fields as optional properties, requires at least one, and rejects any other; every supplied field must match, and omitted fields do not constrain the result. An adapter can derive this search from the view schema instead of authoring one search per field combination. Access policy still governs the results, including combinations of personal criteria. The [business binding](../../api/examples/business-registry.schema.json) declares `byFields` over `legalName` and `registrationStatus` this way.
+
 ## Read requirements
 
 <a id="retrieve-functional-requirements"></a>
@@ -245,6 +247,8 @@ Retrieve and Lookup return `{recordId, data}`. List and Search return `{items, p
 
 The operation's Registry context declaration and response schema provide Registry and schema context. Additional source metadata follows [Registry Core](registry-core.md#common-record-context). A schema linked with `rel="describedby"` describes the complete response, including its envelope. An operation exposing a different view is a separate operation with its own declared schema and field meanings.
 
+**Audience-dependent fields (informative).** When access policies release different fields of the same Records, a contract can take one of two approaches. It can publish one view whose schema marks the varying fields optional, so each caller receives the fields its policy permits; the schema then cannot guarantee those fields to a caller entitled to all of them. Or it can publish each field set as its own view with its own required fields. Because an operation's declared collection equals its path segment, a second view of the same Records uses its own collection path, such as `/v1/businesses` for `business-public` and `/v1/business-extracts` for a fuller `business-extract` view, or a separate API. Records keep their identifiers in both collections.
+
 ### Continuation
 
 The first request selects `pageSize`, defaulting to 20 and bounded to 100 in the canonical contract. A continuation repeats the original criteria, search name where applicable, sorting, and view with the cursor. It can omit `pageSize` to retain the bound value or supply that same value; a different value produces `400 invalid-cursor`. Cursors bind the operation, Registry, collection, query, view, effective size, and applicable access context. The deployment declares expiry and rejects malformed, expired, or mismatched cursors, including continuations whose declared semantics it can no longer preserve. A short or empty Page can carry a non-null `nextCursor` when source processing advances.
@@ -255,7 +259,7 @@ A non-null `pageInfo.nextCursor` enables continuation; `null` marks completion. 
 
 OpenAPI defines the status codes and RFC 9457 Problem Details for each operation. Retrieve and Lookup share `404 record-not-available` for unknown Records, Records outside the selected collection, and Records whose existence is protected under [requirement #3](#retrieve-functional-requirements). Structural input errors, invalid query parameters, and invalid pagination controls use `400`. Structurally valid Lookup and Search bodies with unknown selector or search names or invalid domain values use `422`. Malformed, expired, or mismatched cursors use `400 invalid-cursor`.
 
-Protected reads and errors use `Cache-Control: no-store`. Deployments may declare caching for public or isolated representations. Optional conditional Retrieve evaluates authorization before returning `304`; its ETag validates the selected HTTP representation. Authentication, authorization, and source failures follow the declared OpenAPI responses and the API design guide.
+Protected reads and errors use `Cache-Control: no-store`. Deployments may declare caching for public or isolated representations. Retrieve supports conditional requests: its `200` and `304` responses carry an ETag that validates the selected HTTP representation, and the service evaluates authorization before `If-None-Match` can produce `304`. Authentication, authorization, and source failures follow the declared OpenAPI responses and the API design guide.
 
 ### Record references and expansion
 

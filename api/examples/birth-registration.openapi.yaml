@@ -43,6 +43,8 @@ tags:
 paths:
   /health:
     $ref: '../openapi.yaml#/paths/~1health'
+  /.well-known/api-catalog:
+    $ref: '../openapi.yaml#/paths/~1.well-known~1api-catalog'
   /v1/birth-registrations/{recordId}:
     get:
       operationId: retrieveBirthRegistration
@@ -51,7 +53,8 @@ paths:
         Retrieve a Record in the birth-registrations collection with its permitted view.
         Parent components preserve nameAtRegistration as recorded; individualRef supplies
         optional related Record identity. Absent Records, Records outside this collection
-        and protected existence share 404 record-not-available.
+        and protected existence share 404 record-not-available. Conditional retrieval uses
+        the representation’s ETag after authorization.
       tags: [Consultation]
       x-govstack-digital-registries:
         registry: https://registry.example/registries/birth-registrations
@@ -61,12 +64,15 @@ paths:
       parameters:
         - $ref: '../openapi.yaml#/components/parameters/RecordId'
         - $ref: '../openapi.yaml#/components/parameters/Traceparent'
+        - $ref: '../openapi.yaml#/components/parameters/IfNoneMatch'
       responses:
         '200':
           description: Complete permitted birth-registration view within its published profile bound.
           headers:
             Cache-Control:
               $ref: '../openapi.yaml#/components/headers/CacheControl'
+            ETag:
+              $ref: '../openapi.yaml#/components/headers/ETag'
           content:
             application/json:
               schema:
@@ -81,6 +87,8 @@ paths:
                     - nameAtRegistration: Robin Example
                       individualRef:
                         recordId: person_57
+        '304':
+          $ref: '../openapi.yaml#/components/responses/NotModified'
         '400':
           $ref: '../openapi.yaml#/components/responses/BadRequest'
         '401':

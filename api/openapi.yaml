@@ -44,6 +44,8 @@ tags:
     description: Read authorized Records from declared collections and their associated Registries.
   - name: Health
     description: Bounded operational liveness without registry information.
+  - name: Discovery
+    description: Locate the origin's API contracts and Registry metadata through the RFC 9727 API catalog.
 paths:
   /health:
     get:
@@ -68,6 +70,52 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /.well-known/api-catalog:
+    servers:
+      - url: https://{gatewayHost}
+        description: >-
+          Origin root. RFC 8615 fixes well-known URIs at the origin, so a deployment routing
+          prefix does not apply to this path.
+        variables:
+          gatewayHost:
+            default: registry.example
+            description: Deployment gateway hostname; registry.example is non-production.
+    get:
+      operationId: getApiCatalog
+      summary: Get the API catalog
+      description: >-
+        Return the RFC 9727 API catalog for this origin as an RFC 9264 linkset. For each
+        Digital Registries API at the origin, a service-desc link targets its OpenAPI contract
+        and a service-meta link, typed application/ld+json, targets the Registry metadata
+        document. A deployment that restricts the catalog to an intended audience declares
+        that access requirement instead of security: [].
+      tags: [Discovery]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Traceparent'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          $ref: '#/components/responses/ApiCatalog'
+        '304':
+          $ref: '#/components/responses/ApiCatalogNotModified'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    head:
+      operationId: headApiCatalog
+      summary: Check the API catalog
+      description: >-
+        Return the API catalog response headers without a body, including the Link header
+        with the api-catalog relation that RFC 9727 requires for HEAD requests.
+      tags: [Discovery]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          $ref: '#/components/responses/ApiCatalogHeaders'
   /v1/records/{recordId}:
     get:
       operationId: retrieveRecord
@@ -119,6 +167,8 @@ paths:
       description: >-
         Return permitted Records from this collection in the deployment’s deterministic
         default order with a unique tie-breaker. Deployments offering sort declare its allowed fields and directions. Each
+        declared equality filter is one query parameter for a non-personal field; a field named
+        pageSize, cursor or sort uses another declared parameter name. Each
         request is authorized; unsupported query parameters return 400. Continuations follow
         the Cursor and PageSize rules.
       tags: [Consultation]
@@ -330,7 +380,7 @@ components:
       in: header
       required: false
       description: >-
-        Optional conditional Retrieve against the selected representation. Authorization
+        Conditional request against the selected representation's ETag. Authorization
         precedes evaluation of the validator.
       schema:
         type: string
@@ -369,10 +419,19 @@ components:
         type: string
         const: no-store
     ETag:
-      description: Optional HTTP validator for the caller-selected representation; not a source revision identifier.
+      description: HTTP validator for the caller-selected representation, returned by Retrieve and the API catalog; not a source revision identifier.
       schema:
         type: string
       example: 'W/"representation-7fa9"'
+    ApiCatalogLink:
+      description: >-
+        Web Link with the api-catalog relation. Its target is this well-known URI or the
+        publisher's API catalog document location.
+      required: true
+      schema:
+        type: string
+        pattern: ';\s*rel\s*=\s*(?:api-catalog|"(?:[^"]*\s)?api-catalog(?:\s[^"]*)?")\s*(?:[;,]|(?![\s\S]))'
+      example: '</.well-known/api-catalog>; rel="api-catalog"'
     RetryAfter:
       description: Delay in seconds or HTTP-date before retrying; authoritative over any advisory quota fields.
       schema:
@@ -513,11 +572,12 @@ components:
     Sort:
       type: string
       minLength: 1
-      pattern: '^-?[A-Za-z][A-Za-z0-9]*(,-?[A-Za-z][A-Za-z0-9]*)*(?![\s\S])'
+      pattern: '^-?[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*(,-?[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*)*(?![\s\S])'
       description: >-
         Optional declared field names separated by commas; a minus prefix means
-        descending. A deployment narrows this schema to its supported fields
-        and directions, or omits this input when it only provides default ordering.
+        descending. Field names keep the spelling of the declared schema, and a dot
+        separates nested object fields. A deployment narrows this schema to its supported
+        fields and directions, or omits this input when it only provides default ordering.
       examples: [recordId]
     LookupRequest:
       type: object
@@ -570,6 +630,51 @@ components:
       $ref: './common/govstack-openapi-common.yaml#/components/schemas/Problem'
     ValidationProblem:
       $ref: './common/govstack-openapi-common.yaml#/components/schemas/ValidationProblem'
+    ApiCatalog:
+      type: object
+      description: >-
+        RFC 9264 linkset listing the APIs at this origin. Each Digital Registries API has a
+        service-desc link to its OpenAPI contract and a service-meta link to its Registry
+        metadata document.
+      required: [linkset]
+      properties:
+        linkset:
+          type: array
+          minItems: 1
+          description: Link context objects, such as one per API anchor.
+          items:
+            $ref: '#/components/schemas/LinkContext'
+    LinkContext:
+      type: object
+      description: >-
+        One RFC 9264 link context. Members other than anchor are link relation types, such
+        as item, service-desc and service-meta.
+      properties:
+        anchor:
+          type: string
+          format: uri-reference
+          description: The link context URI.
+      additionalProperties:
+        type: array
+        minItems: 1
+        description: Target links for one relation type.
+        items:
+          $ref: '#/components/schemas/LinkTarget'
+    LinkTarget:
+      type: object
+      description: One RFC 9264 target link; further target attributes follow RFC 9264.
+      required: [href]
+      properties:
+        href:
+          type: string
+          format: uri-reference
+          description: The target URI.
+        type:
+          type: string
+          description: Media type hint for the target.
+        title:
+          type: string
+          description: Human-readable target label.
     Health:
       type: object
       description: Optional informational body; only the HTTP status determines liveness.
@@ -580,6 +685,42 @@ components:
       examples:
         - description: Digital Registries Consultation
   responses:
+    ApiCatalog:
+      description: >-
+        The API catalog linkset. RFC 9727 recommends the Content-Type profile parameter
+        "https://www.rfc-editor.org/info/rfc9727".
+      headers:
+        Link:
+          $ref: '#/components/headers/ApiCatalogLink'
+        ETag:
+          $ref: '#/components/headers/ETag'
+      content:
+        application/linkset+json:
+          schema:
+            $ref: '#/components/schemas/ApiCatalog'
+          example:
+            linkset:
+              - anchor: https://registry.example/
+                service-desc:
+                  - href: https://registry.example/contracts/1.0.0-draft/openapi.yaml
+                    type: application/vnd.oai.openapi
+                    title: Digital Registries Consultation API
+                service-meta:
+                  - href: https://registry.example/catalog
+                    type: application/ld+json
+                    title: Registry metadata for the records Registry
+    ApiCatalogHeaders:
+      description: The API catalog response headers, without a body.
+      headers:
+        Link:
+          $ref: '#/components/headers/ApiCatalogLink'
+        ETag:
+          $ref: '#/components/headers/ETag'
+    ApiCatalogNotModified:
+      description: The API catalog validator matches; the response is bodyless.
+      headers:
+        ETag:
+          $ref: '#/components/headers/ETag'
     Record:
       description: >-
         One permitted Record in the published fixed view. Retrieve and Lookup share this

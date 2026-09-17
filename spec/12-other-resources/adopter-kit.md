@@ -10,7 +10,7 @@ An implementation of Registry Core with Consultation publishes four artifacts. T
 |---|---|---|---|
 | OpenAPI contract, one per API | A stable URL chosen by the deployment | [Business Registry example](../../api/examples/business-registry.openapi.yaml), which reuses the shared components of the [canonical Consultation OpenAPI](../../api/openapi.yaml) | [Consultation HTTP binding](../05-api-families/consultation.md#http-binding) and [API composition](../05-api-families/registry-core.md#api-composition) |
 | Registry metadata document | A stable document URI, served as `application/ld+json` | [Registry metadata example](../../api/examples/registry-metadata.jsonld), validated by the [metadata document schema](../../api/extensions/registry-metadata.schema.json) | [Registry metadata](../05-api-families/registry-core.md#registry-metadata) |
-| API catalog linkset | `/.well-known/api-catalog` at the API origin, served as `application/linkset+json` | [API catalog example](../../api/examples/api-catalog.linkset.json) | [Discovery publication](../05-api-families/registry-core.md#discovery-publication) |
+| API catalog linkset | `/.well-known/api-catalog` at the API origin, served as `application/linkset+json` | [API catalog example](../../api/examples/api-catalog.linkset.json) and the `/.well-known/api-catalog` path of the [canonical Consultation OpenAPI](../../api/openapi.yaml) | [Discovery publication](../05-api-families/registry-core.md#discovery-publication) |
 | Health endpoint | `/health` relative to the OpenAPI server URL, including any routing prefix | The `/health` path of the [canonical Consultation OpenAPI](../../api/openapi.yaml) | GovStack API Design Guide, unversioned health endpoint |
 
 ## Producing the artifacts

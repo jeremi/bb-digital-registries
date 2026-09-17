@@ -20,6 +20,8 @@ capabilities for each collection. One API can expose several collections, each
 with a declared Registry, membership scope, and operation schemas. Success responses share
 `Record {recordId, data}` and `RecordPage {items, pageInfo}`.
 Lookup and Search are synchronous reads. `/health` provides operational liveness.
+`GET` and `HEAD /.well-known/api-catalog` serve the RFC 9727 linkset at the origin
+root, outside any routing prefix.
 
 The server URL identifies the deployment root, optionally with a stable prefix
 such as `/registry`. The major version precedes the collection in each operation
@@ -69,19 +71,10 @@ The checks validate current artifacts and local dependencies. Registry Identifie
 are resolved against the metadata example only in the business contract, the one
 contract that example describes; the canonical, household, and birth-registration
 contracts use illustrative identifiers. The guide gate checks canonical discovery,
-requirement coverage, OpenAPI, and Spectral rules.
+requirement coverage, and the OpenAPI and Spectral rules for the canonical
+contract and the example contracts.
 [Implementation tests](../spec/11-testing.md) cover runtime authorization,
 source behavior, and cursor guarantees.
-
-The canonical contract has these reviewed advisory findings:
-
-- **8.7:** The contract assigns quotas to the gateway and declares `Retry-After`.
-  The linter's proxy recommends BB-owned `RateLimit` headers on the Record,
-  RecordPage, and TooManyRequests responses.
-- **7.16:** List uses `Cache-Control: no-store` with live pagination.
-  The linter recommends ETag and `304` support. Conditional Retrieve is optional.
-
-These findings are advisory; no rule exceptions are declared.
 
 ## Historical artifacts
 

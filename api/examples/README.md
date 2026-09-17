@@ -11,7 +11,8 @@ These illustrative deployments specialize the [Consultation contract](../openapi
 Each contract declares its Registry, collection, capability, and view on every
 operation with `x-govstack-digital-registries`, and publishes schemas, source
 currency, access policy, limits, and response examples. The business contract also defines exact
-and composite selectors, a typed status search, and live cursor pagination.
+and composite selectors, a typed status search, a field-equality search, and live
+cursor pagination.
 
 The examples use `https://registry.example` as their API root. A deployment can
 combine several collections under that root and associate each with its Registry.

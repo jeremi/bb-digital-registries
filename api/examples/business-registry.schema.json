@@ -24,8 +24,9 @@
     },
     "RegistrationStatus": {
       "type": "string",
-      "enum": ["ACTIVE", "DISSOLVED"],
-      "description": "ACTIVE means registered and not dissolved; DISSOLVED means registration has ended. This profile uses a closed domain vocabulary.",
+      "pattern": "^[A-Z][A-Z0-9_]*(?![\\s\\S])",
+      "x-extensible-enum": ["ACTIVE", "DISSOLVED"],
+      "description": "ACTIVE means registered and not dissolved; DISSOLVED means registration has ended. The registry can add statuses; clients handle unrecognised values.",
       "examples": ["DISSOLVED"]
     },
     "BusinessRecord": {
@@ -143,24 +144,54 @@
       "properties": {"registrationStatus": {"$ref": "#/$defs/RegistrationStatus"}},
       "examples": [{"registrationStatus": "DISSOLVED"}]
     },
+    "FieldEqualityCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "Equality predicates over any non-empty combination of the declared business-public fields. Every supplied field must match exactly; omitted fields do not constrain the result.",
+      "properties": {
+        "legalName": {"$ref": "#/$defs/BusinessData/properties/legalName"},
+        "registrationStatus": {"$ref": "#/$defs/RegistrationStatus"}
+      },
+      "examples": [{"legalName": "Example Ltd", "registrationStatus": "DISSOLVED"}]
+    },
     "BusinessSearchRequest": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Status-equality search with typed criteria and continuation controls. Repeat search and criteria on continuation.",
+      "description": "One of two typed equality searches with continuation controls. Search names determine their accepted criteria. Repeat search and criteria on continuation.",
       "required": ["search", "criteria"],
       "properties": {
         "search": {
           "type": "string",
-          "const": "byRegistrationStatus",
-          "description": "The published status-equality search name."
+          "description": "Published search name, constrained together with its criteria by oneOf."
         },
-        "criteria": {"$ref": "#/$defs/RegistrationStatusCriteria"},
+        "criteria": {
+          "type": "object",
+          "description": "The typed criteria associated with the chosen search."
+        },
         "pageSize": {"$ref": "../openapi.yaml#/components/schemas/PageSize"},
         "cursor": {"$ref": "../openapi.yaml#/components/schemas/Cursor"}
       },
+      "oneOf": [
+        {
+          "description": "Registration-status equality search.",
+          "properties": {
+            "search": {"const": "byRegistrationStatus"},
+            "criteria": {"$ref": "#/$defs/RegistrationStatusCriteria"}
+          }
+        },
+        {
+          "description": "Equality search over the declared business-public fields.",
+          "properties": {
+            "search": {"const": "byFields"},
+            "criteria": {"$ref": "#/$defs/FieldEqualityCriteria"}
+          }
+        }
+      ],
       "examples": [
         {"search": "byRegistrationStatus", "criteria": {"registrationStatus": "DISSOLVED"}, "pageSize": 20},
-        {"search": "byRegistrationStatus", "criteria": {"registrationStatus": "DISSOLVED"}, "cursor": "pgn_7JpQ9m2W4xK8fR3cT6vN1"}
+        {"search": "byRegistrationStatus", "criteria": {"registrationStatus": "DISSOLVED"}, "cursor": "pgn_7JpQ9m2W4xK8fR3cT6vN1"},
+        {"search": "byFields", "criteria": {"legalName": "Example Ltd", "registrationStatus": "DISSOLVED"}}
       ]
     }
   }

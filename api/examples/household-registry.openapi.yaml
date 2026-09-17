@@ -41,6 +41,8 @@ tags:
 paths:
   /health:
     $ref: '../openapi.yaml#/paths/~1health'
+  /.well-known/api-catalog:
+    $ref: '../openapi.yaml#/paths/~1.well-known~1api-catalog'
   /v1/households/{recordId}:
     get:
       operationId: retrieveHousehold
@@ -49,7 +51,8 @@ paths:
         Retrieve a Record in the households collection with its permitted embedded address
         and membership components. individualRef identifies the related Individual Record.
         Absent Records, Records outside this collection and protected existence share
-        404 record-not-available.
+        404 record-not-available. Conditional retrieval uses the representation’s ETag
+        after authorization.
       tags: [Consultation]
       x-govstack-digital-registries:
         registry: https://registry.example/registries/households
@@ -59,12 +62,15 @@ paths:
       parameters:
         - $ref: '../openapi.yaml#/components/parameters/RecordId'
         - $ref: '../openapi.yaml#/components/parameters/Traceparent'
+        - $ref: '../openapi.yaml#/components/parameters/IfNoneMatch'
       responses:
         '200':
           description: Complete permitted household view within its published profile bounds.
           headers:
             Cache-Control:
               $ref: '../openapi.yaml#/components/headers/CacheControl'
+            ETag:
+              $ref: '../openapi.yaml#/components/headers/ETag'
           content:
             application/json:
               schema:
@@ -86,6 +92,8 @@ paths:
                       individualRef:
                         recordId: person_57
                         registryId: https://registry.example/registries/individuals
+        '304':
+          $ref: '../openapi.yaml#/components/responses/NotModified'
         '400':
           $ref: '../openapi.yaml#/components/responses/BadRequest'
         '401':

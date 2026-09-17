@@ -266,6 +266,27 @@ class ConsultationContractTests(unittest.TestCase):
 
         self.assertFalse(validator(CANONICAL, "/components/schemas/Sort").is_valid("recordId\n"))
 
+    def test_field_equality_search_accepts_declared_field_combinations(self):
+        check = validator(BINDING, "/$defs/BusinessSearchRequest")
+        for criteria in ({"legalName": "Example Ltd"}, {"registrationStatus": "DISSOLVED"},
+                         {"legalName": "Example Ltd", "registrationStatus": "DISSOLVED"}):
+            with self.subTest(criteria=criteria):
+                check.validate({"search": "byFields", "criteria": criteria, "pageSize": 20})
+        for criteria in ({}, {"recordId": "r_42"}, {"legalName": ""}, {"registrationStatus": None},
+                         {"legalName": "Example Ltd", "undeclaredField": "value"}):
+            with self.subTest(criteria=criteria):
+                self.assertFalse(check.is_valid({"search": "byFields", "criteria": criteria}))
+
+    def test_sort_accepts_adopted_and_nested_field_names(self):
+        check = validator(CANONICAL, "/components/schemas/Sort")
+        for value in ("recordId", "-legalName,recordId", "legal_name", "-address.city,registration_date.year"):
+            with self.subTest(value=value):
+                check.validate(value)
+        for value in ("", "-", "--legalName", "_legalName", "legalName,", ",legalName", "address..city",
+                      "address.", ".city", "legal name", "legal-name", "recordId\n"):
+            with self.subTest(value=value):
+                self.assertFalse(check.is_valid(value))
+
     def test_fixed_view_and_additive_envelope(self):
         check = validator(BINDING, "/$defs/BusinessRecord")
         record = {"recordId": "r_42", "data": {"legalName": "Example Ltd", "registrationStatus": "DISSOLVED"}}
@@ -274,6 +295,39 @@ class ConsultationContractTests(unittest.TestCase):
         self.assertFalse(check.is_valid({**record, "recordId": "r_42\n"}))
         for data in ({"registrationStatus": "DISSOLVED"}, {**record["data"], "undeclaredPrivateField": "value"}, {**record["data"], "legalName": 42}):
             self.assertFalse(check.is_valid({**record, "data": data}))
+
+    def test_registration_status_is_an_open_vocabulary(self):
+        status = document(BINDING)["$defs"]["RegistrationStatus"]
+        self.assertNotIn("enum", status)
+        self.assertEqual(status["x-extensible-enum"], ["ACTIVE", "DISSOLVED"])
+        record = validator(BINDING, "/$defs/BusinessRecord")
+        criteria = validator(BINDING, "/$defs/RegistrationStatusCriteria")
+        for value in ("ACTIVE", "DISSOLVED", "SUSPENDED"):
+            with self.subTest(value=value):
+                record.validate({"recordId": "r_42", "data": {"legalName": "Example Ltd", "registrationStatus": value}})
+                criteria.validate({"registrationStatus": value})
+        for value in ("", "dissolved", "DISSOLVED\n", 42, None):
+            with self.subTest(value=value):
+                self.assertFalse(criteria.is_valid({"registrationStatus": value}))
+
+    def test_retrieve_supports_conditional_requests(self):
+        for path in OPENAPI_DOCUMENTS:
+            spec = document(path)
+            for route, item in spec["paths"].items():
+                if route_kind(route, "get") != ("get", "item") or "get" not in item:
+                    continue
+                operation = item["get"]
+                with self.subTest(file=path.name, operation=operation["operationId"]):
+                    parameters = [resolve_object(path, parameter)[1] for parameter in operation["parameters"]]
+                    self.assertIn(("If-None-Match", "header"), [(p["name"], p["in"]) for p in parameters])
+                    for status in ("200", "304"):
+                        _, response = resolve_object(path, operation["responses"][status])
+                        self.assertIn("ETag", response["headers"], f"{status} carries the representation ETag")
+                    _, not_modified = resolve_object(path, operation["responses"]["304"])
+                    self.assertNotIn("content", not_modified)
+        etag = document(CANONICAL)["components"]["headers"]["ETag"]
+        self.assertFalse(etag["description"].lower().startswith("optional"),
+                         "Retrieve always carries the ETag; only the client's If-None-Match is optional")
 
     def test_custom_methods_preserve_opaque_identifier_routes(self):
         bindings = ((CANONICAL, "records"), (BUSINESS, "businesses"),
@@ -502,6 +556,16 @@ class ConsultationContractTests(unittest.TestCase):
         broken["@context"] = "https://vocab.govstack.global/digital-registries/context/v2"
         self.assertFalse(metadata_check.is_valid(broken), "Only the pinned context version is accepted")
 
+    def test_registry_and_authority_identifiers_need_not_be_https(self):
+        metadata = json.loads(METADATA_EXAMPLE.read_text())
+        registry_node = next(n for n in metadata["@graph"] if "govreg:Registry" in as_list(n["@type"]))
+        registry_node["@id"] = "urn:example:registries:business"
+        registry_node["authority"] = "urn:example:organisations:business-authority"
+        validator(METADATA_SCHEMA, "").validate(metadata)
+        validator(EXTENSION_SCHEMA, "").validate({"registry": "urn:example:registries:business",
+                                                  "collection": "businesses", "capability": "retrieve",
+                                                  "view": "business-public"})
+
     def test_api_catalog_links_contracts_and_metadata(self):
         linkset = json.loads(LINKSET_EXAMPLE.read_text())
         metadata = json.loads(METADATA_EXAMPLE.read_text())
@@ -523,6 +587,48 @@ class ConsultationContractTests(unittest.TestCase):
         catalog = next(n for n in metadata["@graph"] if "dcat:Catalog" in as_list(n["@type"]))
         self.assertEqual(metadata_links, {catalog["@id"]}, "service-meta points at the metadata document")
         self.assert_registry_associations(document(BUSINESS), metadata)
+
+    def test_api_catalog_endpoint_is_described_at_the_origin_root(self):
+        route = "/.well-known/api-catalog"
+        catalog = document(CANONICAL)["paths"][route]
+        self.assertEqual({key for key in catalog if key not in ("summary", "description", "servers")}, {"get", "head"},
+                         "Well-known endpoints are read-only")
+        self.assertEqual([server["url"] for server in catalog["servers"]], ["https://{gatewayHost}"],
+                         "RFC 8615 roots the catalog at the origin, outside any routing prefix")
+        for method in ("get", "head"):
+            operation = catalog[method]
+            with self.subTest(method=method):
+                self.assertEqual(operation["security"], [])
+                self.assertNotIn(EXTENSION, operation, "The catalog is not a Consultation operation")
+                _, response = resolve_object(CANONICAL, operation["responses"]["200"])
+                _, link = resolve_object(CANONICAL, response["headers"]["Link"])
+                self.assertTrue(link["required"], "RFC 9727 requires the api-catalog Link header on HEAD")
+                header = Draft202012Validator(link["schema"], format_checker=FormatChecker())
+                header.validate('</.well-known/api-catalog>; rel="api-catalog"')
+                header.validate('<https://registry.example/catalogs/apis.json>; rel=api-catalog')
+                self.assertFalse(header.is_valid('</catalog>; rel="service-meta"'))
+        _, head = resolve_object(CANONICAL, catalog["head"]["responses"]["200"])
+        self.assertNotIn("content", head)
+        _, get = resolve_object(CANONICAL, catalog["get"]["responses"]["200"])
+        self.assertEqual(list(get["content"]), ["application/linkset+json"])
+        self.assertIn("ETag", get["headers"])
+        parameters = [resolve_object(CANONICAL, parameter)[1] for parameter in catalog["get"]["parameters"]]
+        self.assertIn(("If-None-Match", "header"), [(p["name"], p["in"]) for p in parameters])
+        _, not_modified = resolve_object(CANONICAL, catalog["get"]["responses"]["304"])
+        self.assertIn("ETag", not_modified["headers"])
+        self.assertNotIn("content", not_modified)
+        check = validator(CANONICAL, "/components/schemas/ApiCatalog")
+        check.validate(json.loads(LINKSET_EXAMPLE.read_text()))
+        for invalid in ({}, {"linkset": {}}, {"linkset": []},
+                        {"linkset": [{"service-desc": [{"type": "application/vnd.oai.openapi"}]}]},
+                        {"linkset": [{"service-desc": {"href": "https://registry.example/openapi.yaml"}}]},
+                        {"linkset": [{"anchor": 42}]}):
+            with self.subTest(invalid=invalid):
+                self.assertFalse(check.is_valid(invalid))
+        for example in (BUSINESS, HOUSEHOLD, BIRTH):
+            with self.subTest(file=example.name):
+                self.assertEqual(document(example)["paths"][route],
+                                 {"$ref": "../openapi.yaml#/paths/" + pointer_key(route)})
 
     def assert_registry_associations(self, contract, metadata):
         registry_ids = {n["@id"] for n in metadata["@graph"]

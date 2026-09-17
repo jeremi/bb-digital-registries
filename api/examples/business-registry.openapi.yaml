@@ -48,9 +48,13 @@ tags:
   description: Read authorized Records from the businesses collection.
 - name: Health
   description: Bounded operational liveness without registry information.
+- name: Discovery
+  description: Locate the origin's API contracts and Registry metadata through the RFC 9727 API catalog.
 paths:
   /health:
     $ref: ../openapi.yaml#/paths/~1health
+  /.well-known/api-catalog:
+    $ref: ../openapi.yaml#/paths/~1.well-known~1api-catalog
   /v1/businesses/{recordId}:
     get:
       operationId: retrieveBusiness
@@ -58,7 +62,8 @@ paths:
       description: >-
         Retrieve the permitted business-public view by source recordId within the businesses
         collection. Absent Records, Records outside this collection and protected existence
-        share 404 record-not-available. The response uses no-store.
+        share 404 record-not-available. The response uses no-store. Conditional retrieval
+        uses the representation’s ETag after authorization.
       tags:
       - Consultation
       x-govstack-digital-registries:
@@ -69,16 +74,21 @@ paths:
       parameters:
       - $ref: ../openapi.yaml#/components/parameters/RecordId
       - $ref: ../openapi.yaml#/components/parameters/Traceparent
+      - $ref: ../openapi.yaml#/components/parameters/IfNoneMatch
       responses:
         '200':
           description: One authorized business-public record.
           headers:
             Cache-Control:
               $ref: ../openapi.yaml#/components/headers/CacheControl
+            ETag:
+              $ref: ../openapi.yaml#/components/headers/ETag
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BusinessRecord'
+        '304':
+          $ref: ../openapi.yaml#/components/responses/NotModified
         '400':
           $ref: ../openapi.yaml#/components/responses/BadRequest
         '401':
@@ -229,7 +239,8 @@ paths:
       operationId: searchBusinesses
       summary: Execute one declared search and return a page
       description: >-
-        Search the businesses collection byRegistrationStatus using exact equality. Repeat
+        Search the businesses collection byRegistrationStatus, or byFields with any non-empty
+        combination of legalName and registrationStatus, using exact equality. Repeat
         search and criteria with cursor on continuation; pageSize may be omitted to retain its
         bound value. Apply the declared live pagination policy. Malformed or structurally invalid input and invalid
         pagination controls use 400. Structurally valid input with an unknown search or invalid
@@ -259,6 +270,13 @@ paths:
                   criteria:
                     registrationStatus: DISSOLVED
                   pageSize: 20
+              byFields:
+                summary: Equality on a combination of declared fields
+                value:
+                  search: byFields
+                  criteria:
+                    legalName: Example Ltd
+                    registrationStatus: DISSOLVED
       responses:
         '200':
           description: A bounded page of business-public records in ascending ASCII recordId
