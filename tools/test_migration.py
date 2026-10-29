@@ -342,7 +342,20 @@ class RepositoryIntegrationTests(unittest.TestCase):
                     ".git", ".venv", ".verification-tmp", "__pycache__", ".ruff_cache"
                 ),
             )
-            (fixture / ".git").write_bytes((ROOT / ".git").read_bytes())
+            git_dir = subprocess.run(
+                [
+                    "git",
+                    "--no-optional-locks",
+                    "-C",
+                    str(ROOT),
+                    "rev-parse",
+                    "--absolute-git-dir",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            (fixture / ".git").write_text(f"gitdir: {git_dir}\n")
             source = fixture / "spec/6-functional-requirements.md"
             source.write_bytes(source.read_bytes() + b"\nChanged upstream source.\n")
             result = subprocess.run(
