@@ -1,155 +1,155 @@
 ---
-title: Internal Workflows
-description: >-
-  This section provides a detailed view of how this Building Block will interact
-  with other Building Blocks to support common use cases.
+description: Registry service discovery, latest and historical Record reads, exact lookup, and declared Collection pagination guarantees.
 ---
 
-# Internal Workflows
+# Workflows
 
-## Administrative/Analyst Functions
+## Discover Registry services and their contracts
 
-The Digital Registries building block facilitates the foloowing main internal workflows:
+This workflow applies to every Registry BB implementation. The publisher serves the Registry metadata document and locates it, with each contract, through the RFC 9727 `/.well-known/api-catalog` linkset at the API origin.
 
-\
-9.1.1 Create a registry database in User Interface
+### Preconditions
 
-9.1.2 Process registry data in User Interface
+1. The consumer knows the API origin or has a configured metadata document URI.
+2. The consumer has any access needed to read the metadata and linked contracts.
+3. The publisher provides the Registry metadata and service discovery required by Registry Core.
 
-9.1.3 Create registry database in API interface
+### Interaction
 
-### 9.1.1 User Story 1 - Create registry database in user interface
+1. The consumer requests `/.well-known/api-catalog` at the API origin, follows its `service-meta` link to the Registry metadata document, and selects the Registry by its stable identifier.
+2. The consumer inspects its authority, authoritative scope statement, and referenced Digital Registries specification version.
+3. The consumer follows the Registry's service associations and reads each service's identifier, API-family labels, endpoint URL, and operational-contract reference for the services available to that consumer's audience.
+4. The consumer follows the operational contract to determine the logical Collections, the Registry context declared on each operation, exact operations, selectable features, named searches, inputs, outputs, limits, temporal and purpose requirements, and access requirements. For HTTP APIs, this is an OpenAPI description unless the applicable binding defines an established protocol-native description.
+5. When the service offers caller capability discovery, the consumer can request `GET /v1/capabilities` to obtain a bounded, caller-filtered advisory view of authorised Collection operations and their required views, plus readable fields, selectors, searches, features, and purpose requirements. Filtering uses current trusted context, including a verified purpose when present, and can omit operations whose required purpose is absent. Discovery creates no new purpose input. The consumer still follows the versioned contract and does not treat this document as authority for any Record. If the caller-available description exceeds a declared bound, the service fails explicitly rather than truncating or silently omitting it.
+6. The consumer selects a suitable operation, or determines that the required operation is unavailable.
 
-As an Administrator/Analyst I want to use a web user interface to create a register database (example registry use case - social security program) so that I can configure and launch the registry database instantly to be used by internet users and client systems (e.g. Registration Building Block, Information Mediator Building Block) via web interface and API.
+### Outcomes
 
-**Actors**: Analyst - An administrator user who is creating/changing the registry database schema. The main actor/user in these requirements is the Analyst.
+The linked contract, not the family label, tells the consumer which operations exist. Discovery is not satisfied when an exposed service is missing from the Registry description or lacks its identifier, valid family labels, endpoint, or machine-readable contract, or when the origin serves no `/.well-known/api-catalog` linkset with a `service-meta` link to the metadata document.
 
-**Preconditions**:
+### Postconditions
 
-1. User is authenticated;
-2. User is authorized as an admin;
-3. User interface is a web interface;
-4. User has internet;
-5. System has electricity.
+- The consumer can distinguish the governed Registry, its authority, and its technical services.
+- The consumer knows which operations are available from each service's operational contract.
+- Family labels classify the service's operations. Selected operation options follow the [draft conformance model](conformance.md#draft-conformance-model).
 
-**Process:**
+## Retrieve a permitted Record representation
 
-1. Create a new registry database project.
-2. Define the database fields.
-3. Publish the database.
-4. Validate/configure the API services.
-5. Manage user rights to access the database and APIs.
+This workflow applies to implementations selecting Retrieve. The [HTTP binding](../api/openapi.yaml) defines request and response details.
 
+### Preconditions
 
+1. The published service contract exposes Retrieve and identifies its Registry, collection membership, representation schema, and any selectable features.
+2. The consumer has the credentials and request context required by the deployment.
 
-**Post conditions:**
+### Interaction
 
-1. System contains a database that is ready to process new data.
-2. System has API services to CRUD (Create, Read, Update, Delete) data (and API to validate if data exist).
-3. User can enter data to the registry via web user interface (UI).
-4. User can see log information in the UI.
-5. User can see statistics in the UI.
-6. User can give authorization to use the database and process data.
-7. System contains a database that is ready to process new data.
-8. System has API services to CRUD data (and API to validate if data exist).
-9. User can enter data to the registry via web UI.
-10. User can see log information in the UI.
-11. User can see statistics in the UI.
-12. User can give authorization to use the database and process data.
+1. The consumer sends a request to the declared item path, such as `GET /v1/collections/businesses/records/{recordId}`, with a Record Identifier within the Registry. When the operation declares `field-selection`, the consumer may also request declared selectable top-level `data` fields with `fields`. When a temporal feature is declared, the consumer can explicitly supply `recordedAsOf` or `effectiveAt`; omission requests the latest representation.
+2. The Registry evaluates authentication, access, and disclosure policy.
+3. The Registry resolves the latest or explicitly selected source-backed Record state within the Collection and constructs its permitted baseline `Record` or selected `TemporalRecord` representation. Latest Records may include inactive Records.
+4. The Registry returns that representation or the declared unsuccessful outcome.
 
-### 9.1.2 User Story 2 - Process registry data in User Interface
+### Outcomes
 
-As an Administrator/Analyst, I want to process (Create, Read, Update, Delete) registry data so that I do not have to know the query language.
+| Condition | Observable outcome |
+|---|---|
+| Latest Record state is accessible without temporal selection | The latest permitted representation is returned without temporal metadata. |
+| Explicitly selected Record state is accessible | A `TemporalRecord` echoing the applied temporal context is returned. |
+| Consumer has narrower disclosure rights | The returned representation satisfies both disclosure policy and its schema. |
+| Identifier is unknown, belongs to a Record outside the collection, or has protected existence | The same `record-not-available` outcome is returned. |
+| Source proves no Record exists at the selected temporal coordinates | `404 record-not-available`, subject to protected-existence handling. |
+| Authorised source cannot evaluate the selected temporal state | `409 temporal-state-not-available`; current state is not substituted. |
+| Operation declares `conditional-read` and an authorised `If-None-Match` validator matches | A bodyless `304` with the selected representation's ETag is returned. |
 
-**Actors**
+### Postconditions
 
-* Analyst: the main actor in these requirements is the Analyst/Administrator.
-* Data owner: a physical person whose personal data is stored in the registry.
+- The source Record is unchanged.
+- The returned identifier matches the requested identifier.
+- Registry, schema, and authority context are unambiguous; any additional source metadata follows the published contract.
+- Field selection retains `recordId` and `data`, uses the operation's one declared view schema, and cannot widen disclosure. Unsupported fields produce the declared validation error.
 
-**Preconditions:**
+## Look up a Record using an exact selector
 
-1. Analyst is authenticated and authorized to use the Building Block and process data in the database;
-2. The user interface is a web interface;
-3. User has internet;
-4. System has electricity.
+This workflow applies to implementations selecting Lookup.
 
-**Process**:
+### Preconditions
 
-1. Analyst searches a record via search or filter function;
-2. Analyst selects a record;
-3. Analyst processes a record;
-4. System stores changes to the Change Log database.
+1. The contract exposes a Lookup operation, such as `POST /v1/collections/businesses/lookup`, and declares the Collection, selectable features, and selector's typed components, comparison rules, and uniqueness scope.
+2. The consumer has the required credentials and request context.
 
-**Postconditions**:
+### Interaction
 
-Processing changes by Analyst are done and log for change is created.
+1. The consumer sends `{selector, values}` using the declared schema. A composite selector supplies every key component. When the operation declares `field-selection`, the body may also carry a `fields` array of declared selectable top-level `data` fields. A declared temporal selection is carried in the body `temporal` object.
+2. The Registry validates the input and evaluates access and disclosure policy.
+3. The Registry resolves the selector within its declared scope, checks uniqueness, and applies collection membership.
+4. One permitted match returns the common Record representation. Other outcomes follow the contract, including protected-existence handling and source uniqueness failures.
 
-### 9.1.3 User Story 3- Create registry database in API interface
+### Postconditions
 
-As an IT developer, I want to Create/update/delete registry database schema via API services.
+- The source Record is unchanged.
+- A successful Lookup returns the same Record schema and field meanings as other reads of that view.
+- Multiple source matches fail without selecting an arbitrary Record.
 
-**Actors**
+## Page through a declared collection or search result
 
-* IT developer (Developer): Main actor in these requirements is planning to open a new business program and web form to capture applicants' data. Captured data must be registered in the registry. In this use case, a Developer is any user who is using API services to create and manage registries database.
+This workflow applies independently to List and Search. For the business example, List uses `GET /v1/collections/businesses/records`; Search uses `POST /v1/collections/businesses/search`.
 
-**Preconditions**:
+### Preconditions
 
-1. Developer is using API with a client system or a script that is connected to Information Mediator Building Block. Client system is any Building Block that is using API services via Information Mediator;
-2. IT Developer (Information Mediator organization) has been given authorization to Create/update/delete database schema via API services.
-3. Developer has internet;
-4. System has electricity.
+1. The contract declares the collection or search, accepted inputs, deterministic ordering with a unique tie breaker, page and resource limits, timeout outcome, cursor lifetime, and any selectable features.
+2. The consumer has the required credentials and request context.
 
-**Process**:
+### Interaction
 
-1. Developer uses a client system to edit the registry database in the Building Block. Developer can:
-   1. Create database schema;
-   2. Read database schema;
-   3. Modify database schema;
-   4. Delete database schema and all data in it.
+1. The consumer sends the first request without a cursor, supplying the declared criteria and any supported ordering, page size, temporal selection, and field selection. GET List uses query parameters; POST Search carries temporal and field selection in its body.
+2. The Registry validates the request and evaluates current access and disclosure policy. A current-state request returns the latest permitted Page without temporal metadata; an applied temporal selection echoes its context at Page level even when `items` is empty. Items use the same Record schema for the selected view.
+3. For a non-null `nextCursor`, the consumer repeats the criteria, ordering, temporal selection, and effective field selection with that cursor. It may omit `pageSize` or repeat the effective size established by the first request.
+4. The Registry reauthorises the continuation and verifies its cursor binding, including the Collection, query, view, temporal context, effective field set, effective page size, and effective purpose when required. An invalid, expired, or mismatched cursor produces the declared failure.
+5. The consumer continues until `nextCursor` is `null`, including after short or empty Pages with a continuing cursor.
 
-**Postconditions**:
+### Outcomes and limits
 
-1. When Developer is authorized to use Building Block API then the Digital Registries Building Block allows processing CRUD (Create, Read, Update, Delete) schema of a registry, and all authorized users can;
-2. When Developer is not authorized to process/CRUD the database schema, the system allows to process schema of all databases where an anonymous user has been allowed to edit the database schema (simplification for GovStack Sandbox instance);
-3. When a user has no authorization, one can not create nor change (CRUD) any schema in the Building Block.
+- Every Page respects the effective size bound, every continuation advances, and request processing respects the declared resource limits or returns the declared timeout outcome. The page-size bound does not claim that backend work scales with the number of returned items.
+- An evaluable List or Search with zero permitted matches, including one whose source matches are all filtered by policy, returns `200` with an empty `items` array. A source that cannot evaluate a requested temporal query returns `409 temporal-state-not-available`; it does not report an empty successful result.
+- Live-data changes follow the published pagination and source-currency policy. Baseline pagination does not promise that one traversal exhaustively observes an unchanged result.
+- When the operation declares `complete-traversal`, an unchanged source result and unchanged access conditions yield every permitted match exactly once before completion. An internal result window or limit that prevents this produces the declared failure instead of a completion signal.
+- When the operation declares `snapshot-traversal`, the first request fixes source membership, ordering, and Record data at its documented evaluation point. Every Page still applies current authorisation. The service returns `400 invalid-cursor` if it cannot preserve the snapshot, and its contract documents snapshot reference and availability semantics.
+- When supplied, `pageInfo.total` is the exact count of the full permitted query at its declared evaluation point. Live traversal evaluates it for the current Page; snapshot traversal uses the fixed source point and filters it through current rights.
+- Revoked access applies to subsequent requests. A failed continuation allows the consumer to start a fresh request when permitted.
 
+## Retrieve retained history
 
+This workflow applies when Revision List or Revision Retrieve is selected.
 
-## Applicant Functions
+1. The consumer inspects the contract's history view, revision ordering, retention, gap, schema-evolution, access, and purpose rules.
+2. The consumer requests `GET /v1/collections/{collectionId}/records/{recordId}/revisions` and follows bounded continuation under current authorisation. Every continuation cursor remains bound to that parent `recordId`; replay under another parent returns `400 invalid-cursor`.
+3. Each returned `RecordRevision.recordId` equals the parent path identifier and carries a source-backed `revisionId`, plus `recordedAt` only when the source supports it.
+4. The consumer can retrieve one retained revision at `GET /v1/collections/{collectionId}/records/{recordId}/revisions/{revisionId}`.
+5. Unknown or protected parent Records and revisions use the same `404 record-not-available`, without identifying which resource was unavailable. Only after these protection checks can authorised source inability return `409 history-not-available`. The service does not substitute current state or fabricate a revision.
 
-9.2.1 Process data in API interface
+Revision history and snapshot traversal answer different questions. History exposes source-distinguishable retained states; snapshot traversal holds one collection result stable while it is paged.
 
-### 9.2.1 User Story 4 - Process data in API interface
+## Apply a required purpose
 
-As an Applicant, I want to process CRUD (Create, Read, Update, Delete) data in the registry database.
+This workflow applies only to operations declaring `purpose-bound`.
 
-**Actors**:
+1. The consumer obtains credentials or trusted authorisation context carrying one of the controlled purpose codes or absolute URIs allowed by the operation's `purpose` declaration.
+2. The consumer invokes the operation without adding purpose to the URL or request body.
+3. The service validates the trusted binding before disclosing Records and rejects missing, malformed, untrusted, or unallowed values.
+4. The service binds the effective purpose to continuation, conditional validation, temporal and historical reads, and audit evidence.
 
-* Applicant - The main actor in these requirements is an applicant via the client system. In this use case applicant is any user who is using a client system (Registration Building Block). For example, a Health Care worker is an applicant in this user story; a mother, using the Registration Building Block. An example client system in this document is Registration Building Block.
+Purpose is a declared request context. It is not proof of consent, institutional authority, or actual downstream use. Operations that do not declare `purpose-bound` continue to use their inherited authentication and authorisation contract without this additional requirement.
 
-**Preconditions**:
+## Read a household and interpret its relationships
 
-1. Applicant is using client system (e.g. Registration Building Block) that is connected to Information Mediator Building Block;
-2. Client system has been given authorization to access Registry to process (CRUD) information;
-3. Applicant has been given authorization to access Registry to process (CRUD) information;
-4. Applicants are registered in the system and able to use authentication. Applicant is Authenticated by client system or Security Building Block (Authentication).
-5. Applicant has internet;
-6. System has electricity.
+This workflow uses the [household OpenAPI](../api/examples/household-registry.openapi.yaml).
 
-**Process**:
+1. The consumer sends `GET /v1/collections/households/records/{recordId}` and receives a household containing its declared address and membership components.
+2. The consumer interprets membership attributes as relationship facts. A `membershipId` identifies a component within that household.
+3. The `individualRef` field schema fixes the target Individuals Registry, allowing the reference to omit `registryId`.
+4. Where an individual read is offered, the consumer follows the field's declared target collection and operation binding through the target Registry's published service contract. The binding explains how to use the reference as input; the consumer follows the operation's access requirements.
+5. The related read follows the target's authorisation and source-currency contract. An unavailable target leaves the household's membership facts unchanged.
 
-1. Applicant uses a client system to process data in the registry
-   * Applicant can create data;
-   * Applicant can read data;
-   * Applicant can update data;
-   * Applicant can delete data;
-   * Applicant can create or update data;
-   * Applicant can validate data.
-2. System logs all processing events in the dedicated audit registry.
+A predefined household view may instead include permitted individual summaries, with declared fields, bounds, and source currency.
 
-**Postconditions**:
-
-1. When Applicant is authenticated by a client system (e.g. Registration Building Block) the registry allows processing (CRUD) information from the registry. All users who are authenticated can read data.
-2. When a user is not authenticated in the system, the system allows processing (CRUD) data from all databases where an anonymous user has been allowed to process data.
-3. When a user has no authorization, one can not process (CRUD) any information in the registry.
-
+The [birth-registration OpenAPI](../api/examples/birth-registration.openapi.yaml) illustrates recorded parent details. `nameAtRegistration` belongs to the birth-registration Record, with a reference to the individual, which may be absent. Changes to the individual's current Record leave this recorded value unchanged; accepted corrections to the birth-registration source may update it.

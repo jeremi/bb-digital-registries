@@ -1,6 +1,4 @@
 node_modules
 test/openAPI/result
-.venv/
-__pycache__/
-.ruff_cache/
-.verification-tmp/
+.venv
+__pycache__

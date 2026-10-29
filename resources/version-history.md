@@ -1,10 +1,59 @@
 ---
-title: Version History
-description: >-
-  The version history table describes the major changes to the specifications
-  between published versions.
+description: Major changes to the Digital Registries Building Block specification.
 ---
 
-# Version History
+# 1 Version History
 
-<table><thead><tr><th width="137.66666666666669">Version</th><th width="247">Authors</th><th width="328.3333333333333">Comment</th></tr></thead><tbody><tr><td>0.7</td><td>Frank Grozel, Ingmar Vali, Tambet Artma, Saurav Bhattarai, Dr. P. S. Ramkumar, Rauno Kulla.</td><td>Initial Revision</td></tr><tr><td>0.8</td><td><p>Frank Grozel, Ingmar Vali, Tambet Artma, Saurav Bhattarai, Dr. P. S. Ramkumar, Rauno Kulla.</p><p>Reviewers:</p><p>Neil Roy, Aare Lapõnin, Amy Darling</p></td><td>Applied feedback from technical review</td></tr><tr><td>0.9</td><td><p>Ingmar Vali, Sebastian Leidig, Frank Grozel, Tambet Artma</p><p>Technical Reviewers: Tony Shannon, Saša Kovačević, Riham Moawad, Riham Fahmi, Aare Laponin, Manish Srivastava, Palab Saha, Surendra Singh Sucharia, Arvind Gupta, Gayatri. P., Shivank Singh Chauhan, Gavin Lyons</p><p><br>Reviewers: Steve Conrad, Wes Brown, Valeria Tafoya</p></td><td>Future consideration section analysis and conversion to requirements.<br>Fine tuning, and chapter reorganization.</td></tr><tr><td><strong>1.0</strong><br><sup><em>May 2023</em></sup></td><td><p>Ingmar Vali</p><p>Reviewers: Steve Conrad, Wes Brown, Valeria Tafoya</p></td><td>Final edits to align content to specification template for GovStack 1.0 release</td></tr><tr><td><strong>2.0</strong><br><em>(previously known as 23Q4)</em><br><sup><em>November 2023</em></sup></td><td><em><strong>Authors:</strong></em><br>Sebastian Leidig, Steve Conrad, Łukasz Ruzicki, Damian Borowiecki, Karolina Kopacz, and Paweł Gesek<br><br><em><strong>Reviewer:</strong></em><br>Sebastian Leidig<br><br><em><strong>Editors:</strong></em><br>Steve Conrad, Valeria Tafoya</td><td>Structural Updates to Cross Cutting Requirements.<br>Move of section on standards from previously in section 7.1 to section 5.3<br>Section 8 - Service APIs significantly updated with renamed endpoints and changes to APIs<br>Publishing of test suite</td></tr><tr><td><strong>3.0.0-alpha</strong><br><sup><em>June 2026</em></sup></td><td><p><br><em><strong>Coordinators:</strong></em><br>Dr. Bimal Kumar, Xilene Siquero, Sebastian Leidig</p><p><br><em><strong>Authors:</strong></em><br>Janet Ngugi, Vivek Rana, Chinenye Ifebirinachi, Ananya Jha, Umang Gupta</p><p><br><em><strong>Editors:</strong></em><br>Ali González-García, and David Higgins</p><p></p><p></p></td><td>This version reflects the comprehensive upgrade of the specifications aligned to the enhanced scope, architectural patterns, cross-cutting requirements, and interoperability standards introduced in GovStack Architecture 2.1.</td></tr></tbody></table>
+| Version | Contributors | Comment |
+|---|---|---|
+| 0.7, 0.8, and 0.9 | Initial authors and reviewers listed below | Initial drafts and technical review. |
+| 1.0, May 2023 | Ingmar Vali; reviewers Steve Conrad, Wes Brown, and Valeria Tafoya | First GovStack 1.0-aligned release. |
+| 2.0, November 2023 | Authors and editors listed below | Updated cross-cutting requirements, service APIs, and the test suite. Breaking change. |
+| 3.0.0-alpha.1, June 2026 | Coordinators, authors, and editors listed below | Expanded scope and alignment work for GovStack Architecture 2.x. Public alpha release. |
+| 3.0.0-alpha.2, August 2026 | Digital Registries Working Group | Reframed the alpha as a domain-neutral Registry Core with mandatory Consultation Retrieve and additional capability families. Breaking prerelease change. |
+
+## Current alpha draft revision
+
+The 6 September 2026 revision of the `3.0.0-alpha.2` draft replaced universal Consultation Retrieve with mandatory Registry Core plus at least one selected Registry service operation. The format migration expresses that rule as two core functionalities and the REQUIRED `registry-service` variation point with `select.min: 1`. This remains a revision of the same alpha draft, not a new release; no conformance claim is available.
+
+The revision adds DRAFT requirements and a [canonical HTTP contract](api.yml) for four independently selectable Consultation operation options: Retrieve, Lookup, List, and Search. GET serves Retrieve and List; POST carries exact Lookup and Search criteria. All four share a Record representation. List and Search use live cursor pagination with repeated criteria and a fixed effective page size.
+
+The 8 October 2026 revision distinguishes baseline pagination from selectable stronger operation features. Baseline List and Search publish bounded responses, deterministic ordering, fixed-size context-bound continuation, resource limits, and timeout behaviour without claiming exhaustive backend traversal. Operations can separately declare conditional Retrieve, field selection, complete traversal, or snapshot traversal; omitted features make no such promise.
+
+The 29 October 2026 revision makes logical Collections explicit in the canonical `/v1/collections/{collectionId}` hierarchy and keeps Record identity stable across Collections. It adds selectable source-backed Revision List and Revision Retrieve capabilities, recorded-time and effective-time selection, reusable named Search semantics, caller-filtered capability discovery, and trusted purpose binding. The revision does not mandate a civil-registration legal model, a universal query language, historical storage, or purpose on every operation.
+
+The Record model accepts stable source identifiers within a Registry and permits Registry and schema context through the endpoint, versioned contract, or response. Source revision, lifecycle, and recording time are not required unless a selected capability or profile requires them. Field meanings remain documented.
+
+The [household](../api/examples/household-registry.openapi.yaml) and [birth-registration](../api/examples/birth-registration.openapi.yaml) contracts illustrate nested components, Record references, recorded related details, and bounded arrays with declared completeness. API Design Guide `0.3.0-draft` accompanies these choices. Contract and example validation is published separately from implementation conformance testing.
+
+## Contributors by release
+
+### Versions 0.7 and 0.8
+
+Authors: Frank Grozel, Ingmar Vali, Tambet Artma, Saurav Bhattarai, Dr. P. S. Ramkumar, and Rauno Kulla.
+
+Version 0.8 reviewers: Neil Roy, Aare Lapõnin, and Amy Darling.
+
+### Version 0.9
+
+Authors: Ingmar Vali, Sebastian Leidig, Frank Grozel, and Tambet Artma.
+
+Technical reviewers: Tony Shannon, Saša Kovačević, Riham Moawad, Riham Fahmi, Aare Laponin, Manish Srivastava, Palab Saha, Surendra Singh Sucharia, Arvind Gupta, Gayatri P., Shivank Singh Chauhan, and Gavin Lyons.
+
+Reviewers: Steve Conrad, Wes Brown, and Valeria Tafoya.
+
+### Version 2.0
+
+Authors: Sebastian Leidig, Steve Conrad, Łukasz Ruzicki, Damian Borowiecki, Karolina Kopacz, and Paweł Gesek.
+
+Reviewer: Sebastian Leidig. Editors: Steve Conrad and Valeria Tafoya.
+
+### Version 3.0.0-alpha.1
+
+Coordinators: Dr. Bimal Kumar, Xilene Siquero, and Sebastian Leidig.
+
+Authors: Janet Ngugi, Vivek Rana, Chinenye Ifebirinachi, Ananya Jha, Umang Gupta, Leonora Smart-Abbey, and Jeremi Joslin.
+
+Editors: Ali González-García and David Higgins.
+
+The detailed change record is preserved in the [Release Notes](history/release-notes.md).

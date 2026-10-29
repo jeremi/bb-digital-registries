@@ -1,11 +1,69 @@
 # Digital Registries Building Block Specification
 
-This is a format-only authoring migration of **official `main` at `8588a219df9a8406e66c4392d0bef664b34e4e30`**, labelled **3.0-alpha; June 2026**. The version history also uses `3.0.0-alpha`, retained in the authoring metadata. This migration publishes no release and imports no later draft or uncommitted Registry changes.
+Version **3.0.0-alpha.2**, an authoring draft. The specification inherits
+`govstack-cfr-2.1.0`. Its requirements remain DRAFT and do not establish an
+implementation conformance or certification claim.
 
-Start with the [overview](introduction/overview.md), [scope](introduction/scope.md), and [conformance explanation](resources/conformance.md). The structured requirements preserve all 37 DRS entries, the two elevated cross-functional requirements, and the additional required behaviour stated in the other upstream chapters. The [narrative inventory](resources/upstream-narrative-inventory.md) records the two chapter 4 items that are not carried as separate required statements.
+The Digital Registries Building Block defines interoperable behaviour for software
+that maintains authoritative records about persons, organisations, places, assets,
+or events. It specifies Registry identity, authority, metadata, discovery, stable
+Record references, and permitted representations without prescribing a database
+product, administrative user interface, storage model, deployment topology, or
+domain data model.
 
-[Migration record](resources/format-migration.md) explains the source boundary, optionality mapping and draft identifiers. [Source findings](resources/source-findings.md) records unresolved upstream clauses and contract bindings. [API source notes](resources/contract-source-notes.md) explains the generated [authoring entrypoint](resources/api.yml) and the exact original templates it projects. [Verification procedures](resources/testing.md) distinguishes executable preservation checks from manual implementation assessment.
+The target conformance model combines Registry Core with at least one declared
+Registry operation. In this draft, Retrieve, Lookup, List, Search, Revision List,
+and Revision Retrieve are six independent options of a required core variation point. No particular operation is
+universal. The core functionality is generic Registry service provision; the current option set does not make Consultation permanently universal. The other seven API families remain informative roadmap material until a future version defines their service options with approved requirements, contracts, and tests.
+Business-outcome capabilities in `metadata.yml` are informative and are realised
+by the functionalities; operation choices are declared by option key.
 
-The original `spec/`, `api/`, `examples/` and `test/` trees remain byte-for-byte unchanged as source and implementation artifacts. Original publication navigation is retained there as historical source, not as the active requirement catalogue. The original repository README and GitBook configuration are preserved under `resources/history/`.
+The six Consultation operations share a Record representation and bounded
+pagination over explicit logical Collections. Operations can separately declare
+conditional reads, field selection, complete traversal, snapshot traversal,
+recorded-time, effective-time, or purpose binding; caller capability discovery is
+also selectable. The HTTP binding supplies Registry, Collection, schema, capability,
+and selectable feature declarations through each operation's versioned contract.
+Source history, revision, lifecycle, recording-time, and effective-time metadata
+remain conditional on the source and the selected capability or feature.
 
-The [official source snapshot](https://github.com/GovStackWorkingGroup/bb-digital-registries/tree/8588a219df9a8406e66c4392d0bef664b34e4e30) is the sole content baseline. The shared renderer is separate tooling and does not change that baseline or establish implementation conformance.
+## Reading guide
+
+- **Government architects:** start with the [overview](introduction/overview.md)
+  and [scope](introduction/scope.md) for the system boundary and neighbouring
+  Building Blocks.
+- **Procurement teams:** read [conformance](resources/conformance.md) and
+  [coverage and limitations](resources/README.md#coverage-and-limitations).
+  Cite an approved specification version when one is available.
+- **Implementers:** start with the [adopter kit](resources/adopter-kit.md), then
+  [Discover Registry Services](requirements/registry-discovery.md),
+  [Provide Registry Services](requirements/registry-services.md), and the
+  [Consultation HTTP binding](resources/consultation-binding.md). The
+  [business Registry contract](api/examples/business-registry.openapi.yaml)
+  illustrates a concrete mapping.
+- **Assessors:** use the [verification procedures](resources/testing.md),
+  [legacy requirement mapping](resources/requirement-migration.yml), and the
+  applicability declarations in each functionality file.
+
+<figure><img src="assets/api-families.svg" alt="Digital Registries API-family catalogue"><figcaption>The catalogue retains the previous draft's API-family terminology; selected operations are represented as options in the requirement model.</figcaption></figure>
+
+## Contributing
+
+The repository layout and validation commands are in
+[CONTRIBUTING.md](https://github.com/GovStackWorkingGroup/bb-digital-registries/blob/main/CONTRIBUTING.md).
+
+## Publication and attribution
+
+`toc.yml` is the publication content inventory. `SUMMARY.md` and `.gitbook.yaml`
+retain GitBook navigation and redirects for the migrated source. The local
+[validation workflow](.github/workflows/validate.yml) performs checks only.
+This repository does not assume an available central compiler or publish a release.
+
+Current coordinating authors are Sebastian Leidig, Jeremi Joslin, and David Higgins.
+The [version history](resources/version-history.md) and
+[release notes](resources/history/release-notes.md) retain historical authors,
+coordinators, editors, reviewers, and changes.
+
+The [format migration record](resources/format-migration.md) explains the source
+layout mapping, requirement preservation, publication limits, and how subsequent
+content changes relate to this baseline.

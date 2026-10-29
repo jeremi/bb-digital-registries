@@ -1,131 +1,88 @@
 ---
-title: Overview
+description: Purpose, value, system boundary, functionalities, actors, and interfaces of the Digital Registries Building Block.
 ---
 
-# Overview
+# Digital Registries Building Block
 
 ## Purpose
 
-The Digital Registries Building Block exists so that governments and the systems they authorise can create and manage trusted, authoritative, uniquely identifiable records about entities such as persons, organisations, places, assets, and events.
+### Value
 
-It provides **Registry Administration**, **Record Management**, **Governed Access**, **Accountability**, **Data Exchange**, and **Analytics** capabilities.
-Together, these capabilities let institutions maintain registry structures and data, control their use, retain an audit trail, exchange records through consistent interfaces, and inspect registry activity.
+The Digital Registries Building Block exists so that governments and authorised service providers can discover governed registries and obtain permitted Registry information through consistent external contracts. A named Registry Authority remains institutionally responsible for each Registry within its declared scope. Authoritative means that the authority accepts responsibility for maintaining the Record in that scope; completeness and accuracy are separate data-quality properties.
 
-A common specification matters because government institutions, GovStack Building Blocks, and external systems otherwise have to negotiate different registry interfaces and behaviours for each implementation.
-The common contract supports integration and reuse across domains while leaving implementations free to choose their internal database technology and deployment model.
+| Capability | Value |
+|---|---|
+| Registry Service Discovery | An API consumer can identify a Registry, its responsible authority and authoritative scope, and locate the services and machine-readable contracts available to that consumer. |
+| Authoritative Registry Services | An authorised consumer uses the Registry's declared services within its responsible authority's scope and access policy. |
+
+Without a common specification, every consuming service must learn a different discovery mechanism, representation envelope, error model, and pagination contract. The common agreement supports interoperability between independently operated systems, makes implementations more replaceable, and gives buyers and assessors a stable basis for comparing externally observable behaviour.
 
 ### Place in larger systems
 
-The Digital Registries Building Block is an optional component in the GovStack ecosystem.
-Other Building Blocks may use a traditional database platform alone or in combination with it.
-It can operate as a standalone service, as one centralised instance containing multiple registries for a domain, or as multiple instances with separate databases.
+A Digital Registries implementation exposes services over records for which a named authority accepts responsibility. Examples include business registrations, land titles, vehicle registrations, professional licences, programme enrolments, and civil events. A Registry can operate independently. Where other GovStack Building Blocks are deployed, they can provide complementary citizen-facing intake, workflow orchestration, organisational data exchange, consent management, digital signatures, wallets, identity services, or geospatial processing.
 
-The upstream specification describes these common relationships:
+The Registry Authority decides the authoritative scope and the applicable information-sharing and access policy. The implementation enforces the resulting decisions for each request. Neighbouring components do not acquire responsibility for the Registry's authoritative records merely because they collect, route, process, sign, hold, or visualise related information.
 
-- the **Registration Building Block** provides an interface through which applicants and government operators manage the lifecycle of claims;
-- the **Foundational ID Building Block** uniquely identifies entities;
-- the **Workflow Building Block** orchestrates business processes tied to registry data; and
-- the **Information Mediator** and **Consent and Authorisation** components support secure, policy-driven exchange between organisations.
+| Neighbouring Building Block | Boundary |
+|---|---|
+| Registration | Registration can collect submissions and manage an intake process. The Registry accepts an approved result, a governed change request, or declared state transitions according to an applicable Write profile. |
+| Workflow | Workflow coordinates a process across components. The Registry controls which Record transitions it accepts and remains responsible for the resulting authoritative state. |
+| Information Mediator | Information Mediator can provide cross-organisation addressing, routing, and transport controls. The Registry owns its operations, disclosure decisions, and records. |
+| Consent | Consent can provide evidence or policy signals used in a disclosure decision. The Registry enforces the decision applicable to each request and supports other lawful bases where relevant. |
+| E-Signature | E-Signature can perform signing operations. The Registry remains responsible for the meaning, issuance, status, and lifecycle of Registry Evidence. |
+| Wallet | A Wallet can hold and present credentials issued through Evidence. The Registry remains the source of the asserted facts and is not required to operate a Wallet. |
+| Identity | The [Identity Building Block](https://github.com/GovStackWorkingGroup/bb-identity/blob/main/spec/2-description.md) defines foundational identity services and describes integration with functional identities. A sectoral Registry owns its functional identifiers. [Identity Federation](../resources/roadmap/identity-federation.md) addresses authentication to Relying Services; Registry API access control is a separate responsibility. |
+| GIS | GIS can provide geospatial processing and visualisation. A spatial Registry remains responsible for its records and can expose an OGC-aligned GIS Query capability. |
 
-![Digital Registries Building Block in its GovStack context.](../assets/registry-bb-overview.png)
+Reference architectures and domain or jurisdictional implementation guides can place the Digital Registries Building Block in larger systems without changing this specification's conformance contract.
 
 ## Description
 
 ### System under test
 
-The system under test is a generic, domain-agnostic software component that maintains registry structures and records and exposes them through a web user interface and service APIs.
-It may logically assemble a record from multiple underlying databases and records changes to registry data and structures in auditable logs.
+The system under test is a software component that publishes the identity, authority, scope, services, and contracts of one or more Registries and provides permitted Registry information through declared interfaces. It is assessed as a black box through those interfaces and through auditable evidence where a property, such as Record Identifier non-reassignment, cannot be established from one exchange.
 
-The component boundary includes registry administration, record processing, access control, audit functions, generated registry APIs, and registry statistics.
-Sector-specific applicant interfaces, registration-request workflows, identity services, business-process orchestration, and cross-organisation mediation remain outside that boundary, even when a deployment composes them closely with the Building Block.
-
-The specification observes a solution through its user-facing and service interfaces and through evidence for controls, such as audit-log integrity, that cannot be established from an individual API response alone.
-
-The upstream functional-component view shows a user interface (schema viewer, data viewer and editor, database views, statistics and audit-trail logs), an API interface, administration tools (schema, view, API and authorisation managers), data storage, data import and export, and a security layer.
-Queries and schema operations from other Building Blocks and developers reach the API interface through an Information Mediator gateway.
-The source adds that applicants mostly reach registry data through client applications such as the Registration Building Block, and that any Building Block can query the registry through its APIs when authorised.
-The diagram is informative; it does not prescribe the internal components of an implementation.
-
-![Digital Registries functional components: user interface, API interface, administration tools, data storage, data import and export, and a security layer, with an Information Mediator gateway in front of the API interface.](<../assets/image3 (1) (1).png>)
+The interoperability contract is independent of database technology, internal modules, administrative tools, deployment model, and whether an adaptor fronts an existing Registry. An implementation can be centralised or distributed and can use relational, document, graph, event-sourced, or other storage approaches. Those choices affect conformance only when they change observable behaviour or required evidence.
 
 ### Functionalities
 
-The active specification organises the 37 numbered upstream functional-requirement blocks and the required source-only obligations into these functionalities.
-The descriptions, capability identifiers, and conformance classification match the front matter of the linked requirement files.
-
 | Functionality | Realises | Conformance | Description | Requirements |
 |---|---|---|---|---|
-| Access Control | `governed-access` | Core | Registry operators govern who can administer registries and access registry data. | [`requirements/access-control.md`](../requirements/access-control.md) |
-| Apply Registry Assurance | `governed-access`, `accountability` | Core | Institutions retain the two explicitly elevated upstream cross-functional data protections. | [`requirements/registry-assurance.md`](../requirements/registry-assurance.md) |
-| Audit and Personal Data Protection | `accountability`, `governed-access` | Core | Registry operators and data owners inspect accountable use of registry data, while sensitive data is protected. | [`requirements/audit-and-personal-data.md`](../requirements/audit-and-personal-data.md) |
-| Configure API Services | `registry-administration`, `governed-access` | Core | Authorised users and API clients configure and discover the services exposed for each registry database. | [`requirements/configure-api-services.md`](../requirements/configure-api-services.md) |
-| Automated Data Exchange | `data-exchange` | Core | Registry operators configure conditional exchanges between registries and external systems. | [`requirements/data-exchange.md`](../requirements/data-exchange.md) |
-| Manage Registries | `registry-administration` | Core | Authorised users and API clients create, relate, inspect, publish, version, and remove registry schemas. | [`requirements/manage-registries.md`](../requirements/manage-registries.md) |
-| Operate Registry Services | `registry-administration`, `record-management`, `governed-access`, `accountability`, `data-exchange`, `analytics` | Core | Operators and clients use the additional platform, API and workflow behaviours explicitly described outside the DRS list. | [`requirements/operate-registry-services.md`](../requirements/operate-registry-services.md) |
-| Owner Identifiers | `accountability`, `governed-access` | Core | Registry operators may identify fields that link personal data to its owner. | [`requirements/owner-identifiers.md`](../requirements/owner-identifiers.md) |
-| Personal Data Field Tagging | `accountability`, `governed-access` | Core | Registry operators may identify fields that contain personal data. | [`requirements/personal-data-field-tagging.md`](../requirements/personal-data-field-tagging.md) |
-| Record Access | `record-management`, `governed-access` | Core | Client systems process authorised registry records through OpenAPI services. | [`requirements/record-access.md`](../requirements/record-access.md) |
-| Record Views and Operator Data Handling | `record-management`, `governed-access`, `accountability` | Core | Registry operators view, search, edit, import, export and share registry records. | [`requirements/record-views.md`](../requirements/record-views.md) |
-| Represent Registry Data | `registry-administration`, `record-management`, `accountability` | Core | Registry implementers retain the minimum data fields and resource relationships specified by the upstream model. | [`requirements/represent-registry-data.md`](../requirements/represent-registry-data.md) |
-| Statistical Reporting | `analytics` | Core | Registry operators inspect standard and field-configurable analyses of registry data. | [`requirements/statistical-reporting.md`](../requirements/statistical-reporting.md) |
-| Transfer Registry Schemas | `registry-administration` | Core | Authorised users exchange registry schemas as JSON, YAML, or XLS files. | [`requirements/transfer-schemas.md`](../requirements/transfer-schemas.md) |
-| Database Views | `record-management`, `governed-access` | Database Views extension | Registry operators define read-only selections of registry data for governed reuse. | [`requirements/records-optional-database-views.md`](../requirements/records-optional-database-views.md) |
-| Use Registry Schema Templates | `registry-administration` | Schema Templates extension | Authorised users create registries from reusable, versioned templates and exchange those templates. | [`requirements/schema-templates.md`](../requirements/schema-templates.md) |
-| Service Usage Statistics | `analytics`, `accountability` | Service Usage Statistics extension | Registry operators retain usage records for API services and searches. | [`requirements/service-usage-statistics.md`](../requirements/service-usage-statistics.md) |
-| Statistical Queries API | `analytics`, `governed-access` | Statistical Queries API extension | Authorised clients query registration and programme data for statistical use. | [`requirements/statistics-api.md`](../requirements/statistics-api.md) |
+| Discover Registry Services | Registry Service Discovery | Core | An API consumer identifies a Registry, its responsible authority and authoritative scope, and locates the Registry services and machine-readable contracts available to that consumer. | [`requirements/registry-discovery.md`](../requirements/registry-discovery.md) |
+| Provide Registry Services | Authoritative Registry Services | Core | An API consumer uses the Registry service operations declared in the Registry's published contract. | [`requirements/registry-services.md`](../requirements/registry-services.md) |
 
-These functionalities preserve the source division between registry administration, data management, interoperability, and monitoring and analytics, while giving each group one active requirement file.
-Applicants do not access the Building Block directly in the upstream model.
-They use sectoral applications or other GovStack Building Blocks to invoke the Record Access and, when claimed, Statistical Queries API functionalities.
+Both functionalities are core, and this specification defines no extensions. Discover Registry Services prevents a metadata-free or contract-free service claim. Provide Registry Services contains the required `registry-service` variation point: a solution selects at least one operation. The six currently defined options are independently selectable and discovery metadata alone cannot satisfy the intended model. This is the Registry-wide service choice; future versions can add options from other API families when their requirements, contracts, and tests are approved. Consultation is not a permanent universal requirement. Publishing another option follows the framework's major-version rule.
 
-#### Core and extensions
+The wire contract retains `capability` as its established field name. In that binding vocabulary, the values map to framework option keys as follows:
 
-The core combines registry administration, governed record access, registry-data representation, accountability and assurance, data exchange, operation of the source-only service behaviours, and basic statistical reporting.
-A solution that meets only the core can create and administer registries, represent and process authorised records, inspect and protect accountable data use, exchange data, operate the required service behaviours, and produce registry reports.
+| Binding `capability` value | Framework option key | OpenAPI operation |
+|---|---|---|
+| `retrieve` | `consultation-retrieve` | `retrieveRecord` |
+| `lookup` | `consultation-lookup` | `lookupRecord` |
+| `list` | `consultation-list` | `listRecords` |
+| `search` | `consultation-search` | `searchRecords` |
+| `revision-list` | `consultation-revision-list` | `listRecordRevisions` |
+| `revision-retrieve` | `consultation-revision-retrieve` | `retrieveRecordRevision` |
 
-The source does not draw this boundary cleanly.
-Some required clauses depend on behaviour that another clause marks optional: DRS-5 requires custom read API services built from views, which DRS-9 makes optional; DRS-8, DRS-35 and DRS-37 require logs and reports keyed to personal-data and owner-identifier fields, whose tagging DRS-13 and DRS-14 make optional; and chapter 4 requires registry usage statistics that overlap the optional usage statistics of DRS-12.
-Between extensions, the full registry template of DRS-20 includes the views that only the Database Views extension defines.
-The migration keeps each clause at its source level, does not make one extension depend on another, and records these overlaps in the [source findings](../resources/source-findings.md#cross-clause-ambiguities) for substantive review.
-
-The source marks the requirements grouped into the following extensions as optional.
-The migration gives each optional group a name so that a solution can make an explicit additional conformance claim.
-
-| Extension | Adds | Functionalities | Requires |
-|---|---|---|---|
-| Database Views | Governed, read-only selections of registry data. | Database Views | Core |
-| Schema Templates | Reusable, versioned registry templates and template exchange. | Use Registry Schema Templates | Core |
-| Service Usage Statistics | Retention of API-service and registry-search usage information. | Service Usage Statistics | Core |
-| Statistical Queries API | Authorised statistical queries through an API. | Statistical Queries API | Core |
+The binding field does not declare a framework capability. The framework capabilities are the informative outcomes Registry Service Discovery and Authoritative Registry Services.
 
 ### Actors
 
-| Actor | Kind | Boundary | Interaction with the Building Block |
-|---|---|---|---|
-| Administrator/Analyst | Person | Outside | Designs, configures, modifies, and administers registries, schemas, rules, policies, access, and APIs through the administrative interfaces. |
-| Developer | Person or client-system operator | Outside | Creates and manages registry structures and services through APIs. |
-| Applicant | Person, organisation, or system | Outside | Uses a sectoral application or another Building Block, which invokes authorised registry services on the applicant's behalf. |
-| Operator | Person | Outside | Reviews and processes an applicant's submission through the Registration or another client system. |
-| Registrar | Organisation or authority | Outside | Authorises the receipt, validation, and recording of claims. |
-| Data owner | Person | Outside | May inspect the recorded use of personal data associated with the person's identifier. |
-| Registration Building Block or sectoral application | System | Outside | Captures requests and invokes registry services. |
-| Foundational ID Building Block | System | Outside | Supports unique identification of entities. |
-| Workflow Building Block | System | Outside | Orchestrates processes that use registry data. |
-| Information Mediator and Consent and Authorisation components | System | Outside | Mediate policy-driven exchange between organisations. |
+| Actor | Kind | Boundary | Reaches the Building Block through | Specified where |
+|---|---|---|---|---|
+| API Consumer | System or software component | Outside | Discover Registry Services; Provide Registry Services | The consumer is outside this specification. Its use of the exposed interfaces follows the linked operational contract. |
+| Registry Authority | Organisation | Outside | Named by Discover Registry Services; it does not become part of the software under test | The adopting government's institutional and legal framework. |
+| Registry Operator | Organisation | Outside | Operates the deployment through mechanisms that this specification does not define | The adopting government's operating model and implementation documentation. |
+
+The Registry Authority and Registry Operator can be the same organisation or different organisations. The catalogue publisher can also be separate. Publication of an authority declaration does not by itself establish institutional responsibility; the adopting ecosystem determines how that declaration is accepted or verified.
 
 ### Interfaces
 
-| Interface | Counterpart | Direction | Type | Contract location |
-|---|---|---|---|---|
-| Registry user interface | Administrator/Analyst and data owner | Inbound actions and outbound views | User interface | The linked Core and extension functionality files, with their source workflows in [Internal Workflows](../resources/workflows.md) |
-| Registry Data API | Authorised client systems | Inbound requests and outbound responses | Service API | [GovStack Digital Registries Data API template 1.3.0](../assets/GovStack_Digital_registries_BB_Data_API_template-1.3.0.json), projected in [`resources/api.yml`](../resources/api.yml) |
-| Registry Database API | Developers and administrative clients | Inbound requests and outbound responses | Service API | [GovStack Digital Registries Database API template 1.3.0](../assets/GovStack_Digital_registries_BB_Database_API_template-1.3.0.yaml), projected in [`resources/api.yml`](../resources/api.yml) |
-| Additional reporting and extension APIs | Authorised client systems | Inbound requests and outbound responses | Service API | [Database Views](../requirements/records-optional-database-views.md), [Statistical Reporting](../requirements/statistical-reporting.md), and [Statistical Queries API](../requirements/statistics-api.md); [`requirement-migration.yml`](../resources/requirement-migration.yml) records where the upstream source publishes no exact operation binding |
-| OpenAPI descriptions | Developers and client systems | Outbound | File | [Configure API Services](../requirements/configure-api-services.md), [Operate Registry Services](../requirements/operate-registry-services.md), and [`resources/api.yml`](../resources/api.yml) |
-| Registry data, schema, and template files | Administrator/Analyst and external tools | Inbound and outbound | File | [Record Views and Operator Data Handling](../requirements/record-views.md), [Transfer Registry Schemas](../requirements/transfer-schemas.md), and the [Schema Templates extension](../requirements/schema-templates.md) |
-| External registry lookup and exchange | External registry databases | Outbound requests and inbound responses | Consumed API | [Automated Data Exchange](../requirements/data-exchange.md) and [Owner Identifiers](../requirements/owner-identifiers.md) |
-| Information Mediator exchange | Information Mediator and external systems | Inbound and outbound | Protocol and mediated APIs | [Audit and Personal Data Protection](../requirements/audit-and-personal-data.md) and [Operate Registry Services](../requirements/operate-registry-services.md) define the Digital Registries side; the counterpart contract is outside this specification |
-| Registry events and subscriptions | Authorised downstream consumers | Outbound events and inbound subscription control | Event | [Operate Registry Services](../requirements/operate-registry-services.md) |
-| External integrity log | External blockchain service | Outbound | Consumed API | The recommended external-integrity option in [Audit and Personal Data Protection](../requirements/audit-and-personal-data.md) |
+| Interface | Counterpart | Direction | Functionality | Type | Contract defined in |
+|---|---|---|---|---|---|
+| Registry service discovery | API Consumer | Inbound request, outbound response | Discover Registry Services | Service API | [`resources/api.yml`](../resources/api.yml), realised by [`requirements/registry-discovery.md`](../requirements/registry-discovery.md) |
+| Registry metadata and operational contracts | API Consumer | Outbound published documents | Discover Registry Services | File | [Registry Core model](../resources/registry-core-model.md#registry-metadata) and the schemas and contracts linked from `resources/api.yml` |
+| Registry consultation | API Consumer | Inbound request, outbound response | Provide Registry Services | Service API | [`resources/api.yml`](../resources/api.yml), realised by [`requirements/registry-services.md`](../requirements/registry-services.md) |
+| Record schemas and field meanings | API Consumer | Outbound published documents | Provide Registry Services | File | The deployment's linked operational contract and schemas, constrained by the [Registry Core model](../resources/registry-core-model.md#domain-semantics-and-extensions) |
 
-The [Service APIs resource](../resources/service-apis.md) retains the upstream method-and-path index for the two API source contracts.
+Logging, monitoring, deployment, and other interfaces inherited from the cross-functional requirements are not repeated here.

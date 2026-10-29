@@ -1,0 +1,7 @@
+version: 1
+# Review-only draft mappings do not establish certification or promote maturity.
+# DRAFT requirements are unnumbered in the Specification Framework. Their operation
+# links live in requirements/*.md; the previous numbered mappings are preserved in
+# resources/history/api-coverage.yaml and resources/requirement-migration.yml.
+requirements: []
+draftRequirements: []

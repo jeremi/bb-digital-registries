@@ -1,4 +1,82 @@
 root: ./
+
 structure:
   readme: README.md
   summary: SUMMARY.md
+
+redirects:
+  readme: README.md
+  1-version-history: resources/version-history.md
+  1-version-history/release-notes: resources/history/release-notes.md
+  2-description-and-scope: introduction/overview.md
+  3-terminology: introduction/terminology.md
+  4-conformance: resources/conformance.md
+  5-key-functionalities: resources/family-catalogue.md
+  5-api-families/access-transparency: resources/roadmap/access-transparency.md
+  5-api-families/aggregate-data: resources/roadmap/aggregate-data.md
+  5-api-families/consultation: resources/consultation-binding.md
+  5-api-families/evidence: resources/roadmap/evidence.md
+  5-api-families/identity-federation: resources/roadmap/identity-federation.md
+  5-api-families/notification: resources/roadmap/notification.md
+  5-api-families/provisioning: resources/roadmap/provisioning.md
+  5-api-families/write: resources/roadmap/write.md
+  6-functional-requirements: resources/family-catalogue.md
+  7-cross-functional-requirements: resources/conformance.md
+  8-data-structures: resources/registry-core-model.md
+  9-service-interfaces: resources/service-interfaces.md
+  12-other-resources/historical/future-considerations: resources/README.md
+  12-other-resources/historical/key-decision-log: resources/migration-from-3.0.md
+  README: README.md
+  spec/README: README.md
+  01-version-history: resources/version-history.md
+  spec/01-version-history: resources/version-history.md
+  01-version-history/release-notes: resources/history/release-notes.md
+  spec/01-version-history/release-notes: resources/history/release-notes.md
+  02-description-and-scope: introduction/overview.md
+  spec/02-description-and-scope: introduction/overview.md
+  03-terminology: introduction/terminology.md
+  spec/03-terminology: introduction/terminology.md
+  04-conformance: resources/conformance.md
+  spec/04-conformance: resources/conformance.md
+  05-key-functionalities: resources/family-catalogue.md
+  spec/05-key-functionalities: resources/family-catalogue.md
+  05-api-families/registry-core: resources/registry-core-model.md
+  spec/05-api-families/registry-core: resources/registry-core-model.md
+  05-api-families/consultation: resources/consultation-binding.md
+  spec/05-api-families/consultation: resources/consultation-binding.md
+  09-service-interfaces: resources/service-interfaces.md
+  spec/09-service-interfaces: resources/service-interfaces.md
+  10-workflows: resources/workflows.md
+  spec/10-workflows: resources/workflows.md
+  11-testing: resources/testing.md
+  spec/11-testing: resources/testing.md
+  12-other-resources: resources/README.md
+  spec/12-other-resources: resources/README.md
+  12-other-resources/adopter-kit: resources/adopter-kit.md
+  spec/12-other-resources/adopter-kit: resources/adopter-kit.md
+  12-other-resources/metadata-vocabulary: resources/metadata-vocabulary.md
+  spec/12-other-resources/metadata-vocabulary: resources/metadata-vocabulary.md
+  12-other-resources/migration-from-3.0: resources/migration-from-3.0.md
+  spec/12-other-resources/migration-from-3.0: resources/migration-from-3.0.md
+  12-other-resources/read-api-design-decisions: resources/read-api-design-decisions.md
+  spec/12-other-resources/read-api-design-decisions: resources/read-api-design-decisions.md
+  12-other-resources/references: introduction/references.md
+  spec/12-other-resources/references: introduction/references.md
+  05-api-families/registry-core-context.jsonld: assets/registry-core-context.jsonld
+  spec/05-api-families/registry-core-context.jsonld: assets/registry-core-context.jsonld
+  05-api-families/registry-core-vocabulary.ttl: assets/registry-core-vocabulary.ttl
+  spec/05-api-families/registry-core-vocabulary.ttl: assets/registry-core-vocabulary.ttl
+  05-api-families/provisioning: resources/roadmap/provisioning.md
+  spec/05-api-families/provisioning: resources/roadmap/provisioning.md
+  05-api-families/evidence: resources/roadmap/evidence.md
+  spec/05-api-families/evidence: resources/roadmap/evidence.md
+  05-api-families/write: resources/roadmap/write.md
+  spec/05-api-families/write: resources/roadmap/write.md
+  05-api-families/notification: resources/roadmap/notification.md
+  spec/05-api-families/notification: resources/roadmap/notification.md
+  05-api-families/aggregate-data: resources/roadmap/aggregate-data.md
+  spec/05-api-families/aggregate-data: resources/roadmap/aggregate-data.md
+  05-api-families/access-transparency: resources/roadmap/access-transparency.md
+  spec/05-api-families/access-transparency: resources/roadmap/access-transparency.md
+  05-api-families/identity-federation: resources/roadmap/identity-federation.md
+  spec/05-api-families/identity-federation: resources/roadmap/identity-federation.md

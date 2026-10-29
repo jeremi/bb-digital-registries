@@ -1,764 +1,163 @@
 ---
-title: Verification Procedures
+description: Draft verification of mandatory Registry discovery and selected capabilities.
 ---
 
-# Verification Procedures
-
-These are finite manual verification plans for the migrated upstream requirements. They have not been executed against a deployed implementation. Existing upstream Cucumber fixtures remain unchanged under `test/openAPI/`; preservation and authoring checks do not establish runtime conformance.
-
-Run the repository checks with `uv run python -m unittest discover -s tools -p 'test_*.py'` and `uv run python tools/validate_migration.py`. Validate the authoring projection with `uv run openapi-spec-validator resources/api.yml`.
-
-For missing standardized bindings, use an implementation's declared contract only to assess the upstream behaviour. That does not fill the common-contract gap or prove compatibility with an official compiler.
-
-<a id="drs-1"></a>
-## DRS-1
-
-**Fixture**
-
-- A fresh Digital Registry instance.
-- One account authorised to create registries and one account without that permission.
-- A sample schema with one text field.
-- Metadata values for domain, owner department, retention policy, and each classification: Open, Restricted, and Confidential.
-
-**Actions**
-
-1. With the authorised account, create a registry through the web user interface with a database name, unique short code, the sample schema, all required metadata, Draft lifecycle state, and a row-store default profile.
-2. Repeat with distinct short codes, the remaining classifications, and column-store and document-store default profiles.
-3. Progress one registry from Draft to Published and then to Archived.
-4. Attempt to create another registry using the first registry's short code.
-5. Attempt the same creation and lifecycle changes with the account that lacks permission.
-
-**Expected results**
-
-- Each permitted creation stores and displays the submitted name, unique short code, schema, domain, owner department, retention policy, classification, lifecycle state, and default indexing and storage profile.
-- Row store, column store, and document store are accepted as profile choices.
-- The tested registry progresses in order from Draft to Published to Archived.
-- The duplicate short code is rejected without creating another registry.
-- The account without permission cannot create a registry or change its lifecycle state.
-
-<a id="drs-2"></a>
-## DRS-2
-
-**Fixture**
-
-- An authorised registry administrator.
-- Four registries in one instance: Parent, Child, Payment, and Tag.
-- Parent and Payment records with known identifiers, including one Parent with two matching Payment records.
-- Separate disposable relationships configured for cascade delete, restrict delete, and orphan tolerance.
-
-**Actions**
-
-1. Confirm that all four registries coexist in the same instance.
-2. Configure a strict foreign key between Child and Parent, selecting the linked database and fields.
-3. Configure a soft UUID reference from Payment to Parent without a foreign-key constraint.
-4. Configure a parent-child graph edge between Parent and Child and a many-to-many graph edge between Parent and Tag.
-5. Inspect the relationship definitions and record the database identifiers and field identifiers used by each link.
-6. Browse Payment data in the user interface and select the Parent identifier for the record that has two matching Payment records.
-7. Exercise cascade delete, restrict delete, and orphan tolerance on their disposable relationships.
-
-**Expected results**
-
-- The system retains all registries in one instance and exposes all three relationship kinds.
-- Each relationship records the selected databases and fields, with identifiers at database and field levels.
-- Selecting the linked identifier opens the corresponding Parent record and exposes all corresponding linked Payment records.
-- Cascade delete removes the configured dependent record, restrict delete blocks deletion while a restricted reference exists, and orphan tolerance permits the configured orphan outcome.
-- The procedure does not decide whether a single relationship may combine integrity rules, because DRS-2 does not define that point.
-
-<a id="drs-3"></a>
-## DRS-3
-
-**Fixture**
-
-- An authorised registry administrator and a draft registry schema.
-- Representative values for Text, Number, Boolean, Date/time, Date, Time, File, List or Array or Edit grid, and List of Values or Catalog.
-- A file-type allow-list containing PDF and DOC.
-- If the solution declares a RECOMMENDED DRS-3 feature met, representative JSON object grouping, multilingual UTF-8 text, latitude and longitude, and polygon or boundary values for that feature.
-
-**Actions**
-
-1. Add a named field of every required core type through the user interface.
-2. Configure the File field to accept PDF and DOC, then attempt an allowed file and a file type outside the allow-list.
-3. Store multiple values in the List, Array, or Edit-grid field.
-4. Configure and store key-value choices in the List of Values or Catalog field.
-5. For each RECOMMENDED feature declared met, configure and exercise its JSON object or block-container grouping, UTF-8 multilingual content, GeoPoint, or GeoShape behaviour.
-6. For UTF-8, inspect the documented database or cluster encoding in addition to storing and retrieving multilingual text.
-
-**Expected results**
-
-- Every core field retains its name, type, and representative value.
-- The File field accepts configured types and rejects or prevents selection of a type outside the configuration.
-- The collection field retains all submitted values, and the catalog field retains both keys and values.
-- A declared JSON object or block-container feature groups fields visually.
-- A declared UTF-8 feature has UTF-8 database or cluster configuration and round-trips multilingual text unchanged.
-- Declared GeoPoint and GeoShape features round-trip latitude and longitude and polygon or boundary values respectively.
-- A RECOMMENDED feature not declared met is reported as not tested, not failed.
-
-<a id="drs-4"></a>
-## DRS-4
-
-**Fixture**
-
-- An authorised registry administrator.
-- A draft registry with one text field and one record.
-- A compatible schema change and a known breaking schema change.
-
-**Actions**
-
-1. Publish the draft through the web user interface and record the resulting schema and API-service version.
-2. Apply the compatible change and publish again.
-3. Inspect the earlier schema version and use its data through both the earlier and later versions.
-4. Submit the known breaking change for change-impact analysis.
-5. Delete a disposable schema version through the user interface and then attempt to use its same-version API service.
-
-**Expected results**
-
-- Each publish reveals the database to users and creates a new version of both the schema and API services.
-- The earlier schema remains available to authorised users.
-- Data stored under the earlier version remains usable under both tested versions. The evidence records the solution's compatibility or migration mechanism because DRS-4 does not define one.
-- The breaking change is identified automatically and a warning is shown before or during the analyst's change workflow.
-- Deleting the schema version also removes its same-version API services.
-
-<a id="drs-5"></a>
-## DRS-5
-
-**Fixture**
-
-- An authorised registry administrator and an account without API-configuration permission.
-- A draft registry with fields and sample records.
-- One database view, used only by the custom-read step; that step depends on the recorded DRS-5/DRS-9 source conflict (DRS-5 requires view-based custom read services, DRS-9 marks views OPTIONAL).
-- The solution's documented subscription operation, because the source OpenAPI documents contain no subscription operation.
-- If dynamic field masking is declared met, two callers whose policies produce masked and unmasked views of one field.
-
-**Actions**
-
-1. Configure API services for the registry through the user interface and publish it.
-2. Discover and exercise generated create, read, update, delete, batch create, batch update, batch delete, exists (checks whether matching data exists), update-or-create, archive, and schema-introspection services. Record the solution's operations for batch create, batch delete and archive, because the source templates define no generic operation for them.
-3. Compare introspection output with the published tables, fields, types, and relationships.
-4. Hide or disable one disposable service, delete another, copy a third, and create a custom read service from the prepared view (this step depends on the recorded DRS-5/DRS-9 source conflict).
-5. Use the documented subscription operation and produce create, update, and delete changes for a subscribed record.
-6. Change the dynamic database structure, publish again, and compare the generated API data structure before and after publication.
-7. If dynamic masking is declared met, read the protected field as both policy contexts.
-8. Repeat API-configuration actions with the account that lacks permission.
-
-**Expected results**
-
-- Publishing generates each required service, and every exercised service performs its named operation. The exists service reports whether matching data exists.
-- Schema introspection matches the published schema.
-- Hidden or disabled, deleted, and copied services exhibit their respective configured states. A custom view-based service does so where the solution offers database views; the source makes views OPTIONAL in DRS-9 but requires the service in DRS-5, and the result records that conflict.
-- The subscription delivers the tested create, update, and delete changes through the solution-supplied operation. The result cannot establish a shared operation binding until the source contract defines one.
-- Republish regenerates the API data structure from the changed database structure.
-- When masking is declared met, the protected caller receives the dynamically masked value and the permitted caller receives the unmasked value. Otherwise the RECOMMENDED item is reported as not tested.
-- The account without permission cannot change API-service configuration.
-
-<a id="drs-6"></a>
-## DRS-6
-
-**Fixtures**
-
-1. Create two registries with linked records and fields classified as public and restricted.
-2. Create an administrator, an operator, an ordinary authenticated user, an anonymous client, two groups, and roles that grant disjoint rights.
-3. Configure representative RBAC, ABAC, PBAC, consent, delegated-access, data-minimisation, cross-registry-template, and record-value conditions. Include `CaseStatus=APPROVED` as one field condition.
-
-**Actions and expected results**
-
-1. Attempt registry creation and administration as the administrator and ordinary user. The authorised action succeeds, the unauthorised action is denied, and the denied action changes nothing.
-2. Exercise each API service with rights varied independently at service, record, and field scope. Each response follows the scope-specific decision and returns no denied field.
-3. Repeat a data read through the user interface and the API with an allowed and denied actor. Both boundaries enforce the same configured data-access decision.
-4. Manage the same user right through the rights-management UI and API. The resulting policies are equivalent. If the candidate cannot bind the API action to a published operation, record the binding gap rather than passing the API check.
-5. For RBAC, ABAC, PBAC, consent, and delegated access, run one allowed and one denied request per policy kind. The decision log identifies the policy inputs used.
-6. Apply a cross-registry access template to the second registry. Its resulting rights match the template without altering unrelated rights.
-7. Request a record containing more fields than the caller needs. The response contains only the fields permitted by the minimisation rule.
-8. Read otherwise identical records with approved and non-approved case status. The conditionally restricted field appears only for the approved record.
-9. Assign rights directly to one user and through one group. Confirm that a group contains users, a role contains rights, and both assignment paths affect access as configured.
-10. Exercise the `Any logged-in user` and `Anonymous` roles with authenticated and unauthenticated clients. Each role is selectable and produces the configured decision.
-
-<a id="drs-7"></a>
-## DRS-7
-
-**Fixtures**
-
-1. Create a registry with a schema and one record containing personal data linked to an owner.
-2. Create an analyst, the data owner, a second owner, and an unauthorised user.
-
-**Actions and expected results**
-
-1. Change the schema, then create, read, update, and delete record data. The audit log contains a corresponding event for every action and no unexplained gap.
-2. In the analyst UI, search for each event by its available identifiers and time. Every event is visible and discoverable.
-3. Confirm that at least one of the two `owner-log-visibility` options is provided: the owner API (`DPU`) or the owner UI. For each provided option, the owner sees the identity of each reader or processor and the matching events for the owner's data, but not the second owner's events. If neither option is provided, the variation point is unmet.
-4. Inspect the log-integrity design and verify a representative chain. Alter a copied log entry and confirm that integrity verification detects the change.
-5. If external-blockchain logging is implemented, correlate a database log entry with its external transaction evidence and verify that a changed entry no longer matches. If it is omitted, record the RECOMMENDED requirement as unmet without failing core conformance.
-
-<a id="drs-8"></a>
-## DRS-8
-
-**Fixtures**
-
-1. Create a registry with a `PersonalData` field, a unique and unchangeable `PersonalDataID`, and two owners.
-2. Create an analyst, each owner, and readers with distinct IDs, names or initials, roles, organisations, and locations.
-3. Configure one read for which law requires a legal justification, one consent-governed read, and one read to which neither condition applies.
-
-**Actions and expected results**
-
-1. Read personal data through the UI and through the API. The log table contains one event for every read boundary.
-2. Inspect each personal-data event. It is tagged `PersonalData` and includes log ID, record ID, field ID, unique and unchangeable `PersonalDataID`, reader ID, reader name or initial, read time, viewer role, organisation, and location (the `(optional)` marker is read as scoping only the device fingerprint).
-3. Confirm that the legally governed event includes the legal justification and the consent-governed event includes the consent reference. The unrelated event need not contain those conditional values.
-4. As the analyst, open the personal-data report and see all recorded personal-data reads. As each owner, see only that owner's events. The unauthorised user and other owner cannot retrieve them.
-5. Call `DPU` with the configured owner identifier and database identifier. The response contains that owner's usage events for that registry. The upstream scenarios in [`data_my_personal_data_usage.feature`](../test/openAPI/features/data_my_personal_data_usage.feature) provide positive and invalid-user or invalid-database examples.
-6. Read the personal-data report through each exposed boundary. A new report-read event appears in the log table.
-7. If device-fingerprint logging is implemented, confirm that a representative read event contains the viewer device fingerprint. If it is omitted, record the RECOMMENDED requirement as unmet without failing core conformance.
-
-<a id="drs-9"></a>
-## DRS-9
-
-If the `database-views` extension is not claimed, record this functionality as not applicable. If it is claimed, use these checks.
-
-**Fixtures**
-
-1. Create records with fields and rows that a view includes and excludes.
-2. Create an authorised operator, an ordinary authenticated user, and an anonymous client with distinct view rights.
-
-**Actions and expected results**
-
-1. Create a view in the UI. Its result contains exactly the selected registry data.
-2. Expose the view as Open Data. The anonymous client can read it under the configured anonymous rights.
-3. Expose the view through a custom read API and retrieve the same selection. If no source operation binds the API, record the known binding gap rather than inventing one.
-4. Attempt to update and delete data through the view and its API. Both mutations are rejected and source data remains unchanged.
-5. Deny view access to the ordinary user through rights management. The user's UI and API reads are denied, while the authorised operator remains allowed.
-
-<a id="drs-10"></a>
-## DRS-10
-
-**Fixture**
-
-- An authorised registry administrator and a registry schema containing every core DRS-3 field type.
-- The solution's declaration of whether the required `JSON/YAML` wording is met by JSON, YAML, or both.
-- If XLS export is declared met, an XLS reader capable of inspecting every exported schema element.
-
-**Actions**
-
-1. Export the schema in every JSON or YAML format the solution declares as satisfying the required source wording.
-2. Record the exact exported file profile, because the source defines no schema export file format, and compare each exported file field by field with the source schema.
-3. If XLS export is declared met, export and inspect the XLS file in the same way.
-
-**Expected results**
-
-- Every declared required format produces a parseable file containing the complete schema without changed names, types, properties, or relationships.
-- The result records whether JSON, YAML, or both were tested, because DRS-10 does not resolve the slash notation.
-- A declared XLS export produces an XLS file with the same schema content; otherwise that RECOMMENDED item is reported as not tested.
-
-<a id="drs-11"></a>
-## DRS-11
-
-**Fixture**
-
-- An authorised registry administrator and an empty registry instance.
-- JSON and YAML representations of the same schema, including every core DRS-3 field type and one relationship.
-- The solution's declaration of whether the required `JSON/YAML` wording is met by JSON, YAML, or both.
-- If XLS import is declared met, an equivalent XLS schema file.
-
-**Actions**
-
-1. Import every JSON or YAML format the solution declares as satisfying the required source wording.
-2. Record the exact accepted file profile, because the source defines no schema import file format, then read the resulting schema and compare all names, types, properties, and relationships with the input.
-3. If XLS import is declared met, import the XLS file and make the same comparison.
-
-**Expected results**
-
-- Every declared required format creates the complete intended schema without changed names, types, properties, or relationships.
-- The result records whether JSON, YAML, or both were tested, because DRS-11 does not resolve the slash notation.
-- A declared XLS import creates the same schema from XLS; otherwise that RECOMMENDED item is reported as not tested.
-
-<a id="drs-12"></a>
-## DRS-12
-
-If the `service-usage-statistics` extension is not claimed, record this functionality as not applicable. If it is claimed, use these checks.
-
-**Fixtures**
-
-1. Select every exposed API service at least once and identify one UI search and one API search that return known records.
-
-**Actions and expected results**
-
-1. Invoke every API service in the fixture. Usage storage contains a distinct, attributable record for every invocation.
-2. Run the UI search and API search. Usage storage contains both events and distinguishes their boundary.
-3. Repeat one invocation and each search. Counts or event rows increase exactly once per action, with no missing or duplicate usage event.
-
-<a id="drs-13"></a>
-## DRS-13
-
-This is a RECOMMENDED core behaviour. If it is omitted, record the recommendation as unmet without failing core conformance.
-
-**Fixtures**
-
-1. Create a registry schema with one ordinary field and one field that contains personal data.
-
-**Actions and expected results**
-
-1. Mark the personal field as a `PersonalData` log object and publish the schema. The marker persists and the ordinary field remains unmarked.
-2. Read both fields. The personal-data log identifies the marked field as personal data and does not misclassify the ordinary field.
-
-<a id="drs-14"></a>
-## DRS-14
-
-These are RECOMMENDED core behaviours. Record each omitted recommendation as unmet without failing core conformance.
-
-**Fixtures**
-
-1. Create national, passport, and local owner identifiers with known-valid and known-invalid values.
-2. Provide a stand-in external registry that records identifier-link requests.
-
-**Actions and expected results**
-
-1. Mark a field as `PersonalDataID`. The marker identifies that field as the data owner's identifier.
-2. Configure all three identifier kinds for one owner. The registry retains each identifier without replacing another.
-3. Apply an identifier validation rule. The valid value is accepted and the invalid value is rejected without changing the prior value.
-4. Link an identifier to the stand-in external registry. The recorded call identifies the intended owner and identifier. If the source contract remains unspecified, record the binding gap.
-5. Mark an identifier immutable, then attempt to change it through every exposed mutation boundary. Every attempt is rejected and the stored value remains unchanged.
-
-<a id="drs-15"></a>
-## DRS-15
-
-**Fixtures**
-
-1. Create a registry with a normal field and a secret field containing representative card data.
-2. Configure a Building Block exchange through the Information Mediator path used by the candidate deployment.
-
-**Actions and expected results**
-
-1. Mark the card-data field as secret. The marker persists after publication.
-2. Inspect storage evidence for the secret and normal values. The secret value is not present at rest in plaintext, and authorised use still returns the correct decrypted value.
-3. Capture the Building Block exchange at the transport boundary. The information is encrypted in transit and the integration evidence identifies the applicable Information Mediator rules. If no versioned rule can be identified, record the contract gap.
-
-<a id="drs-16"></a>
-## DRS-16
-
-**Fixture**
-
-- An authorised registry administrator.
-- A published schema with named fields, types, properties, and one relationship.
-
-**Actions**
-
-1. Open the registry schema through the web user interface.
-2. Compare the displayed schema with the published schema definition.
-
-**Expected results**
-
-- The interface displays the correct fields, types, properties, and relationship for the selected registry schema.
-
-<a id="drs-17"></a>
-## DRS-17
-
-**Fixture**
-
-- An authorised registry administrator and an account without schema-configuration permission.
-- A draft schema with text, number, array, catalog, encrypted, and foreign-key fields.
-- Sample records that meet and violate required, unique, minimum, and maximum rules.
-- Trigger cases for identifier creation, field merging, prefix, suffix, conditional logic, upper case, lower case, and JavaScript transformation.
-
-**Actions**
-
-1. Configure API-related required, unique, maximum, minimum, and blinded or encrypted properties.
-2. Configure user-interface field mask and format, read-only, personal-data, enum selection, blinded or encrypted, multiple-value or array, foreign-key, and trigger properties.
-3. On the multiple-value field, configure array type plus Required, Unique, maximum, and minimum validation and a foreign key to another registry in the instance.
-4. Create and change records that exercise each validation rule and each configured trigger action.
-5. Exercise trigger conditions once when false and once when true.
-6. Attempt to change these field properties with the account that lacks permission.
-
-**Expected results**
-
-- The schema retains every configured API-related and user-interface-related property.
-- Required, unique, minimum, and maximum rules accept conforming values and reject violating values at their configured boundaries.
-- Blinded or encrypted, read-only, mask, format, personal-data, enum, multiple-value, and foreign-key properties produce their configured visible behaviour.
-- Multiple values are retained as an array and obey their validation and foreign-key settings.
-- Every listed trigger performs its configured action on record creation or change only when its condition is true; the false case does not perform the action.
-- The JavaScript result records the solution's execution environment and safeguards, because DRS-17 does not define them.
-- The account without permission cannot change field properties.
-
-<a id="drs-18"></a>
-## DRS-18
-
-**Fixtures**
-
-1. Create two registries with different records and configure a distinct encryption key for each.
-2. Create an authorised operator, an application with the first key, an application with the second key, and an application with no key.
-
-**Actions and expected results**
-
-1. Inspect both database configurations. Each database has its own unique configured key and the keys differ.
-2. Enter the key in the UI and revisit the configuration. The UI blinds the stored key and does not disclose it in page source or ordinary responses.
-3. Store and retrieve encrypted data in each database. Evidence shows the database's own key is used for encryption and decryption, and swapping keys does not decrypt the other database's data.
-4. Call `read` with an application that knows the correct key, the wrong key, and no key. Only the correct-key case reads encrypted data. The source `read` contract exposes no key parameter, so retain the request evidence and record that binding gap.
-5. View the encrypted record as an authorised operator. The UI displays the decrypted data without displaying the key.
-
-<a id="drs-19"></a>
-## DRS-19
-
-**Fixtures**
-
-1. Create source records that exercise true and false conditions, and same-instance destinations that exercise one-to-one, many-to-one, and one-to-many mappings.
-2. Provide a stand-in external registry API that records calls and returns known responses.
-3. Configure input and output mappings with query and answer parts, a short interval, grouped `AND` and `OR` rules, and a webhook trigger.
-
-**Actions and expected results**
-
-1. Start the interval automation. It processes one corresponding record at a time, loops until all corresponding records are processed, and stops without duplicating a completed record.
-2. Run records that make the grouped conditions true and false. Only true conditions activate an exchange, with `AND` and `OR` producing the configured results.
-3. Send mapped data to a second database in the same instance. The destination fields equal the configured output mapping and unrelated fields remain unchanged.
-4. Send mapped data to the stand-in external API. The recorded request contains the mapped output and the registry records the configured answer mapping. Record the contract gap because the source names no external API contract.
-5. Exercise many-to-one and one-to-many mappings. The number and content of destination records match each configured cardinality.
-6. Activate the webhook trigger. Exactly one configured exchange starts. Record whether the deployment receives, publishes, or observes the webhook because the source leaves that boundary ambiguous.
-7. If transformation is implemented, configure `est` to `EST` and confirm the destination contains `EST`. If it is omitted, record the RECOMMENDED requirement as unmet without failing core conformance.
-
-<a id="drs-20"></a>
-## DRS-20
-
-**Fixture**
-
-- A solution that claims the Schema Templates extension.
-- An authorised template administrator and an account without template-management permission.
-- A source registry containing a schema, API configuration, and sample template metadata, plus views where the solution also claims the Database Views extension (DRS-20 includes views in a full template while DRS-9 makes views OPTIONAL; the source does not say what a template contains otherwise).
-- A second clean instance or isolated tenant for import.
-- If the nested domain-template recommendation is declared met, Health, Business, and Farmer templates.
-
-**Actions**
-
-1. Create a template from the source registry and use it to create another registry.
-2. Share the template with another user in the same instance and confirm that user can discover and use it through the internal marketplace.
-3. Export the template, inspect its package contents, and import it into the clean instance or tenant. Record the package format used, because the source defines no registry-template package format.
-4. Share the template through the solution's marketplace workflow and record the workflow used, because DRS-20 does not define a marketplace protocol.
-5. Create a second version of the template, then retrieve and use both versions from the template repository.
-6. If domain templates are declared met, create registries from the Health, Business, and Farmer templates.
-7. Attempt template creation, sharing, export, and import with the account that lacks permission.
-
-**Expected results**
-
-- A registry created from the template contains the intended registry definition, schema, views (where the Database Views extension is claimed), and API configuration.
-- Internal sharing makes the same template available to the selected user in the instance.
-- Export and import preserve the full registry, schema, views (where the Database Views extension is claimed), API configuration, and template metadata.
-- The marketplace workflow shares the template by the documented solution mechanism without implying a shared GovStack marketplace protocol.
-- Both template versions remain distinguishable and usable in the versioned repository.
-- When domain templates are declared met, all three named domains create their corresponding registry structures. Otherwise the RECOMMENDED item is reported as not tested.
-- The account without permission cannot manage or transfer templates.
-
-<a id="drs-21"></a>
-## DRS-21
-
-**Fixtures**
-
-1. Create records whose combined grid and detail fields cover all registry data, with one image and one non-image document.
-2. Create known create, update, delete, read, and export events using two readers.
-
-**Actions and expected results**
-
-1. Open the main grid and each detail view. Every registry data element is reachable and each selected grid record opens the matching detail record.
-2. Open the image document. It renders in the UI. Open the non-image document. It is offered as a download with unchanged content.
-3. Open the data log view. It shows the create, update, and delete changes and the before-and-after data for each change that has both states.
-4. Open the data read view. It shows information about who looked at or exported the data.
-5. Inspect the log registry. It stores the data and the data reader information for the looks and exports performed in the fixtures.
-
-<a id="drs-22"></a>
-## DRS-22
-
-**Fixtures**
-
-1. Create one editable record with an ordinary field, a blinded or encrypted field, and two documents.
-2. Create an authorised operator and a read-only user.
-
-**Actions and expected results**
-
-1. Edit the ordinary field inline in the main grid and through the detail view. Each saved value is returned by a fresh read.
-2. Upload one document and remove another in the detail view. The resulting document set and contents match the actions.
-3. Inspect the blinded or encrypted field in edit mode. The UI applies the configured protection and does not reveal protected content to the read-only user.
-4. Delete the record as the authorised operator. It is no longer available through the operator view.
-5. Attempt each mutation as the read-only user. Every action is denied and data remains unchanged.
-6. Inspect the audit log. Every successful edit, document addition or removal, and deletion has a corresponding event; denied attempts do not appear as successful changes.
-
-<a id="drs-23"></a>
-## DRS-23
-
-**Fixtures**
-
-1. Create records with distinguishable values in every field and a text phrase that occurs in only one record.
-
-**Actions and expected results**
-
-1. Apply a field-content criterion. The result includes every matching record and no non-matching record.
-2. Run a full-text search for the unique phrase. It returns the intended record.
-3. Sort ascending and descending by every data field. Each result follows the field's defined ordering, including equal values and empty values.
-
-<a id="drs-24"></a>
-## DRS-24
-
-**Fixtures**
-
-1. Prepare equivalent JSON, CSV, and XLS files containing new records, plus a malformed file in each format.
-
-**Actions and expected results**
-
-1. Import each valid file. A fresh registry read returns all expected values with no duplicate records.
-2. Import each malformed file. The import fails visibly, identifies the invalid input, and does not partially create data unless the candidate explicitly documents and reports partial-import semantics.
-3. Record the exact accepted file profile because the source names formats but defines no schema or validation contract.
-4. In the analyst UI, choose the import action for a registry database and complete one import. The UI offers the action and the imported data appears in the registry.
-
-<a id="drs-25"></a>
-## DRS-25
-
-**Fixtures**
-
-1. Create records for which a filter selects a strict subset and a field selection omits at least one field.
-
-**Actions and expected results**
-
-1. Export the selected or filtered data separately as CSV, XLS, and JSON.
-2. Parse each output with an independent format parser. Every file contains exactly the selected records and fields, with values matching the registry.
-3. Record the exact produced file profile because the source names formats but defines no schema or validation contract.
-4. In the analyst UI, select a subset of records, then filter records, and choose the export action for each. The UI offers the action and the export contains exactly that selection or filter result.
-5. Record whether CSV and XLS are both produced; the source writes `CSV/XLS, JSON` and does not say whether both are required.
-
-<a id="drs-26"></a>
-## DRS-26
-
-**Fixtures**
-
-1. Create people and service records across multiple dates, then change selected data elements to produce audit events.
-2. Identify registry fields from which to build a custom report and an authorised external analytics client.
-
-**Actions and expected results**
-
-1. Generate the standard reports. They include all registered items and can be filtered to details of people, details of services, registration changes over time, and changes to data elements from audit logs.
-2. Build a report from selected registry fields. Its columns, filters, and values match the configuration.
-3. Analyze the collected data in at least two different ways, using the available reports or other analysis functions. Each result is reproducible from the fixture.
-4. Call `list` as the external analytics client and reconcile the extracted records to the source registry. An unauthorised client is denied. Record that the binding to `list` is an interpretation and that the DRS-26 header reads `should ... (REQUIRED)`.
-5. If custom dashboards are implemented, build a dashboard from registry data and reconcile every displayed measure to the source records. If omitted, record the RECOMMENDED requirement as unmet without failing core conformance.
-
-<a id="drs-27"></a>
-## DRS-27
-
-**Fixtures**
-
-1. Create a record with shareable and restricted fields, an authorised sender, anonymous recipient, consented recipient, non-consented recipient, allowed role, and denied role.
-
-**Actions and expected results**
-
-1. Confirm that at least one of the two `sharing-channels` options is provided: email, or a unique and secure URL. If neither is provided, the variation point is unmet. Share through each provided channel; each works and exposes only the selected record and fields.
-2. Turn sharing off in the authorisation module and repeat. No new share is created and existing behaviour follows the documented disablement semantics.
-3. Create an anonymous share. It is accessible without authentication and is identified as Open Data by the registry.
-4. Actions 4 to 7 apply to sharing links. A candidate that provides email only records them as untestable and notes that the source presupposes a link in items 1 to 4. Create a time-bound link, use it before and after expiry, and confirm that only the pre-expiry access succeeds.
-5. Create a consent-required link. The non-consented recipient is denied, and the consented recipient is allowed.
-6. Create a role-restricted link. The allowed role succeeds, and the denied role fails without disclosure.
-7. Generate the QR code and resolve it. It identifies the intended sharing link without exposing additional data in the code.
-8. Download through a share that permits export. The downloaded file contains a visible or machine-verifiable watermark.
-9. Open a view-only share. The data is readable, but export and direct download are unavailable or denied.
-
-<a id="drs-28"></a>
-## DRS-28
-
-**Fixture**
-
-- An authorised API client and a client without registry-creation permission.
-- A create request containing a database name, short name, and a DRS-3 schema.
-- The `modifyDatabase` operation from `resources/api.yml`, whose request defines `code`, `schema`, `groupName` and `catalogName` but no database-name field.
-
-**Actions**
-
-1. Send the create request through `modifyDatabase` with the authorised client.
-2. Read the resulting registry schema and compare it with the request.
-3. Repeat the create request with the client that lacks permission.
-
-**Expected results**
-
-- The authorised request creates one registry with the submitted name, short name, and schema. Record how the database name is conveyed, because the bound request defines no database-name field.
-- The read-back schema matches the request.
-- The client without permission cannot create a registry.
-
-<a id="drs-29"></a>
-## DRS-29
-
-**Fixture**
-
-- An authorised API client.
-- Three distinct registry create requests with unique names, short names, and schemas.
-- The `modifyDatabase` operation from `resources/api.yml`.
-
-**Actions**
-
-1. Submit all three requests through `modifyDatabase` to the same system instance.
-2. List the registries in that instance and read back each schema.
-
-**Expected results**
-
-- All three registry databases coexist in the same instance.
-- Each registry retains the name, short name, and schema from its own request without overwriting either of the others.
-
-<a id="drs-30"></a>
-## DRS-30
-
-**Fixture**
-
-- An authorised API client, a client without publish permission, and a draft registry not visible to ordinary users.
-- The solution's documented registry-publish operation, because neither source OpenAPI document defines one.
-
-**Actions**
-
-1. Invoke the documented publish operation with the authorised client.
-2. Attempt to discover or access the registry as an ordinary permitted registry user.
-3. Repeat against another draft registry with the client that lacks publish permission.
-
-**Expected results**
-
-- The authorised API request publishes the registry and reveals it to users who are permitted to see published registries.
-- The client without publish permission cannot publish the second registry.
-- The procedure records the implementation-specific operation used and does not claim a shared API binding until the source contract defines one.
-
-<a id="drs-31"></a>
-## DRS-31
-
-**Fixture**
-
-- An authorised API client and a client without API-configuration permission.
-- A draft registry, a changed version of its schema, and one disposable custom API service.
-- The solution's documented operations for modifying, hiding, deleting, copying, and creating custom API services, because neither source OpenAPI document defines them.
-
-**Actions**
-
-1. Use the documented configuration operation to modify the services of the draft registry.
-2. Publish the registry and exercise generated create, read, update, delete, exists, and update-or-create services.
-3. Change the dynamic database structure, publish again, and compare the generated API data structure before and after publication.
-4. Through the documented operations, hide one service, delete a disposable service, copy another service, and create the prepared custom service.
-5. Repeat each configuration action with the client that lacks permission.
-
-**Expected results**
-
-- The authorised client can modify the registry's service configuration through the documented solution operations.
-- Publication automatically creates all required data services, and each exercised service performs its named operation.
-- Republish regenerates the API data structure from the changed database structure.
-- Hidden, deleted, copied, and custom services exhibit their respective configured states.
-- The client without permission cannot change API-service configuration.
-- The procedure records every implementation-specific configuration operation and does not claim a shared API binding until the source contract defines one.
-
-<a id="drs-32"></a>
-## DRS-32
-
-**Fixture**
-
-- An authorised API client and a client without schema-read permission.
-- A published registry with a known schema and several available API services.
-- The `getDatabase` operation from `resources/api.yml`.
-- The `genericServices` field of the `getDatabase` response, which the source describes as the list of possible API services for the database, each with `isVisible`.
-
-**Actions**
-
-1. Call `getDatabase` for the published registry and compare the returned schema with the known schema.
-2. Read `genericServices` from the same `getDatabase` response and compare the listed services and their `isVisible` flags with the registry's published service configuration.
-3. Repeat both reads with the client that lacks permission.
-
-**Expected results**
-
-- `getDatabase` returns the complete schema of the requested registry.
-- `genericServices` lists every service available for that database and no service from another database.
-- The client without permission cannot read the protected schema or service list.
-- The procedure does not bind the requirement to `listDatabases`, which lists databases rather than their services.
-
-<a id="drs-33"></a>
-## DRS-33
-
-**Fixtures**
-
-1. Create an authorised API client, an unauthorised client, and a registry with known records.
-
-**Actions and expected results**
-
-1. As the authorised client, exercise `list`, `create`, `read`, `update`, `delete`, and `update-or-create`. Reconcile every response and resulting state to the requested operation.
-2. Repeat each operation as the unauthorised client. Every request is denied and registry state remains unchanged.
-3. Run the matching pinned upstream feature scenarios in [`data_list.feature`](../test/openAPI/features/data_list.feature), [`data_create.feature`](../test/openAPI/features/data_create.feature), [`data_read.feature`](../test/openAPI/features/data_read.feature), [`data_update.feature`](../test/openAPI/features/data_update.feature), [`data_delete.feature`](../test/openAPI/features/data_delete.feature), and [`data_update_or_create.feature`](../test/openAPI/features/data_update_or_create.feature). Record results without treating these source scenarios as coverage of authorisation unless the harness actually exercises denied clients.
-
-<a id="drs-34"></a>
-## DRS-34
-
-**Fixture**
-
-- A registry with at least two published API-service versions.
-- At least one request and response field per operation, each with a description and example value.
-- Access to the solution's OpenAPI description and its Swagger or equivalent visualisation.
-- A client system with no administrative access to the registry.
-
-**Actions**
-
-1. Parse the OpenAPI description and enumerate every documented API service and version.
-2. Compare that enumeration with the published API-service inventory.
-3. Inspect every request and response field for a description and example value.
-4. Open the visualisation and navigate to every service and version found in the OpenAPI description.
-5. As the client system, retrieve the OpenAPI description of every service and version. Record the solution's retrieval mechanism, because neither source OpenAPI document defines an operation or endpoint that publishes service descriptions.
-6. Where the solution marks an example as safely executable, run it and record whether it succeeds. Do not substitute production personal data merely to make an example real.
-
-**Expected results**
-
-- The OpenAPI description covers every published API service and service version.
-- Every described field has a field description and example value.
-- The visualisation exposes every service and version from the OpenAPI description.
-- The client system can retrieve the description of every service and version; the result records the implementation-specific retrieval mechanism and does not claim a shared API binding.
-- Safely executable examples behave as documented. Examples not marked executable remain inspected examples, because DRS-34's "if possible" wording does not define a mandatory condition.
-
-<a id="drs-35"></a>
-## DRS-35
-
-**Fixtures**
-
-1. Create a personal-data registry with two owners and known usage events, plus an analyst and an unauthorised user.
-
-**Actions and expected results**
-
-1. Configure which unique owner identifier the personal-data usage API accepts. The chosen identifier persists and is used by subsequent queries.
-2. Link every personal-data record to its owner. An owner identifier resolves to that owner's data and not the other owner's data.
-3. Call `DPU` with the configured owner identifier and database identifier. The response contains the matching usage events. Invalid owner and database inputs fail as illustrated by [`data_my_personal_data_usage.feature`](../test/openAPI/features/data_my_personal_data_usage.feature).
-4. Repeat as the unauthorised user. Access is denied without disclosing whether another owner's data exists.
-
-<a id="drs-36"></a>
-## DRS-36
-
-If the `statistics-api` extension is not claimed, record this functionality as not applicable. If it is claimed, use these checks.
-
-**Fixtures**
-
-1. Create registration and programme records spanning multiple date and time ranges and at least two registered programmes.
-2. Create clients authorised for all data, one programme only, and no statistical data.
-
-**Actions and expected results**
-
-1. Query registration data and programme data separately. Each response contains the requested data kind.
-2. Query by date and time range. Boundary values are handled consistently and only in-range data is returned.
-3. Query by registered programme. Only records for the selected programme are returned.
-4. Combine the range and programme parameters. The result satisfies both filters.
-5. Repeat with each client. Results contain only authorised data, and the unauthorised client is denied without data leakage.
-6. Record the operation binding gap because the source API descriptions do not identify a statistical-query operation.
-
-<a id="drs-37"></a>
-## DRS-37
-
-**Fixtures**
-
-1. Create two physical-person owners, personal-data fields marked by an analyst, and read and processing events by distinguishable actors.
-
-**Actions and expected results**
-
-1. Confirm that at least one of the two `owner-log-visibility` options is provided: the owner UI or the owner API (`DPU`). If neither is provided, the variation point is unmet.
-2. For each provided option, act as the first owner. In the UI, open the personal-data report; through the API, call `DPU` with the first owner's unique identifier and database identifier. The result identifies who read or processed that owner's data and does not include the second owner's events. If both options are provided, the API result matches the UI result.
-3. Attempt each provided boundary as the second owner and an unauthorised user for the first owner's identifier. Access is denied or restricted to the caller's own events without disclosing the first owner's log.
-4. Confirm that events for unmarked ordinary data are not misrepresented as personal-data events. Record the source ambiguity if the candidate lacks the RECOMMENDED field-tagging capability on which this required report relies.
-
-<a id="supplementary"></a>
-## Supplementary upstream chapters
-
-**Fixtures:** two registry-schema versions; representative records with each of the eleven minimum fields; administrator, authorised applicant, denied caller and explicitly enabled anonymous sandbox contexts; an event broker and external/internal consumers; the selected original API templates and the deployment's declared bindings.
-
-**Actions and expected results:**
-
-1. Create registries for multiple tenants. Publish schema changes, deprecate and archive versions, and inspect compatibility guidance and synchronized generated service versions. Compare the observable outcomes with the source workflow, retaining its network, power and authorisation preconditions.
-2. Configure deduplication, data-quality controls, masking and redaction; demonstrate the policy effects in the analyst interface. Demonstrate logical deletion and archival, respecting the inherited exception for legally mandated hard deletion.
-3. Inspect generated REST and GraphQL services and API descriptions. Exercise every operation bound in the authoring projection with fixtures valid under its original request schema, check the documented response schema, and compare deployment parameter substitutions with the original template. Record unsupported or unspecified bindings rather than guessing an endpoint.
-4. Create, update and delete a record and observe the corresponding domain events. Check external subscriptions through the named mediator boundary, and test any offered direct internal route with role/attribute policy, tenant isolation and audit controls. Record missing event contracts as source gaps.
-5. Exercise schema CRUD and applicant data operations for authorised, denied and explicitly enabled anonymous contexts. Verify denial where neither an explicit nor an anonymous grant applies. Record the source's unresolved broad authenticated-read wording and authorisation wording; this migration supplies no new precedence rule.
-6. Inspect the dedicated change-log database and audit registry after the workflows. Compare recorded processing events with the actions performed. Inspect usage, performance and data-quality statistics for the analyst.
-7. Inspect model evidence for all eleven required fields, their types and meanings, and the four original relationship/cardinality statements. Compare the model with the preserved source table and diagram rather than inventing JSON names.
-8. Review inherited data-protection evidence and deletion policy against the two elevated source CFR requirements. Demonstrate logical record preservation, or the documented legal basis for mandated hard deletion. Record evidence and unresolved source ambiguities without treating an authoring check as runtime certification.
+# Testing
+
+## Test maturity
+
+The scenarios below define verification intent for the [draft requirements](conformance.md#requirement-maturity). The [Consultation artifact checks](../api/README.md#validation) validate OpenAPI documents, requirement-to-operation mappings, and schema fixtures. They inspect the declared conditional-response headers and body shape, revision parent identity, and rich caller-capability metadata as artifacts. They do not execute cursor replay, protected-history outcomes, or temporal source-unavailability behaviour; those remain implementation scenarios. Passing artifact checks supports contract review only and does not establish deployed runtime behaviour or implementation conformance. Implementation conformance requires separate evaluation of a deployed Registry; an executable suite is pending. Legacy Cucumber tests under `test/openAPI` remain migration evidence for the previous generated CRUD interface.
+
+## Applicability and required fixtures
+
+Verification starts with an inventory of the Registry services the implementation exposes to each intended metadata audience and the operation options it declares. Every evaluation covers Registry identity, authoritative scope, specification-version metadata, and service discovery. Operation-specific verification follows the selected option keys and the [draft conformance model](conformance.md#draft-conformance-model).
+
+Common Record representation requirements are evaluated through each implemented operation that returns Records, using that operation to obtain the fixtures. Identifier lifecycle evidence applies wherever the implementation assigns or maintains Record Identifiers.
+
+An implementation being evaluated provides non-production fixtures according to the following applicability rules:
+
+| Fixture or evidence | Required when |
+|---|---|
+| Machine-readable Registry metadata, the inventory of exposed Registry BB services, and their linked machine-readable operational contracts, including each operation's selectable feature declarations | Every evaluation. |
+| Two distinct current Records in the same Registry, with expected scoped identity, declared schema, and field meanings | An implemented operation returns Record representations. |
+| Record fixtures covering each exposed lifecycle state | An implemented operation returns Record representations in those states. |
+| Identifier policy and stability/non-reassignment evidence across source changes and retirement where supported | The implementation assigns or maintains Record Identifiers. |
+| Source revision, lifecycle, and provenance evidence for metadata actually exposed | The operation or selected profile exposes or requires this metadata. |
+| Consumer contexts and expected permitted representations | An implemented operation returns Record representations. |
+| The same Record accessible to consumers with different disclosure rights | The applicable policy provides different disclosure entitlements. |
+| An unknown Record Identifier and a known Record outside the selected collection where applicable | Retrieve is selected. |
+| Distinct Records in different collections | A Registry exposes multiple collections. |
+| One Record available through multiple collections or views | Collections overlap or expose distinct views of one Record. |
+| Known, unknown, invalid, and composite selector inputs where supported; a simulated source uniqueness failure | Lookup is selected. |
+| Protected and unknown Record Identifiers, selector values, parent Records, and Revision Identifiers for the same consumer context | Retrieve, Lookup, Revision List, or Revision Retrieve is selected and the applicable policy protects Record or revision existence. |
+| Zero-, one-, and multi-result collections; typed search criteria and invalid inputs; duplicate sort values where applicable | List or Search is selected, using fixtures relevant to each selected operation. |
+| Continuations covering completion, mismatch, expiry, and access changes; a short or empty advancing page where supported; parent Records A and B for cursor replay | List, Search, or Revision List is selected. |
+| Declared resource limits, an over-limit request, and a request that reaches the declared timeout outcome | List or Search is selected. |
+| A current representation and its ETag; expected `200` and `304` headers; expected `200` body and bodyless `304`; authorised matching, non-matching, stale, unknown, and protected conditional requests | A Retrieve operation declares `conditional-read`. |
+| Declared selectable data fields, any documented mandatory data fields, unsupported fields, and consumers with different disclosure rights | An operation declares `field-selection`. |
+| An unchanged multi-page result with duplicate primary sort values, plus a configured result window or limit too small for that result | A List or Search operation declares `complete-traversal`. |
+| Source changes between Pages, access changes, and a simulated loss of retained snapshot state | A List or Search operation declares `snapshot-traversal`. |
+| Retained source revisions spanning schema versions, retention boundaries, and known or unknown gaps; an authorised source-history failure | Revision List or Revision Retrieve is selected. |
+| Source acceptance timestamps before, at, and after revisions, including a correction; proven item absence; evaluable empty Search; source inability to evaluate history | An operation declares `recorded-time`. |
+| Source applicability dates or instants covering boundaries, overlaps, corrections, no applicable state, evaluable empty Search, and source inability to evaluate history | An operation declares `effective-time`. |
+| Named Search fixtures for each declared equality, range, set-membership, prefix, or domain-specific semantic | Search is selected. |
+| Caller contexts with different authorised operations; a rich discovery entry containing its required view plus `readableFields`, selectors, searches, known and unknown features, and purpose requirements; an unknown capability entry; plus a description exceeding each declared bound | Caller capability discovery is offered. |
+| Trusted contexts with missing, malformed, allowed, disallowed, and changed controlled purpose values | An operation declares `purpose-bound`. |
+| Nested components, same-target and mixed-target references, and collection-boundary fixtures | A selected view exposes subobjects, references, or embedded collections. |
+| Recorded related details and a separately changed current target Record; a parent without an individual reference where supported | A selected view exposes recorded related details or references that may be absent. |
+
+Use synthetic fixtures and record the applicability rationale for each omitted conditional fixture.
+
+## Requirement traceability
+
+The row anchors below are stable test targets for the functionality files. The displayed `fr-core#req-*` and `fr-consultation#req-*` labels are historical aliases from the source draft, not current requirement identifiers. Current requirements are DRAFT and unnumbered; [Requirement history](history/requirements.md) preserves their source text and [Migration from the 3.0.0-alpha.1 Draft](migration-from-3.0.md#replacement-index) preserves the predecessor ledger.
+
+| Requirement | Applicability | Verification item | Expected result |
+|---|---|---|---|
+| <a id="core-1"></a>`fr-core#req-1` | Every implementation | Access machine-readable Registry metadata as an intended consumer and inspect identifier evidence | Globally unique and stable Registry Identifier, Registry name, Registry Authority, authoritative scope statement, and Digital Registries specification-version reference are present; the publication URI and access conditions are available to intended consumers. |
+| <a id="core-2"></a>`fr-core#req-2` | Each implemented operation returning Records | Obtain two distinct Record representations through that operation; compare collections where supported | Each representation includes a different Record Identifier and has unambiguous Registry context; each identifier pair is unique across the Registry, including its collections, without requiring repeated Registry fields. |
+| <a id="core-3"></a>`fr-core#req-3` | Implementations assigning or maintaining Record Identifiers | Inspect the identifier policy and lifecycle evidence | A Record Identifier remains unchanged across revisions and lifecycle states, is not shared, and is not reassigned after retirement. |
+| <a id="core-4"></a>`fr-core#req-4` | Each implemented operation returning Records | Validate a returned representation | The binding identifies the format and versioned resolvable schema, field meanings are documented, and validation succeeds. A separate formal semantic model is checked only when declared. Nested component and reference meanings, target Registry scope, related-read bindings where offered, and collection completeness are unambiguous. |
+| <a id="core-5"></a>`fr-core#req-5` | Source revision or lifecycle metadata is exposed or required by the selected profile | Obtain relevant Record fixtures and source evidence | Provided metadata has documented meaning, matches the source, and is not fabricated from an ETag or adapter fetch. Absence is valid for a profile that does not require it. |
+| <a id="core-6"></a>`fr-core#req-6` | Each implemented operation returning Records, with conditional checks for extra provenance | Obtain a known accessible Record and resolve its Registry context | Registry Authority resolves through metadata. Any additional provenance has documented semantics and matches source evidence; a recording timestamp is not fabricated from fetch time. |
+| <a id="core-7"></a>`fr-core#req-7` | Every implementation | Request `/.well-known/api-catalog` at each HTTP service origin, follow its `service-meta` link to the metadata document, and compare services exposed to each intended metadata audience with their published discovery metadata and linked operational contracts | Every exposed Registry BB service is identified, associated with its Registry, and declares valid API-family concepts, an endpoint URL, and a resolvable machine-readable operational contract. The contract describes the advertised endpoint and operations from each declared family; declarations reflect currently available services. |
+| <a id="core-8"></a>`fr-core#req-8` | Implementations selecting Collection-scoped Consultation operations | Validate the `x-govstack-digital-registries` extension of every selected Collection-scoped Consultation operation against its schema and compare it with the published metadata and operation path | Every such operation declares a Registry Identifier present in the metadata, the logical Collection from `{collectionId}` or its fixed path value, a valid capability, and a view; operations sharing a Collection and view use one Record schema. Selectable feature names and capability combinations are valid; a purpose-bound operation has a valid trusted purpose declaration; an absent or empty `features` member declares none. Caller capability discovery is validated separately under `fr-consultation#req-17`. |
+| <a id="consultation-1"></a>`fr-consultation#req-1` | Retrieve selected | Retrieve a known accessible Record without temporal selection, with each supported explicit temporal selector, and outside the Collection where applicable | Omission returns the latest permitted state; an explicit supported selector returns a source-backed state and echoed temporal context; a Record outside the Collection returns `record-not-available`. |
+| <a id="consultation-2"></a>`fr-consultation#req-2` | Every selected Consultation read | Invoke fixtures under applicable consumer contexts; compare responses where entitlements differ | Each response contains only the projection permitted to that consumer, validates against its schema, and does not expose omitted values through related references, embedded fields, errors, or collection metadata. |
+| <a id="consultation-3"></a>`fr-consultation#req-3` | Retrieve, Lookup, Revision List, or Revision Retrieve selected and policy protects Record or revision existence | Resolve unknown and protected fixtures as the same consumer through each selected operation; for Lookup, also exercise a source uniqueness violation involving a protected key; for history, vary parent Record and Revision Identifier presence separately, then simulate source-history failure for an authorised visible parent | Status, security-relevant response metadata, stable error type, response structure, and non-resource-specific values match for unknown and protected resources; revision outcomes do not reveal whether the parent or revision was absent. Trace values are independent of existence. No unresolved outcome contains Record-specific or revision-specific data, including the Lookup protected-key uniqueness-violation outcome. `409 history-not-available` occurs only after protection checks for an authorised source inability. |
+| <a id="consultation-4"></a>`fr-consultation#req-4` | Lookup selected | Exercise each declared exact selector with known, unknown, invalid, and ambiguous source fixtures | One collection member resolves uniquely within the selector's declared scope; missing components and unknown inputs fail; no permitted collection match gives the declared unresolved outcome; multiple matches never return an arbitrary Record. |
+| <a id="consultation-5"></a>`fr-consultation#req-5` | List selected | List declared collections, including zero and one result and unsupported inputs | Results retain the Page shape, satisfy membership and disclosure, respect the page bound and declared order, and reject unsupported filters or sort. |
+| <a id="consultation-6"></a>`fr-consultation#req-6` | Search selected | Execute each declared Search with valid, true zero-result, protected-only, and invalid criteria, including synthetic personal criteria; inspect their request location and the available request-log evidence; for temporal Search, simulate source evaluation inability | Matching permitted Records use the same declared view. Evaluable zero and protected-only results return `200` with an empty `items` array; source inability to evaluate the requested history returns `409 temporal-state-not-available`. Unsupported searches and fields fail. Personal criteria remain in the request body rather than URLs, and request-log evidence is checked against the inherited disclosure policy. |
+| <a id="consultation-7"></a>`fr-consultation#req-7` | List, Search, or Revision List selected | Exercise first and continuing Pages, short or empty advancing Pages where supported, declared resource limits, the timeout outcome, changed Collection or criteria, expiry, page-size mismatch, authorisation changes, and Revision List cursor replay from parent Record A under parent Record B | Each bounded response follows deterministic ordering and its unique tie-breaker. Continuation preserves Collection, operation, query, view, effective size, and Revision List parent `recordId`; its opaque integrity-protected cursor expires, advances to completion, reauthorises, and never silently restarts. Cross-parent replay returns `400 invalid-cursor`. Processing stays within declared limits or returns the declared timeout outcome. Totals, when supplied, match the full permitted query at the declared evaluation point. No exhaustive or snapshot claim is inferred. |
+| <a id="consultation-8"></a>`fr-consultation#req-8` | Retrieve declares `conditional-read` | Retrieve a current representation and repeat authorised requests with matching, non-matching, and stale `If-None-Match` values; assert the declared `200` and `304` headers and bodies; compare unknown and protected outcomes | `200` and matching `304` responses carry the selected representation's ETag and other declared headers. `200` carries the representation body. A matching validator produces a bodyless `304` only after authorisation. Non-matching or stale validators return the current permitted representation, and conditional requests do not reveal protected existence. |
+| <a id="consultation-9"></a>`fr-consultation#req-9` | A read operation declares `field-selection` | Request supported selectable top-level `data` fields, an unsupported field, and the same selection under narrower disclosure rights; continue a paged result where applicable | Success retains `recordId`, `data`, and any documented mandatory data fields, returns only the requested permitted selectable fields, satisfies the one declared view schema, and preserves the effective field set in continuation. Unsupported fields fail and selection never widens authorisation. |
+| <a id="consultation-10"></a>`fr-consultation#req-10` | List or Search declares `complete-traversal` | Traverse unchanged multi-page fixtures with duplicate primary sort values under unchanged access conditions; separately impose an internal window or limit smaller than the matching result | Every permitted matching Record appears exactly once in the declared order, every Page respects the size bound, and the traversal terminates with a null cursor. A limit that prevents completeness produces the declared failure rather than a completion signal. |
+| <a id="consultation-11"></a>`fr-consultation#req-11` | List or Search declares `snapshot-traversal` | Start a traversal, change source membership, order, and Record data, then continue; separately revoke access and make the retained snapshot unavailable | Pages retain source membership, order, and data from the first request's documented evaluation point while applying current authorisation. The snapshot reference and availability follow the contract, revoked data is withheld, and loss of the snapshot produces `400 invalid-cursor` rather than live fallback. Any total uses the fixed source point filtered for current rights. |
+| <a id="consultation-12"></a>`fr-consultation#req-12` | Revision List selected | Page retained revisions across schema versions, including one faithfully normalised and one unavailable mapping, retention boundaries, documented gaps, and source-history failure while changing caller authorisation between Pages; assert every item `recordId` equals the parent path identifier | Each `RecordRevision` retains the parent Record identity and has a source-backed Revision Identifier; recording time, where supplied, is source-backed; order, retention, gaps, schema interpretation, bounds, and current authorisation follow the contract without a false completeness claim. Older schemas normalise without changing source values or meanings; unavailable mapping fails explicitly rather than returning arbitrary raw data. Authorised source inability returns `409 history-not-available` only after protection checks. |
+| <a id="consultation-13"></a>`fr-consultation#req-13` | Revision Retrieve selected | Retrieve known revisions across schema versions and exercise an unavailable mapping, unknown, removed, outside-retention, protected, Record-mismatched Revision Identifiers, and authorised source-history failure | A known permitted revision is returned under the declared history view with `recordId` matching the parent path and values and meanings preserved. Unknown and protected parent or revision uses the same `404 record-not-available`. Mapping failure and authorised source inability use the declared explicit outcome, including `409 history-not-available`, only after protection checks, with no raw-schema, latest-state, nearby-revision, or fabricated fallback. |
+| <a id="consultation-14"></a>`fr-consultation#req-14` | Retrieve, Lookup, List, or Search declares `recorded-time` | Select source-acceptance cutoffs before, at, and after revisions and a correction; exercise proven item absence, evaluable empty and protected-only Search, source evaluation inability, and omitted temporal selection | Results use only source knowledge accepted by the cutoff and return `TemporalRecord` or `TemporalRecordPage` with echoed date-time, including an empty Page. Proven item absence returns `404 record-not-available`; evaluable zero permitted matches returns `200` empty; source inability returns `409 temporal-state-not-available`. Omitted selection returns latest permitted state without temporal metadata. Revision operations reject this selector. Request, ingestion, occurrence, or registration time is not substituted unless the source contract defines one as its acceptance time. |
+| <a id="consultation-15"></a>`fr-consultation#req-15` | Retrieve, Lookup, List, or Search declares `effective-time` | Select supported dates or instants at applicability boundaries, overlaps, corrections, and no applicable state; exercise proven item absence, evaluable empty and protected-only Search, source evaluation inability, and omitted temporal selection | Results use `TemporalRecord` or `TemporalRecordPage` and echo applicable context, including an empty Page. Proven item absence returns `404 record-not-available`; evaluable zero permitted matches returns `200` empty; source inability returns `409 temporal-state-not-available`. Omitted selection returns latest permitted state without temporal metadata. Revision operations reject this selector. Event occurrence or registration date is not treated as effective time without an explicit source definition. |
+| <a id="consultation-16"></a>`fr-consultation#req-16` | Search selected | Exercise every declared equality, range, set-membership, prefix, and domain-specific semantic, plus undeclared semantics and invalid typed boundaries | Named Search behaviour matches its versioned criteria schema, declared field and combination rules, normalisation, null and empty handling. Undeclared semantics fail; no universal or fuzzy query support is inferred. |
+| <a id="consultation-17"></a>`fr-consultation#req-17` | Caller capability discovery offered | Request `GET /v1/capabilities` under callers and trusted contexts with different permissions; validate required contract, operation ID, capability, and view plus a rich entry containing `readableFields`, selectors, searches, known features, and purpose requirements; test unknown capability and feature annotations, no visible operation, duplicate Collection identifiers, duplicate `(contract, operationId)` pairs, contradictory linked metadata, more than 64 Collections, and more than 16 operations in one Collection; then invoke a discovered operation against permitted and unavailable Records | The bounded `no-store` document references version-specific HTTPS contracts and operation IDs, identifies each operation's view, and filters advisory metadata for the caller. `readableFields` does not imply `field-selection`. Known metadata agrees with the linked operation; unknown capabilities cause clients to skip that entry and unknown advisory features are ignored. Unknown metadata never grants authority, while the normative linked operation extension remains closed. Collection identifiers and operation keys are unique. `collections: []` represents no visible operation. Contradictions and over-bound descriptions fail explicitly without silent merge, truncation, omission, or an empty-array substitute. Invocation reauthorises; the document makes no record-level permission promise. |
+| <a id="consultation-18"></a>`fr-consultation#req-18` | A Record or history operation declares `purpose-bound` | Exercise missing, malformed, untrusted, allowed, disallowed, and changed trusted purpose contexts; replay cursors and validators under another purpose | Missing or unallowed purpose fails before disclosure. Purpose is obtained only from the declared trusted binding, participates in continuation, conditional, temporal, historical, and audit context, and is not treated as consent, authority, or proof of downstream use. Discovery has no purpose feature or request input; it filters under any verified purpose already present in trusted context. |
+
+The abbreviated references in this table preserve the former `govstack-bb-digital-registries` namespaces for traceability only. They link the migrated functionality files to the unchanged fixture and procedure detail without assigning identifiers to DRAFT requirements.
+
+### API catalog HEAD verification
+
+<a id="core-7-head"></a>
+
+For every HTTP service origin, use the published access conditions and a synthetic
+consumer context permitted to obtain its discovery metadata:
+
+1. Send `GET /.well-known/api-catalog` and retain the successful response headers
+   and linkset as the comparison resource.
+2. Send `HEAD /.well-known/api-catalog` at the same origin, outside any deployment
+   routing prefix. Check the declared successful status and verify that no
+   response body is transferred.
+3. Check that HEAD includes the binding's required `Link` header with the
+   `api-catalog` relation, and that its target locates that origin's API catalog.
+   Check the remaining declared response headers against the same catalog
+   resource; HEAD does not return the `service-meta` and `service-desc` linkset
+   body. Retain the request, status, headers, and body-absence evidence.
+
+This is a manual procedure for a deployed Registry. The artifact suite separately
+checks the OpenAPI description and cannot establish that a deployment follows it.
+
+## Behaviour scenarios
+
+Discovery is verified through `fr-core#req-7` in the traceability table: every exposed service is reachable through the linkset and the metadata document, a family label does not by itself establish that any particular operation exists, and a service without a machine-readable contract fails the requirement. Read scenarios apply to their selected capabilities and declared operation features. Disclosure differences, protected existence, exposed metadata, and resource-limit behaviour additionally require the corresponding conditions in [Applicability and required fixtures](#applicability-and-required-fixtures).
+
+The following cases apply to the selected read capabilities. Run them against each operation and view to which their fixtures apply.
+
+| Case | Exercise | Expected evidence |
+|---|---|---|
+| Latest Retrieve | Read a known accessible Record without temporal selection, including an exposed inactive state. | Stable identifier, latest valid permitted representation under the declared source currency, and an unchanged source Record. |
+| Collection scope | Retrieve a known Record through a collection that excludes it. | The same `record-not-available` outcome as an unknown identifier. |
+| Identity across collections | Read one Record through multiple collections or views, and compare distinct Records across collections in the same Registry. | The same Record retains its identifier; distinct Records have different identifiers within the Registry. |
+| Collection actions | Retrieve Records whose identifiers are `lookup`, `search`, or resemble action names, and invoke the Collection's `/lookup` or `/search` operation. | Item retrieval under `/records/{recordId}` and Collection actions route independently; no Record Identifier value is reserved by these action names. |
+| Disclosure | Read the same Record under different disclosure entitlements. | Each response matches the permitted fields and metadata for its consumer. |
+| Protected existence | Retrieve and Look up unknown and protected fixtures as the same consumer; list and retrieve history while independently varying unknown or protected parent Records and revisions. | Each applicable operation produces the same contract-defined `404 record-not-available` and security-relevant content for unknown and protected resources; history does not reveal whether the parent or revision was unavailable; independently generated trace values may differ. |
+| Exact Lookup | Submit known, unknown, incomplete, incorrectly typed, and unsupported selector inputs, including composite keys where declared. | One permitted Record for a valid unique match; declared unresolved or validation errors otherwise. |
+| Selector uniqueness failure | Supply source data with multiple matches for a unique selector. | The declared failure, with protected-existence policy applied and no arbitrary Record selected. |
+| Empty and single-result collections | List and Search fixtures containing zero and one permitted match. | The Page shape is retained; completed results have `nextCursor: null`. |
+| Baseline pagination progress | Continue a result that produces a short or empty advancing Page where the implementation supports that pattern. | The Page respects the effective size, its non-null cursor advances, and the traversal reaches an explicit null cursor without silently restarting. This does not establish exhaustive traversal. |
+| Declared resource limits | Exercise each published limit and cause one request to exceed a limit or its processing deadline. | Work stays within the declared limits or ends with the declared timeout outcome; evidence does not infer that backend work scales with page size. |
+| Cursor binding | Change Collection, criteria, Search, ordering, view, or effective page size while reusing a cursor; replay a Revision List cursor from parent Record A under parent Record B. | `400 invalid-cursor`, with no silent restart and no history from either parent in the cross-parent case. |
+| Continuation size | Omit `pageSize`, then repeat the original effective size on another continuation. | Both retain the bound size. |
+| Cursor validity | Submit malformed, tampered, and expired cursors. | The invalid-cursor outcome. |
+| Authorisation change | Revoke access between Pages. | Subsequent requests enforce current authorisation before releasing results. |
+| Total | Compare any reported `total` on a later Page with the full permitted query. | An exact count at the declared evaluation point, including matches before the cursor. Live traversal uses the current Page evaluation; snapshot traversal uses its fixed source point filtered for current rights. |
+| Live source changes | Insert, update, and remove source Records between Pages. | Observed results match the published currency and pagination policy. |
+| Query disclosure | Compare unknown and protected-only query fixtures where match existence is protected. | Items, counts, and continuation patterns preserve the disclosure policy. |
+| Unsupported input | Submit undeclared Search names, criteria, List parameters, and sort choices. | The declared validation error. |
+| Conditional Retrieve | On a Retrieve declaring `conditional-read`, send authorised matching, non-matching, and stale validators and repeat against unknown and protected Records; assert declared headers on `200` and `304` and body presence. | Matching current representations return a bodyless `304` with ETag only after authorisation; other permitted reads return `200` with the declared headers, current ETag, and representation body, without weakening protected-existence handling. |
+| Field selection | On each operation declaring `field-selection`, request supported selectable top-level `data` fields, an unsupported field, and a permitted field withheld from the caller. | `recordId`, `data`, and documented mandatory data fields remain present; selectable fields satisfy the declared view schema and disclosure policy; unsupported input fails; continuation repeats the effective selection. |
+| Complete traversal | On List or Search declaring `complete-traversal`, traverse an unchanged collection with duplicate primary sort values and unchanged access, then repeat with a result window or limit that prevents completion. | Every matching permitted Record appears once in the declared order; every Page respects the size bound and the last cursor is null. The limiting case returns the declared failure instead of a completion signal. |
+| Snapshot traversal | On List or Search declaring `snapshot-traversal`, change membership, order, and data between Pages, then test revoked access and unavailable snapshot state. | Source results remain fixed at the first evaluation point, current authorisation can withhold them, and an unavailable snapshot returns `400 invalid-cursor` without falling back to live traversal. |
+| Revision List | Page retained history with duplicate primary ordering values, schema changes, retention boundaries, documented gaps, and an authorised source-history failure. | Every item `recordId` matches the parent path; Revision Identifiers and recording times, where supplied, are source-backed; order, schema interpretation, current authorisation, and completeness follow the contract. Source inability returns `409 history-not-available` only after protected-existence checks. |
+| Revision Retrieve | Request known, unknown, removed, outside-retention, protected, and Record-mismatched revisions, then simulate authorised source-history failure. | Known permitted history has `recordId` matching the parent path. Unknown and protected parent or revision uses the same `404`; authorised source inability can return `409` only after protection checks; no outcome substitutes another revision or current state. |
+| Recorded-time selection | Select acceptance cutoffs before, at, and after source revisions and a correction; exercise proven item absence, an evaluable Search with zero permitted matches, source evaluation inability, and an omitted selector. | Selected success uses `TemporalRecord` or `TemporalRecordPage` with echoed context, including a `200` empty Page. Proven item absence is `404`; source inability is `409 temporal-state-not-available`; omitted selection returns latest permitted state without temporal metadata. Revision operations reject the selector; request, occurrence, and registration dates are not substituted. |
+| Effective-time selection | Select supported dates or instants at applicability boundaries and where no state applies; exercise proven item absence, an evaluable Search with zero permitted matches, source evaluation inability, and an omitted selector. | Selected success uses `TemporalRecord` or `TemporalRecordPage` with echoed context, including a `200` empty Page. Proven item absence is `404`; source inability is `409 temporal-state-not-available`; omitted selection returns latest permitted state without temporal metadata. Revision operations reject the selector; occurrence and registration dates are used only when the source explicitly defines that meaning. |
+| Temporal and traversal separation | Apply a temporal selector to live pagination, and run snapshot traversal without a temporal selector. | Temporal selection alone does not promise a snapshot; snapshot traversal alone does not expose historical states. |
+| Reusable Search semantics | Exercise all and only the equality, range, set-membership, prefix, and domain-specific semantics named by each Search. | Typed matching follows the contract; undeclared operators and fields fail; no fuzzy or universal query behaviour is inferred. |
+| Caller capabilities | Request a rich capability document under callers with different rights, including each operation's required view, `readableFields`, selectors, searches, known and unknown features, purpose requirements, and an unknown capability entry; exceed declared bounds and attempt allowed and unavailable Record access. | One bounded `no-store` document exposes only caller-available advisory metadata and identifies the view of each operation. `readableFields` does not imply `field-selection`; clients skip unknown capabilities and ignore unknown advisory features; the normative operation extension remains closed. Over-bound descriptions fail explicitly without truncation or silent omission; every invocation still authorises and no Record access follows from discovery alone. |
+| Purpose binding | Invoke a purpose-bound operation with missing, untrusted, allowed, and unallowed trusted purpose context, then replay a cursor or validator under another purpose. | Invalid purpose fails before disclosure; allowed purpose is bound to continuation and validation and retained for audit without being treated as consent, authority, or downstream-use proof. |
+
+Relationship cases apply to views exposing the corresponding shapes. The [household](../api/examples/household-registry.openapi.yaml) and [birth-registration](../api/examples/birth-registration.openapi.yaml) contracts provide concrete examples; their [fixtures](../api/examples/relationship-exchanges.json) cover schema validation.
+
+| Case | Exercise | Expected evidence |
+|---|---|---|
+| Nested components | Read a household with an address and memberships. | Components validate with their declared field meanings and local identifier scope. |
+| Fixed-target reference | Validate an individual reference with omitted, matching, and conflicting `registryId`. | Omitted or matching values resolve to the schema-declared Registry; a conflicting value fails validation. |
+| Mixed-target reference | Validate a reference whose field allows multiple Registries. | The reference identifies its target Registry; omission fails validation. |
+| Related read binding | Follow a reference for which the contract offers a related read. | The declared target collection, operation contract, and input mapping determine the request without parsing the opaque Record Identifier. |
+| Recorded parent details | Change the individual's current name while leaving the birth registration unchanged. | The birth registration retains `nameAtRegistration`; a permitted parent component may omit its individual reference. |
+| Complete array boundary | Exceed the response bound of a view declaring a complete memberships array. | The declared failure, with no truncated array presented as complete. |
+| Related disclosure | Read a household with restricted individual or relationship fields. | References, embedded values, omissions, arrays, and completeness metadata satisfy the consumer's disclosure policy. |
+
+## Evidence retained for audit
+
+Retain the specification version, selected capabilities and operation features, exposed services, published metadata and contracts, and a requirement traceability report with pass, fail, or not-applicable results and applicability rationales. Applicable evidence includes fixtures, requests and responses, schema-validation results, source mapping and currency, revision and temporal evidence, resource-limit and timeout results, pagination and disclosure outcomes, purpose evaluation and audit context, caller-discovery results, and identifier lifecycle evidence.
+
+Record artifact validation separately from deployed implementation results.

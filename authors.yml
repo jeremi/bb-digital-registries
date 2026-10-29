@@ -1,41 +1,12 @@
+---
+# Credits for the current alpha; historical contributors remain in the version history.
 authors:
-- name: Dr. Bimal Kumar
-  roles: &id001
-  - Author
-  - Coordinator
-  urn: null
-- name: Xilene Siquero
-  roles: *id001
-  urn: null
-- name: Sebastian Leidig
-  roles: *id001
-  urn: null
-- name: Janet Ngugi
-  roles: &id002
-  - Author
-  urn: null
-- name: Vivek Rana
-  roles: *id002
-  urn: null
-- name: Chinenye Ifebirinachi
-  roles: *id002
-  urn: null
-- name: Ananya Jha
-  roles: *id002
-  urn: null
-- name: Umang Gupta
-  roles: *id002
-  urn: null
-- name: Leonora Smart-Abbey
-  roles: *id002
-  urn: null
-- name: Jeremi Joslin
-  roles: *id002
-  urn: null
-- name: Ali González-García
-  roles: &id003
-  - Editor
-  urn: null
-- name: David Higgins
-  roles: *id003
-  urn: null
+  - name: Sebastian Leidig
+    roles: [Author]
+    urn: govstack:person:sebastian-leidig
+  - name: Jeremi Joslin
+    roles: [Author]
+    urn: govstack:person:jeremi-joslin
+  - name: David Higgins
+    roles: [Author]
+    urn: govstack:person:david-higgins
