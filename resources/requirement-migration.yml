@@ -1,0 +1,879 @@
+source_repository: https://github.com/GovStackWorkingGroup/bb-digital-registries
+source_branch: main
+source_commit: 8588a219df9a8406e66c4392d0bef664b34e4e30
+source_version: 3.0-alpha; June 2026
+legacy_requirements:
+  DRS-1:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to create a registry schema through the web user interface.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to progress a registry through Draft, Published, and Archived lifecycle states.
+  DRS-2:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to create multiple registry databases in one system instance through the web user interface.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to configure the databases and fields connected by a registry relationship.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry opens records in a related database when a user selects a linked record identifier while browsing registry data.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry identifies linked registry data at both database and field levels.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry supports cascade delete, restrict delete, and orphan tolerance as reference-integrity rules for linked databases.
+  DRS-3:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to add fields to a registry schema.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to assign a name to each registry schema field.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to select a supported type for each registry schema field.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to configure a JSON object or block-container field that groups fields visually.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry uses UTF-8 as the database or cluster encoding for multilingual registry content.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to configure a GeoPoint field that holds latitude and longitude.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to configure a GeoShape field that holds a polygon or boundary.
+  DRS-4:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to publish a registry database through the web user interface.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry creates a new version of the registry schema and its API services for each publish request.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry makes earlier versions of a registry schema available to authorised users.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry keeps data stored under an earlier database version usable under both that version and later versions.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to delete a registry schema version through the web user interface.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry identifies breaking changes in a registry schema automatically.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry warns an authorised user about identified breaking changes in a registry schema.
+  DRS-5:
+    targets:
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised user to configure API services for each registry database through the web user interface.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry automatically creates the required API services for a registry database.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised user to hide or disable an API service.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised user to delete an API service.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised user to copy an API service.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised user to create a custom read API service from a registry database view.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry exposes an event-based subscription API for registry data.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry regenerates the API data structure from the current dynamic database structure whenever the database is published.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry applies field-level masking dynamically when returning registry data through an API service.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets an authorised operator mark a registry field as secret.
+    - file: requirements/owner-identifiers.md
+      statement: The Digital Registry lets an authorised operator mark a field as `PersonalDataID`, the identifier of the data owner.
+  DRS-6:
+    targets:
+    - file: requirements/access-control.md
+      statement: The Digital Registry enforces authorisation for creating and managing registry databases.
+    - file: requirements/access-control.md
+      statement: The Digital Registry enforces authorisation for API use at service, record and data-field scope.
+    - file: requirements/access-control.md
+      statement: The Digital Registry enforces authorisation for access to registry data.
+    - file: requirements/access-control.md
+      statement: The Digital Registry provides an API through which an authorised operator manages user rights for a registry database and its data.
+    - file: requirements/access-control.md
+      statement: The Digital Registry provides a user interface through which an authorised operator manages user rights for a registry database and its data.
+    - file: requirements/access-control.md
+      statement: The Digital Registry evaluates role-based access-control rules.
+    - file: requirements/access-control.md
+      statement: The Digital Registry evaluates attribute-based access-control rules.
+    - file: requirements/access-control.md
+      statement: The Digital Registry evaluates policy-based access-control rules.
+    - file: requirements/access-control.md
+      statement: The Digital Registry evaluates consent-based access-control rules.
+    - file: requirements/access-control.md
+      statement: The Digital Registry evaluates delegated-access rules for guardians, parents and representatives.
+    - file: requirements/access-control.md
+      statement: The Digital Registry lets an authorised operator configure cross-registry access templates.
+    - file: requirements/access-control.md
+      statement: The Digital Registry applies data-minimisation rules that return only the fields required by an authorised request.
+    - file: requirements/access-control.md
+      statement: The Digital Registry applies dynamic field restrictions whose conditions are evaluated against record values.
+    - file: requirements/access-control.md
+      statement: The Digital Registry provides an `Any logged-in user` role.
+    - file: requirements/access-control.md
+      statement: The Digital Registry provides an `Anonymous` user role.
+    - file: requirements/access-control.md
+      statement: The Digital Registry lets an authorised operator assign rights to an individual user and to a group of users.
+  DRS-7:
+    targets:
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry records every registry schema change in its audit log.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry records every create, read, update and delete operation on registry data in its audit log.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets an authorised operator view and search the audit log.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets a data owner see who has processed the owner's personal data, through an API or a user interface, as a standard function for all registries.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry returns to a data owner, through an API, the identity of each party that read or processed personal data the owner owns and the matching event logs.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry presents a data owner with the identity of each party that read or processed personal data the owner owns and with the matching event logs.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry protects change-log integrity by chaining log entries.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry writes database log evidence to an external blockchain for additional integrity protection.
+  DRS-8:
+    targets:
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry records every read request made through its user interface or APIs.
+    - file: requirements/audit-and-personal-data.md
+      statement: For a personal-data read, the Digital Registry records a log entry tagged `PersonalData` with the log ID, record ID, field ID, unique and unchangeable `PersonalDataID`, reader ID, reader name or initial, and time of the read.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry presents all personal-data read logs to an authorised operator.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets a data owner see who has processed the owner's personal data, through an API or a user interface, as a standard function for all registries.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry returns to a data owner, through an API, the identity of each party that read or processed personal data the owner owns and the matching event logs.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry presents a data owner with the identity of each party that read or processed personal data the owner owns and with the matching event logs.
+    - file: requirements/audit-and-personal-data.md
+      statement: For one registry, the Digital Registry returns a personal-data usage report selected by the configured unique identifier of the data owner.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry records every read of a personal-data usage report in its audit log.
+    - file: requirements/audit-and-personal-data.md
+      statement: When law requires a legal justification for a personal-data read, the Digital Registry records that legal justification with the read event.
+    - file: requirements/audit-and-personal-data.md
+      statement: When consent applies to a personal-data read, the Digital Registry records the consent reference with the read event.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry records the data viewer's role, organisation and location with a personal-data read event.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry records the viewer device fingerprint with a personal-data read event.
+  DRS-9:
+    targets:
+    - file: requirements/records-optional-database-views.md
+      statement: The Digital Registry lets an authorised operator create a view as a selection of data from a registry database.
+    - file: requirements/records-optional-database-views.md
+      statement: The Digital Registry lets an authorised operator expose a database view as Open Data to the `Anonymous` role.
+    - file: requirements/records-optional-database-views.md
+      statement: The Digital Registry exposes a configured database view through a custom read API operation.
+    - file: requirements/records-optional-database-views.md
+      statement: The Digital Registry prevents a database view from changing or deleting registry data.
+    - file: requirements/records-optional-database-views.md
+      statement: The Digital Registry applies its user-rights management policies to access a database view.
+  DRS-10:
+    targets:
+    - file: requirements/transfer-schemas.md
+      statement: The Digital Registry exports a registry database schema as a JSON or YAML file.
+    - file: requirements/transfer-schemas.md
+      statement: The Digital Registry exports a registry database schema as an XLS file.
+  DRS-11:
+    targets:
+    - file: requirements/transfer-schemas.md
+      statement: The Digital Registry imports a registry database schema from a JSON or YAML file.
+    - file: requirements/transfer-schemas.md
+      statement: The Digital Registry imports a registry database schema from an XLS file.
+  DRS-12:
+    targets:
+    - file: requirements/service-usage-statistics.md
+      statement: The Digital Registry records usage information for every API service invocation.
+    - file: requirements/service-usage-statistics.md
+      statement: The Digital Registry records every search made through the registry user interface.
+    - file: requirements/service-usage-statistics.md
+      statement: The Digital Registry records every search made through a registry API.
+  DRS-13:
+    targets:
+    - file: requirements/personal-data-field-tagging.md
+      statement: The Digital Registry lets an authorised operator mark a field as a `PersonalData` log object that contains personal data.
+  DRS-14:
+    targets:
+    - file: requirements/owner-identifiers.md
+      statement: The Digital Registry lets an authorised operator mark a field as `PersonalDataID`, the identifier of the data owner.
+    - file: requirements/owner-identifiers.md
+      statement: The Digital Registry lets an authorised operator configure multiple owner identifiers, including national, passport and local identifiers.
+    - file: requirements/owner-identifiers.md
+      statement: The Digital Registry lets an authorised operator configure validation rules for owner identifiers.
+    - file: requirements/owner-identifiers.md
+      statement: The Digital Registry links an owner identifier to an external registry.
+    - file: requirements/owner-identifiers.md
+      statement: The Digital Registry prevents a configured immutable owner identifier from being changed.
+  DRS-15:
+    targets:
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets an authorised operator mark a registry field as secret.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry encrypts secret field data while the data is at rest.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry encrypts information in transit between Building Blocks under the rules of the Information Mediator Building Block.
+  DRS-16:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry displays a registry database schema in the web user interface.
+  DRS-17:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to configure API-related properties of a registry schema field.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised user to configure user-interface-related properties of a registry schema field.
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry activates configured field-content triggers when a record is created or changed.
+  DRS-18:
+    targets:
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets an authorised operator add a unique encryption key for each database.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry uses the configured database encryption key to encrypt and decrypt data for that database.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry blinds the configured database encryption key in the user interface.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry requires an application to know the database encryption key before the application reads encrypted data through the API.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry decrypts encrypted registry data for display in the user interface.
+  DRS-19:
+    targets:
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry lets an authorised operator configure an automated exchange by mapping input and output registry fields.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry runs a configured exchange after each configured time interval until every corresponding record has been processed.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry processes one record at a time during an automated exchange.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry lets an authorised operator configure exchange conditions that combine field comparisons with `AND` and `OR` operators.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry copies mapped data to another registry database in the same system instance.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry sends mapped data to an API of an external registry database.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry supports webhook triggers for multi-registry orchestration of automated exchanges.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry supports many-to-one and one-to-many field mappings in an automated exchange.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry lets an authorised operator configure a transformation of mapped data into another format.
+    - file: requirements/data-exchange.md
+      statement: The Digital Registry activates a configured automated exchange when its configured conditions evaluate to true.
+  DRS-20:
+    targets:
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry enables an authorised user to create a registry from a schema template.
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry enables an authorised user to share a registry schema template with other users of the same system instance.
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry exports a registry schema template.
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry imports a registry schema template.
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry enables an authorised user to share a registry schema template through a marketplace.
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry maintains versions of registry schema templates in a template repository.
+    - file: requirements/schema-templates.md
+      statement: The Digital Registry provides domain templates for Health, Business, and Farmer registries.
+  DRS-21:
+    targets:
+    - file: requirements/record-views.md
+      statement: The Digital Registry presents a main grid view through which an authorised operator can see all registry data.
+    - file: requirements/record-views.md
+      statement: The Digital Registry presents a detail view of a registry record to an authorised operator.
+    - file: requirements/record-views.md
+      statement: The Digital Registry opens an image document associated with a registry record in the user interface.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator download a non-image document associated with a registry record.
+    - file: requirements/record-views.md
+      statement: The Digital Registry presents a data log view of changes (create, update and delete) with the data before and after each change.
+    - file: requirements/record-views.md
+      statement: The Digital Registry presents a data read view with information about who has looked at or exported the data.
+    - file: requirements/record-views.md
+      statement: The Digital Registry stores the data and the data reader information of the data read view in the log registry.
+  DRS-22:
+    targets:
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator edit record data inline in the main grid.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator edit record data in a record-detail view.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator upload a document to a registry record.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator remove a document from a registry record.
+    - file: requirements/record-views.md
+      statement: The Digital Registry presents blinded or encrypted record fields in the record-detail edit view.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator delete registry data through the user interface.
+    - file: requirements/record-views.md
+      statement: The Digital Registry records every change made to registry data through an operator view.
+  DRS-23:
+    targets:
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator filter records by search criteria applied to field content.
+    - file: requirements/record-views.md
+      statement: The Digital Registry provides full-text search over registry data to an authorised operator.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator order records by each data field.
+  DRS-24:
+    targets:
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator choose to import information into a registry database.
+    - file: requirements/record-views.md
+      statement: The Digital Registry imports registry data from JSON, CSV and XLS files.
+  DRS-25:
+    targets:
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator select or filter registry data and choose to export it.
+    - file: requirements/record-views.md
+      statement: The Digital Registry exports selected or filtered registry data to CSV, XLS and JSON files.
+  DRS-26:
+    targets:
+    - file: requirements/statistical-reporting.md
+      statement: The Digital Registry produces standard statistical reports for a registry.
+    - file: requirements/statistical-reporting.md
+      statement: The Digital Registry shows statistics for all registered items and lets a user filter those statistics by multiple criteria.
+    - file: requirements/statistical-reporting.md
+      statement: The Digital Registry lets a user generate a report configured from fields registered in the registry.
+    - file: requirements/statistical-reporting.md
+      statement: The Digital Registry lets an analyst or user analyze data collected in the system in various ways.
+    - file: requirements/statistical-reporting.md
+      statement: The Digital Registry provides an API operation that extracts registry records for analysis in an external data-analytics system.
+    - file: requirements/statistical-reporting.md
+      statement: The Digital Registry lets an authorised operator build a custom dashboard for analysing data within a registry database.
+  DRS-27:
+    targets:
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user share registry data by email or through a unique and secure URL.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user share registry data by email.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user share registry data through a unique and secure URL.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user select shared data at record level and field level.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised operator turn data sharing off in the authorisation module.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user share data with an anonymous recipient.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user limit the validity of a secure sharing link to a defined time period.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user require consent before a recipient accesses a sharing link.
+    - file: requirements/record-views.md
+      statement: The Digital Registry lets an authorised user restrict a sharing link to recipients with specified roles.
+    - file: requirements/record-views.md
+      statement: The Digital Registry provides a QR code for a sharing link.
+    - file: requirements/record-views.md
+      statement: The Digital Registry applies a watermark to data downloaded through a sharing link.
+    - file: requirements/record-views.md
+      statement: The Digital Registry provides a view-only sharing mode that prevents export.
+  DRS-28:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised API client to create a registry database.
+  DRS-29:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised API client to create multiple registry databases in one system instance.
+  DRS-30:
+    targets:
+    - file: requirements/manage-registries.md
+      statement: The Digital Registry enables an authorised API client to publish a registry database.
+  DRS-31:
+    targets:
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry automatically creates the required API services for a registry database.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry regenerates the API data structure from the current dynamic database structure whenever the database is published.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised API client to modify the API services of a registry database.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised API client to hide an API service.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised API client to delete an API service.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised API client to copy an API service.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry enables an authorised API client to create a custom API service.
+  DRS-32:
+    targets:
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry returns a registry database schema to an authorised API client.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry returns the list of API services available for a registry database to an authorised API client.
+  DRS-33:
+    targets:
+    - file: requirements/record-access.md
+      statement: The Digital Registry provides an OpenAPI operation through which an authorised client searches registry records.
+    - file: requirements/record-access.md
+      statement: The Digital Registry provides an OpenAPI operation through which an authorised client creates a registry record.
+    - file: requirements/record-access.md
+      statement: The Digital Registry provides an OpenAPI operation through which an authorised client reads a registry record.
+    - file: requirements/record-access.md
+      statement: The Digital Registry provides an OpenAPI operation through which an authorised client updates a registry record.
+    - file: requirements/record-access.md
+      statement: The Digital Registry provides an OpenAPI operation through which an authorised client deletes a registry record.
+    - file: requirements/record-access.md
+      statement: The Digital Registry provides an OpenAPI operation through which an authorised client creates or updates a registry record.
+    - file: requirements/record-access.md
+      statement: The Digital Registry authorises client systems and users before they process registry records.
+  DRS-34:
+    targets:
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry provides an OpenAPI service description for every API service and API-service version.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry makes the OpenAPI service description of every API service and API-service version available to client systems.
+    - file: requirements/configure-api-services.md
+      statement: The Digital Registry visualises every API service and API-service version described by its OpenAPI service description.
+  DRS-35:
+    targets:
+    - file: requirements/audit-and-personal-data.md
+      statement: For one registry, the Digital Registry returns a personal-data usage report selected by the configured unique identifier of the data owner.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets an authorised operator configure the unique data-owner identifier accepted as input to the personal-data usage report API.
+    - file: requirements/audit-and-personal-data.md
+      statement: When a registry schema stores personal data, the Digital Registry lets an authorised operator link that personal data to its owner.
+  DRS-36:
+    targets:
+    - file: requirements/statistics-api.md
+      statement: The Digital Registry exposes registration data through a statistical-query API.
+    - file: requirements/statistics-api.md
+      statement: The Digital Registry exposes programme data through a statistical-query API.
+    - file: requirements/statistics-api.md
+      statement: The Digital Registry's statistical-query API accepts date and time ranges as query parameters.
+    - file: requirements/statistics-api.md
+      statement: The Digital Registry's statistical-query API accepts a registered programme as a query parameter.
+    - file: requirements/statistics-api.md
+      statement: The Digital Registry limits statistical-query API results to data the caller is authorised to access.
+  DRS-37:
+    targets:
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry lets a data owner see who has processed the owner's personal data, through an API or a user interface, as a standard function for all registries.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry returns to a data owner, through an API, the identity of each party that read or processed personal data the owner owns and the matching event logs.
+    - file: requirements/audit-and-personal-data.md
+      statement: The Digital Registry presents a data owner with the identity of each party that read or processed personal data the owner owns and with the matching event logs.
+    - file: requirements/audit-and-personal-data.md
+      statement: For one registry, the Digital Registry returns a personal-data usage report selected by the configured unique identifier of the data owner.
+supplementary_requirements:
+  KF-LIFECYCLE-2:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an analyst to deprecate and archive registry versions.
+  KF-LIFECYCLE-5:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an analyst to configure deduplication and data-quality controls.
+  KF-DATA-9:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry supports logical deletion and archival of registry records.
+  KF-DATA-11:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an analyst to apply policy-based masking and redaction to sensitive record attributes.
+  KF-INTEROP-12:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry exposes generated GraphQL services for its registries.
+  KF-INTEROP-14:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry publishes create, update and delete domain events through publish/subscribe messaging.
+  KF-APPLICANT-6-EXTERNAL:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry accepts external and cross-domain event subscriptions only through mediated services exposed by the Information Mediator or an Information Mediator-managed Event Gateway.
+  KF-APPLICANT-6-INTERNAL:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies RBAC or ABAC policy, tenant isolation and audit controls to direct internal event-bus subscriptions.
+  KF-MONITORING-15:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry shows registry usage, performance and data-quality statistics to an analyst.
+  API-VERSION-SYNCHRONISATION:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry synchronizes published database-schema versions and their generated API service versions.
+  API-ENDPOINT-CONVENTION:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry describes its generated API endpoints using the upstream naming convention.
+  API-DESCRIPTION-FORMAT:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides OpenAPI 3 descriptions of its REST APIs with YAML descriptions and JSON request and response bodies.
+  WF-9.1.2-CHANGE-LOG:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry stores changes made through the analyst workflow in a Change Log database.
+  WF-9.2.1-AUDIT-REGISTRY:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry records all applicant-workflow processing events in a dedicated audit registry.
+  API-DATABASE-modifyDatabase:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an authorised API client to create or modify a database schema.
+  API-DATABASE-getDatabase:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an authorised API client to read a database schema.
+  API-DATABASE-deleteDatabase:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an authorised API client to delete a database schema and all data in it.
+  API-DATABASE-listDatabases:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry enables an authorised API client to list the registry databases and their information.
+  WF-9.2.1-create:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies the applicant workflow access outcomes to its create operation.
+  WF-9.2.1-read:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies the applicant workflow access outcomes to its read operation.
+  WF-9.2.1-update:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies the applicant workflow access outcomes to its update operation.
+  WF-9.2.1-delete:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies the applicant workflow access outcomes to its delete operation.
+  WF-9.2.1-update-or-create:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies the applicant workflow access outcomes to its update-or-create operation.
+  WF-9.2.1-exists:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry applies the applicant workflow access outcomes to its exists operation.
+  API-TEMPLATE-list:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation list.
+  API-TEMPLATE-create:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation create.
+  API-TEMPLATE-GDB-MCTS-create-entries:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides a batch-create operation for entries of a registry database.
+  API-TEMPLATE-exists:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation exists.
+  API-TEMPLATE-read:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation read.
+  API-TEMPLATE-update:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation update.
+  API-TEMPLATE-updateEntries:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation updateEntries.
+  API-TEMPLATE-update-or-create:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation update-or-create.
+  API-TEMPLATE-delete:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation delete.
+  API-TEMPLATE-readValue:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation readValue.
+  API-TEMPLATE-DPU:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation DPU.
+  API-TEMPLATE-getDatabase:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation getDatabase.
+  API-TEMPLATE-deleteDatabase:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation deleteDatabase.
+  API-TEMPLATE-modifyDatabase:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation modifyDatabase.
+  API-TEMPLATE-listDatabases:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides the upstream reference operation listDatabases.
+  DATA-7.2-FIELD-1:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Database ID in its data model.
+  DATA-7.2-FIELD-2:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Database name in its data model.
+  DATA-7.2-FIELD-3:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Schema ID in its data model.
+  DATA-7.2-FIELD-4:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Database schema in its data model.
+  DATA-7.2-FIELD-5:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Version in its data model.
+  DATA-7.2-FIELD-6:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Data ID in its data model.
+  DATA-7.2-FIELD-7:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Registry number in its data model.
+  DATA-7.2-FIELD-8:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Field type in its data model.
+  DATA-7.2-FIELD-9:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Field value in its data model.
+  DATA-7.2-FIELD-10:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Audit log old value in its data model.
+  DATA-7.2-FIELD-11:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry includes the upstream minimum field Audit log new value in its data model.
+  DATA-7.1-RELATIONSHIPS:
+    targets:
+    - file: requirements/represent-registry-data.md
+      statement: The Digital Registry represents the relationships in the upstream Registry resource model.
+  CFR-DATA-4:
+    targets:
+    - file: requirements/registry-assurance.md
+      statement: The Digital Registry complies with high-quality data-protection principles.
+  CFR-DATA-7:
+    targets:
+    - file: requirements/registry-assurance.md
+      statement: The Digital Registry preserves logical records when deleting records unless hard deletion is mandated by law.
+  KF-PLATFORM:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry supports multiple tenants that create and manage registry databases.
+  KF-LIFECYCLE-4:
+    targets:
+    - file: requirements/operate-registry-services.md
+      statement: The Digital Registry provides backward-compatibility guidance when an analyst publishes a changed registry schema and API version.
+binding_gaps:
+- file: requirements/manage-registries.md
+  statement: The Digital Registry enables an authorised API client to publish a registry database.
+  reason: Neither source OpenAPI document defines an operation that publishes a registry database.
+  source: DRS-30
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry exposes an event-based subscription API for registry data.
+  reason: Neither source OpenAPI document defines a subscription operation.
+  source: DRS-5
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry applies field-level masking dynamically when returning registry data through an API service.
+  reason: The behaviour applies across data-returning operations, while the format permits exactly one api_operation_id and the source does not identify one operation as the complete contract.
+  source: DRS-5
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry automatically creates the required API services for a registry database.
+  reason: The source templates define no generic operation for batch create, batch delete or archive; the only batch-create operation, GDB-MCTS-create-entries, is fixed to the example registry path /data/mcts/createEntries.
+  source: DRS-5
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry enables an authorised API client to modify the API services of a registry database.
+  reason: Neither source OpenAPI document defines an operation for API-service configuration.
+  source: DRS-31
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry enables an authorised API client to hide an API service.
+  reason: Neither source OpenAPI document defines an operation for API-service configuration.
+  source: DRS-31
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry enables an authorised API client to delete an API service.
+  reason: Neither source OpenAPI document defines an operation for API-service configuration.
+  source: DRS-31
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry enables an authorised API client to copy an API service.
+  reason: Neither source OpenAPI document defines an operation for API-service configuration.
+  source: DRS-31
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry enables an authorised API client to create a custom API service.
+  reason: Neither source OpenAPI document defines an operation for API-service configuration.
+  source: DRS-31
+- file: requirements/configure-api-services.md
+  statement: The Digital Registry makes the OpenAPI service description of every API service and API-service version available to client systems.
+  reason: Neither source OpenAPI document defines an operation or endpoint that publishes service descriptions.
+  source: DRS-34
+- file: requirements/access-control.md
+  statement: The Digital Registry provides an API through which an authorised operator manages user rights for a registry database and its data.
+  reason: Neither source OpenAPI document defines an operation for managing user rights.
+  source: DRS-6
+- file: requirements/records-optional-database-views.md
+  statement: The Digital Registry exposes a configured database view through a custom read API operation.
+  reason: Neither source OpenAPI document defines an operation for a custom database view.
+  source: DRS-9
+- file: requirements/audit-and-personal-data.md
+  statement: The Digital Registry writes database log evidence to an external blockchain for additional integrity protection.
+  reason: The source identifies no blockchain protocol, network or operation to which this consumed interaction can bind.
+  source: DRS-7
+- file: requirements/audit-and-personal-data.md
+  statement: The Digital Registry encrypts information in transit between Building Blocks under the rules of the Information Mediator Building Block.
+  reason: The source cites the Information Mediator Building Block without a versioned publication identifier or section.
+  source: DRS-15
+- file: requirements/audit-and-personal-data.md
+  statement: The Digital Registry requires an application to know the database encryption key before the application reads encrypted data through the API.
+  reason: The `read` operation is the matching data-read operation, but its source request contract defines no encryption-key parameter or other proof-of-knowledge field.
+  source: DRS-18
+- file: requirements/data-exchange.md
+  statement: The Digital Registry sends mapped data to an API of an external registry database.
+  reason: The source identifies no external registry API contract or operation for the consumed interaction.
+  source: DRS-19
+- kind: unresolved-interaction
+  file: requirements/data-exchange.md
+  statement: The Digital Registry supports webhook triggers for multi-registry orchestration of automated exchanges.
+  reason: The source does not say whether webhook triggers are received, published, or observed through another component.
+  source: DRS-19
+- file: requirements/owner-identifiers.md
+  statement: The Digital Registry links an owner identifier to an external registry.
+  reason: The source identifies no external registry API contract or linking operation.
+  source: DRS-14
+- file: requirements/record-views.md
+  statement: The Digital Registry imports registry data from JSON, CSV and XLS files.
+  reason: The source names file types but defines no schema, profile or validation contract for imported data files.
+  source: DRS-24
+- file: requirements/record-views.md
+  statement: The Digital Registry exports selected or filtered registry data to CSV, XLS and JSON files.
+  reason: The source names file types but defines no schema, profile or validation contract for exported data files.
+  source: DRS-25
+- file: requirements/transfer-schemas.md
+  statement: The Digital Registry exports a registry database schema as a JSON or YAML file.
+  reason: The source defines no schema export or import file format.
+  source: DRS-10
+- file: requirements/transfer-schemas.md
+  statement: The Digital Registry exports a registry database schema as an XLS file.
+  reason: The source defines no schema export or import file format.
+  source: DRS-10
+- file: requirements/transfer-schemas.md
+  statement: The Digital Registry imports a registry database schema from a JSON or YAML file.
+  reason: The source defines no schema export or import file format.
+  source: DRS-11
+- file: requirements/transfer-schemas.md
+  statement: The Digital Registry imports a registry database schema from an XLS file.
+  reason: The source defines no schema export or import file format.
+  source: DRS-11
+- file: requirements/schema-templates.md
+  statement: The Digital Registry exports a registry schema template.
+  reason: The source defines no registry-template package format.
+  source: DRS-20
+- file: requirements/schema-templates.md
+  statement: The Digital Registry imports a registry schema template.
+  reason: The source defines no registry-template package format.
+  source: DRS-20
+- file: requirements/statistics-api.md
+  statement: The Digital Registry exposes registration data through a statistical-query API.
+  reason: Neither source OpenAPI document identifies an operation as the statistical-query API required by DRS-36.
+  source: DRS-36
+- file: requirements/statistics-api.md
+  statement: The Digital Registry exposes programme data through a statistical-query API.
+  reason: Neither source OpenAPI document identifies an operation as the statistical-query API required by DRS-36.
+  source: DRS-36
+- file: requirements/statistics-api.md
+  statement: The Digital Registry's statistical-query API accepts date and time ranges as query parameters.
+  reason: Neither source OpenAPI document identifies an operation as the statistical-query API required by DRS-36.
+  source: DRS-36
+- file: requirements/statistics-api.md
+  statement: The Digital Registry's statistical-query API accepts a registered programme as a query parameter.
+  reason: Neither source OpenAPI document identifies an operation as the statistical-query API required by DRS-36.
+  source: DRS-36
+- file: requirements/operate-registry-services.md
+  statement: The Digital Registry exposes generated GraphQL services for its registries.
+  reason: The upstream chapter requires GraphQL services but supplies no GraphQL endpoint or operation binding.
+  source: Chapter 4, Interoperability item 12
+- file: requirements/operate-registry-services.md
+  statement: The Digital Registry provides a batch-create operation for entries of a registry database.
+  reason: The only batch-create operation in the source, GDB-MCTS-create-entries, is fixed to the example registry path /data/mcts/createEntries, so it is not a generic operation and no operation is bound.
+  source: API-TEMPLATE-GDB-MCTS-create-entries
+source_ambiguities:
+- source: DRS-2
+  description: The source uses database and database table interchangeably when describing relationships.
+- source: DRS-1
+  description: The source lists the default indexing and storage profile as `row store / column store / document store` without saying whether all three must be offered.
+- source: DRS-2
+  description: The source says links can be a foreign key, a soft link or a graph relationship, while only the foreign key is backed by `must`; the migration requires all three and the source does not say whether all are mandatory.
+- source: DRS-2
+  description: The source says it `should be possible` to open another database by clicking the record ID, while the example that follows is tagged REQUIRED.
+- source: DRS-2
+  description: The source lists cascade delete, restrict delete, and orphan tolerance without saying whether a relationship selects one rule or may combine them.
+- source: DRS-3
+  description: UTF-8 database or cluster encoding is listed among field types even though its wording describes a storage encoding.
+- source: DRS-4
+  description: The source requires old-version data to remain usable under later versions but does not define compatibility or migration rules.
+- source: DRS-5
+  description: Section 4.1 names generated REST, GraphQL, and OpenAPI services, while the source API contracts define REST operations only.
+- source: DRS-5 and DRS-14
+  description: DRS-5 says an analyst must be able to mark a field as PersonalDataID, while its DRS-14 cross-reference marks that feature optional.
+- source: DRS-10 and DRS-11
+  description: The notation JSON/YAML does not say whether both formats are required or whether one format is sufficient. The migrated statements keep the source `JSON or YAML` wording; whether one format suffices remains open.
+- source: DRS-17
+  description: The source names JavaScript field transformation without defining its execution environment or security constraints.
+- source: DRS-20
+  description: The source requires marketplace sharing but does not define a registry-template package format or marketplace protocol.
+- source: DRS-19
+  description: '`Mapping may have a transformation option` sits in a REQUIRED block without an (Optional) tag; the migration keeps `may` as a nonblocking recommendation.'
+- source: DRS-20 and DRS-9
+  description: DRS-20 includes views in a full registry template, while DRS-9 makes database views OPTIONAL; the source does not say what a template contains when the Database Views extension is not claimed.
+- source: DRS-34
+  description: The source asks for real examples "if possible" without a condition that makes the phrase verifiable.
+- source: DRS-5 and DRS-9
+  description: DRS-5 requires an analyst to create custom read API services from views, while DRS-9 marks the whole database-view functionality optional.
+- source: DRS-5 and DRS-9
+  description: DRS-5 labels dynamic field-level masking optional and cross-references DRS-9, but DRS-9 describes database views and does not define field-level masking.
+- source: DRS-7
+  description: The source requires the `highest level of integrity` for change logs but defines no comparative level or measurable threshold; it names log chaining as the only concrete mechanism.
+- source: DRS-8, DRS-13, DRS-14, DRS-35, and DRS-37
+  description: DRS-13 and DRS-14 make personal-data and owner-identifier field tagging optional, while DRS-8, DRS-35 and DRS-37 require logs, owner linking and owner reports that depend on those concepts.
+- source: DRS-8
+  description: The conditions under which law requires a legal justification or consent applies are not defined by the source.
+- source: DRS-18
+  description: The source requires applications to know a database encryption key and states that the user interface decrypts data, but does not define key transport, custody or rotation.
+- source: DRS-19
+  description: '`Webhook triggers` does not say whether the Digital Registry receives a webhook, publishes one, or observes it through another component.'
+- source: DRS-26 and DRS-36
+  description: DRS-26 requires APIs that extract data for external analytics, while DRS-36 makes a statistical-query API optional; the source does not define the boundary between those APIs.
+- source: DRS-27
+  description: The source joins email delivery and a unique secure URL with `or`, so it does not require both sharing mechanisms.
+- source: DRS-27
+  description: The source classifies data shared anonymously as Open Data without defining publication, licensing or withdrawal consequences.
+- source: DRS-7 and DRS-37
+  description: 'DRS-7 item 1.4 gives a data owner the option to see who has processed the owner''s data without naming a channel, while DRS-37 item 3 says the logs are visible `via API or via User Interface`; the either/or does not require both, so the migration models a variation point that needs at least one of the two options.'
+- source: DRS-8
+  description: 'The marker `(optional)` ends the final bullet `Data viewer''s role, org, location, Device fingerprint (optional)` and the source does not say whether it scopes only the device fingerprint or all four items; the migration reads it as scoping the device fingerprint and keeps role, organisation and location required.'
+- source: DRS-27
+  description: 'DRS-27 items 1 to 4 (time-bound, consent-required, role-restricted and QR-code sharing) are written as link features, so they presuppose a sharing link even though the opening sentence allows email delivery alone.'
+- source: DRS-26
+  description: 'The block header reads `should have the ability to (REQUIRED)`, so the source does not settle whether `should` makes the listed abilities recommendations or requirements; the migration keeps them REQUIRED, and the analytics extraction statement stays bound to `list` as the closest operation.'
+- source: DRS-24 and DRS-25
+  description: 'DRS-25 writes `CSV/XLS, JSON`, and the slash does not say whether both CSV and XLS are required; DRS-24 lists JSON, CSV and XLS with commas. The migrated export statement keeps all three formats.'
+- source: Chapter 4, Interoperability item 12
+  description: 'spec/4-key-digital-functionalities.md:40 writes `REST/GraphQL/OpenAPI`, and the slash does not say whether GraphQL is required alongside REST.'
+- source: Chapter 4 item 16 and DRS-26
+  description: 'Chapter 4 item 16 (spec/4-key-digital-functionalities.md:47), `Generate dashboards and administrative reports`, sits under a chapter described as core required functions, while DRS-26 marks custom dashboards as an option; the migration keeps the dashboard statement RECOMMENDED.'
+- source: Workflow 9.1.3
+  description: 'spec/9-workflows.md:112-113 postconditions 2 and 3 conflict: postcondition 2, labelled a simplification for the GovStack Sandbox instance, lets a non-authorised developer process the schema of databases where anonymous editing is allowed, while postcondition 3 says a user with no authorization cannot create or change any schema.'
+- source: Chapter 4 item 15 and DRS-12
+  description: 'Chapter 4 item 15 (spec/4-key-digital-functionalities.md:46) requires viewing statistics on registry usage, performance and data quality, while DRS-12 makes service usage statistics optional; the migration keeps the monitoring statement REQUIRED and the DRS-12 recording statements optional.'
+- source: Chapter 8
+  description: 'Chapter 8 calls its listed APIs `a minimal set of functionality that should be provided by any implementation` (spec/8-service-apis.md:9) and says the Building Block `is expected to host` them (spec/8-service-apis.md:31); the migration maps them to REQUIRED, and the `should` and `expected` wording does not settle the level.'
+- source: Chapter 4 item 13
+  description: 'Item 13, `Integrate with external systems through the Information Mediator BB` (spec/4-key-digital-functionalities.md:41), does not say whether every external integration must pass through the Information Mediator; the migration does not carry it as a separate statement because mediation is outside the system under test.'

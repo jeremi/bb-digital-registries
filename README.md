@@ -1,84 +1,11 @@
-# GovStack Building Block Template
+# Digital Registries Building Block Specification
 
-This template is intended to be used by the various GovStack building block
-repos. Each building block repo will have at least 4 main sections, outlined in
-the directory structure below.
+This is a format-only authoring migration of **official `main` at `8588a219df9a8406e66c4392d0bef664b34e4e30`**, labelled **3.0-alpha; June 2026**. The version history also uses `3.0.0-alpha`, retained in the authoring metadata. This migration publishes no release and imports no later draft or uncommitted Registry changes.
 
-## Gitbook and the published "Building Block Specifications" document
+Start with the [overview](introduction/overview.md), [scope](introduction/scope.md), and [conformance explanation](resources/conformance.md). The structured requirements preserve all 37 DRS entries, the two elevated cross-functional requirements, and the additional required behaviour stated in the other upstream chapters. The [narrative inventory](resources/upstream-narrative-inventory.md) records the two chapter 4 items that are not carried as separate required statements.
 
-Note that pushes to the `main` branch will automatically trigger a Gitbook build
-and deployment from the `/spec` directory.
+[Migration record](resources/format-migration.md) explains the source boundary, optionality mapping and draft identifiers. [Source findings](resources/source-findings.md) records unresolved upstream clauses and contract bindings. [API source notes](resources/contract-source-notes.md) explains the generated [authoring entrypoint](resources/api.yml) and the exact original templates it projects. [Verification procedures](resources/testing.md) distinguishes executable preservation checks from manual implementation assessment.
 
-## Repo Structure
+The original `spec/`, `api/`, `examples/` and `test/` trees remain byte-for-byte unchanged as source and implementation artifacts. Original publication navigation is retained there as historical source, not as the active requirement catalogue. The original repository README and GitBook configuration are preserved under `resources/history/`.
 
-```sh
-README.md
-/spec # the markdown files which are used to build the specification in GitBook
-/api # the openapi specification
-/test # the test plan and tests
-  plan.md
-/examples # examples for deploying, configuring, and testing applications which implement the behaviors specified by this building block
-  /application-a
-    README.md # instructions for deployment/testing
-    docker-compose.yaml # example deployment file
-      db
-      web
-      adaptor
-      security-server
-    Caddyfile # example config for "adaptor"
-    Dockerfile # dockerfile to build "adaptor"
-  /application-b
-  /application-c
-```
-
-## Test data
-
-In order to properly call the tests, a file with input data has been created.
-
-The data must exist in tested software before running the tests.
-
-This data are compatible with the data used in the tests and they are stored in
-the `openAPI` folder in the `test-data.json`.
-
-## Run Cucumber tests
-
-Cucumber-js is used to execute test harness to check compability of application
-api with BB test definitions.
-
-### Mock server
-
-Launch the mock server from examples/mock folder. The instruction is located in
-'examples/mock' folder in file README.md
-
-### Cucumber tests
-
-To install project's dependencies, navigate to folder 'test' and execute the
-following command:
-
-```
-yarn install
-```
-
-Then to execute all tests scenarios use the following command:
-
-```
-yarn test
-```
-
-or
-
-```
-npx cucumber-js
-```
-
-To execute specific test scenario use the following command:
-
-```
-npx cucumber-js features/<file_name>
-```
-
-example:
-
-```
-npx cucumber-js features/data_update_or_create.feature
-```
+The [official source snapshot](https://github.com/GovStackWorkingGroup/bb-digital-registries/tree/8588a219df9a8406e66c4392d0bef664b34e4e30) is the sole content baseline. The shared renderer is separate tooling and does not change that baseline or establish implementation conformance.

@@ -1,0 +1,47 @@
+name: Digital Registries
+abstract: A domain-agnostic Building Block for creating and administering registries, governing registry records, generating service interfaces, and retaining accountable data use.
+url: https://specs.govstack.global/registries/
+repository: https://github.com/GovStackWorkingGroup/bb-digital-registries
+urn: govstack:spec:bb:registries
+owner_group: govstack:wg:registries-registration
+capabilities:
+- id: registry-administration
+  title: Registry Administration
+  description: Authorised institutions create, configure, publish and maintain registry structures.
+- id: record-management
+  title: Record Management
+  description: Authorised users and client systems maintain and retrieve registry records.
+- id: governed-access
+  title: Governed Access
+  description: Institutions control access to registry structures, records and sensitive information.
+- id: accountability
+  title: Accountability
+  description: Operators and data owners inspect protected records of registry data processing.
+- id: data-exchange
+  title: Data Exchange
+  description: Institutions exchange registry information with other registries and systems.
+- id: analytics
+  title: Analytics
+  description: Authorised users inspect registry statistics and reports.
+extensions:
+- id: schema-templates
+  title: Schema Templates
+  description: A solution that claims this extension creates registries from reusable, versioned templates and exchanges those templates.
+  requires: []
+- id: database-views
+  title: Database Views
+  description: A solution that claims this extension creates governed read-only selections of registry data and can expose them as Open Data and through custom read APIs.
+  requires: []
+- id: service-usage-statistics
+  title: Service Usage Statistics
+  description: A solution that claims this extension records API service usage and searches made through registry user and API interfaces.
+  requires: []
+- id: statistics-api
+  title: Statistical Queries API
+  description: A solution that claims this extension exposes authorised registration and programme data through parameterised statistical queries.
+  requires: []
+versions:
+- version: 3.0.0-alpha
+  release_date: null
+  short_description: Format-only authoring migration of official main, labelled 3.0-alpha; June 2026. No release is published.
+  latest: true

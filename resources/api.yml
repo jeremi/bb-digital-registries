@@ -1,0 +1,891 @@
+openapi: 3.0.0
+info:
+  title: Digital Registries upstream API authoring projection
+  version: 1.3.0
+  description: Generated from the two contracts embedded by upstream chapter 8. Paths,
+    operations and schemas retain their source meaning. Four Database operation identifiers
+    are authoring aliases, not endpoint changes.
+x-upstream-commit: 8588a219df9a8406e66c4392d0bef664b34e4e30
+x-authoring-projection: true
+paths:
+  /data/{registryName}/{versionNumber}:
+    get:
+      tags:
+      - Registry data query API
+      description: 'Searches (Regex supported) and returns multiple records as an
+        array-list. '
+      operationId: list
+      summary: list
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      - name: search
+        in: query
+        description: Field for searching random string type data from database
+        required: false
+        schema:
+          type: string
+          example: John
+      - name: filter
+        in: query
+        description: Field name that user wishes to filter
+        required: false
+        schema:
+          type: string
+          example: FirstName
+      - name: ordering
+        in: query
+        description: How user wishes to order the data
+        required: false
+        schema:
+          type: string
+          example: descending
+      - name: page
+        in: query
+        description: Result page number
+        required: false
+        schema:
+          type: integer
+          example: 1
+      - name: pageSize
+        in: query
+        description: Number of results on one page
+        required: false
+        schema:
+          type: integer
+          example: 10
+      - name: query.<fieldName>
+        in: query
+        description: Example of searchable database field. If more searchable fields
+          are in DB, then more similar fields will follow in input
+        required: false
+        schema:
+          type: string
+          example: Value can be in any supported format, for an example 'string'
+          readOnly: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Number of results
+                    example: 1
+                  next:
+                    type: string
+                    format: uri
+                    x-nullable: true
+                    description: URI to next results page
+                    example: 1
+                  previous:
+                    type: string
+                    format: uri
+                    x-nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                required:
+                - count
+                - results
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/create:
+    post:
+      tags:
+      - Registry data query API
+      description: Creates a new record in the registry database.
+      operationId: create
+      summary: create
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      requestBody:
+        description: ''
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                write:
+                  type: object
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+              required:
+              - write
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    $ref: upstream-api/data-api.json#/components/schemas/Example
+      security:
+      - data__apiKey: []
+  /data/mcts/createEntries:
+    post:
+      operationId: GDB-MCTS-create-entries
+      description: ''
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      tags:
+      - example
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                write:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      content:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            readOnly: true
+                            description: Registration ID
+                            example: MCTS31
+                          start:
+                            type: string
+                            format: date
+                            description: Record registration date
+                            example: '2021-10-03T07:03:36Z'
+                          expiry:
+                            type: string
+                            format: date
+                            description: Record expiry date
+                            example: '2021-10-03T07:03:36Z'
+                          child:
+                            type: object
+                            properties:
+                              citizenId:
+                                type: string
+                                description: Child ID
+                                example: ID2
+                              firstName:
+                                type: string
+                                description: Child first name
+                                example: Usha
+                              lastNames:
+                                type: string
+                                description: Child last name
+                                example: Bajaj
+                              birthdate:
+                                type: string
+                                format: date
+                                description: Child data of birth
+                                example: '2021-10-03T07:03:36Z'
+                              address:
+                                type: string
+                                description: Child's address
+                                example: Longroad 123, Welltown, Ethiopia
+                              nationality:
+                                type: string
+                                description: Child is a citizen of this country. ISO
+                                  3166-1 encoding list
+                                example: ET
+                              birthCertificate:
+                                $ref: upstream-api/data-api.json#/components/schemas/FieldFileType
+                              gender:
+                                type: string
+                                enum:
+                                - Male
+                                - Female
+                            description: Child object data that is queried from database
+                          caretaker:
+                            type: object
+                            properties:
+                              citizenId:
+                                type: string
+                                description: Caretaker's ID
+                                example: ID1
+                              firstName:
+                                type: string
+                                description: Caretaker's first name
+                                example: Sowmya
+                              lastNames:
+                                type: string
+                                description: Caretaker's last name
+                                example: Bajaj
+                              birthdate:
+                                type: string
+                                format: date
+                                description: Caretaker's birth date
+                                example: '2021-10-03T07:03:36Z'
+                              phone:
+                                type: string
+                                description: Caretaker's phone number
+                                example: '+3725278511'
+                              email:
+                                type: string
+                                description: Caretaker's email
+                                example: test@test.et
+                              picture:
+                                $ref: upstream-api/data-api.json#/components/schemas/FieldFileType
+                              citizenIdDoc:
+                                $ref: upstream-api/data-api.json#/components/schemas/FieldFileType
+                            description: Caretaker's information
+                          paymentId:
+                            type: string
+                        required:
+                        - ID
+                      createdAt:
+                        type: string
+                        format: date-time
+                        readOnly: true
+                      modifiedAt:
+                        type: string
+                        format: date-time
+                        readOnly: true
+                      uuid:
+                        type: string
+                        format: uuid
+                        readOnly: true
+                    required:
+                    - content
+                    - createdAt
+                    - modifiedAt
+                    - uuid
+              required:
+              - write
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: upstream-api/data-api.json#/components/schemas/DataWriteList
+          multipart/form-data:
+            schema:
+              $ref: upstream-api/data-api.json#/components/schemas/DataWriteList
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  receive:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        content:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              readOnly: true
+                              description: Registration ID
+                              example: MCTS31
+                            start:
+                              type: string
+                              format: date
+                              description: Record registration date
+                              example: '2021-10-03T07:03:36Z'
+                            expiry:
+                              type: string
+                              format: date
+                              description: Record expiry date
+                              example: '2021-10-03T07:03:36Z'
+                            child:
+                              type: object
+                              properties:
+                                citizenId:
+                                  type: string
+                                  description: Child ID
+                                  example: ID2
+                                firstName:
+                                  type: string
+                                  description: Child first name
+                                  example: Usha
+                                lastNames:
+                                  type: string
+                                  description: Child last name
+                                  example: Bajaj
+                                birthdate:
+                                  type: string
+                                  format: date
+                                  description: Child data of birth
+                                  example: '2021-10-03T07:03:36Z'
+                                address:
+                                  type: string
+                                  description: Child's address
+                                  example: Longroad 123, Welltown, Ethiopia
+                                nationality:
+                                  type: string
+                                  description: Child is a citizen of this country.
+                                    ISO 3166-1 encoding list
+                                  example: ET
+                                birthCertificate:
+                                  $ref: upstream-api/data-api.json#/components/schemas/FieldFileType
+                                gender:
+                                  type: string
+                                  enum:
+                                  - Male
+                                  - Female
+                              description: Child object data that is queried from
+                                database
+                            caretaker:
+                              type: object
+                              properties:
+                                citizenId:
+                                  type: string
+                                  description: Caretaker's ID
+                                  example: ID1
+                                firstName:
+                                  type: string
+                                  description: Caretaker's first name
+                                  example: Sowmya
+                                lastNames:
+                                  type: string
+                                  description: Caretaker's last name
+                                  example: Bajaj
+                                birthdate:
+                                  type: string
+                                  format: date
+                                  description: Caretaker's birth date
+                                  example: '2021-10-03T07:03:36Z'
+                                phone:
+                                  type: string
+                                  description: Caretaker's phone number
+                                  example: '+3725278511'
+                                email:
+                                  type: string
+                                  description: Caretaker's email
+                                  example: test@test.et
+                                picture:
+                                  $ref: upstream-api/data-api.json#/components/schemas/FieldFileType
+                                citizenIdDoc:
+                                  $ref: upstream-api/data-api.json#/components/schemas/FieldFileType
+                              description: Caretaker's information
+                            paymentId:
+                              type: string
+                          required:
+                          - ID
+                        createdAt:
+                          type: string
+                          format: date-time
+                          readOnly: true
+                        modifiedAt:
+                          type: string
+                          format: date-time
+                          readOnly: true
+                        uuid:
+                          type: string
+                          format: uuid
+                          readOnly: true
+                      required:
+                      - content
+                      - createdAt
+                      - modifiedAt
+                      - uuid
+                required:
+                - receive
+          description: ''
+  /data/{registryName}/{versionNumber}/exists:
+    post:
+      tags:
+      - Registry data query API
+      description: Searches records based on input parameters and returns boolean
+        answer (true/false).
+      operationId: exists
+      summary: exists
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      requestBody:
+        description: ''
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: object
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+              required:
+              - query
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: object
+                    properties:
+                      status:
+                        type: boolean
+                        example: true
+                        description: Example object found in database
+                      message:
+                        type: string
+                        example: Object found from database
+                        description: More information about the object
+                    required:
+                    - status
+                required:
+                - answer
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/read:
+    post:
+      tags:
+      - Registry data query API
+      description: Searches and returns one record.
+      operationId: read
+      summary: read
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      requestBody:
+        description: ''
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: object
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+              required:
+              - query
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    $ref: upstream-api/data-api.json#/components/schemas/Example
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    enum:
+                    - no record found
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/update:
+    put:
+      tags:
+      - Registry data query API
+      description: Updates one existing record in the registry database.
+      operationId: update
+      summary: update
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      requestBody:
+        description: ''
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: object
+                  description: Search object that needs to be updated
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+                write:
+                  type: object
+                  description: Update found object with the following data
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+              required:
+              - write
+      responses:
+        '200':
+          description: ''
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/updateEntries:
+    put:
+      tags:
+      - Registry data query API
+      description: Updates multiple records in the registry database that match the
+        input query.
+      operationId: updateEntries
+      summary: updateEntries
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      requestBody:
+        description: ''
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: object
+                  description: Find objects that needs to be updated
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+                write:
+                  type: object
+                  description: Data that needs to be added to the found objects
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+              required:
+              - write
+      responses:
+        '200':
+          description: ''
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/updateOrCreate:
+    post:
+      tags:
+      - Registry data query API
+      description: 'API updates existing record if matching with input parameters
+        is successful. If record is not found the API will create a new record. '
+      operationId: update-or-create
+      summary: update-or-create
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      requestBody:
+        description: ''
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: object
+                  description: Find object to update, if object not found, new will
+                    be created
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+                write:
+                  type: object
+                  description: Data that will be updated for found Example object.
+                    If object not found new object with this data is created
+                  properties:
+                    content:
+                      $ref: upstream-api/data-api.json#/components/schemas/Example
+                  required:
+                  - content
+              required:
+              - write
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    $ref: upstream-api/data-api.json#/components/schemas/Example
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/{id}/delete:
+    delete:
+      tags:
+      - Registry data query API
+      description: Delete record.
+      operationId: delete
+      summary: delete
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          example: ID1
+          description: ID of the citizen that needs to be deleted from the Registry
+            data query API
+      responses:
+        '204':
+          description: ''
+      security:
+      - data__apiKey: []
+  /data/{registryName}/{versionNumber}/{uuid}/readValue/{field}.{ext}:
+    get:
+      tags:
+      - Registry data query API
+      description: Searches and returns one record’s one field value.
+      operationId: readValue
+      summary: readValue
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - $ref: upstream-api/data-api.json#/components/parameters/registryName
+      - $ref: upstream-api/data-api.json#/components/parameters/versionNumber
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Primary key field
+          example: DB-1
+      - name: field
+        in: path
+        required: true
+        schema:
+          type: string
+          description: 'Data format. Endpoint: /data/DB/1.0/DB-1/read-value/First%20name.json'
+          example: First name
+      - name: ext
+        in: path
+        required: true
+        schema:
+          type: string
+          description: 'Data format. Endpoint: /data/DB/1.0/DB-1/read-value/First%20name.json'
+          example: json
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - type: string
+                - type: object
+                  properties:
+                    value:
+                      anyOf:
+                      - type: array
+                        items:
+                          anyOf:
+                          - type: boolean
+                          - type: integer
+                          - type: number
+                          - type: object
+                          - type: string
+                      - type: boolean
+                      - type: integer
+                      - type: number
+                      - type: object
+                      - type: string
+      security:
+      - data__apiKey: []
+  /data/mypersonalDataUsage:
+    get:
+      tags:
+      - MypersonalDataUsage API
+      description: Allows a user to see who has read their personal data.
+      operationId: DPU
+      parameters:
+      - $ref: upstream-api/data-api.json#/components/parameters/Information-Mediator-Client
+      - name: userId
+        in: query
+        description: User's personal unique identifier
+        required: true
+        style: form
+        schema:
+          type: string
+          example: EE378129277266
+      - name: databaseId
+        in: query
+        description: Database acronym
+        required: true
+        style: form
+        schema:
+          type: string
+          example: MCTS
+      responses:
+        '200':
+          description: Success Response
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Array of found data processign logs
+                items:
+                  $ref: upstream-api/data-api.json#/components/schemas/personalDataUsage
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Person requests not found
+  /database/{id}:
+    get:
+      tags:
+      - Database API
+      description: API endpoint that allows user to get database information with
+        schema
+      parameters:
+      - $ref: upstream-api/database-api.yaml#/components/parameters/Information-Mediator-Client
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 1
+          description: Id of the database that schema is requested
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: upstream-api/database-api.yaml#/components/schemas/databaseInfo
+      security:
+      - database__apiKey: []
+      operationId: getDatabase
+    delete:
+      tags:
+      - Database API
+      description: API endpoint that allows user to delete database schema
+      parameters:
+      - $ref: upstream-api/database-api.yaml#/components/parameters/Information-Mediator-Client
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 1
+          description: Id of the database that schema is requested
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: string
+                example: Success
+      security:
+      - database__apiKey: []
+      operationId: deleteDatabase
+  /database/modify:
+    post:
+      tags:
+      - Database API
+      description: API endpoint that allows user to create or modify database schema
+      parameters:
+      - $ref: upstream-api/database-api.yaml#/components/parameters/Information-Mediator-Client
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupName:
+                  type: string
+                  description: Group name where this schema is located
+                  example: Test
+                catalogName:
+                  type: string
+                  description: Catalog name where this schema is located
+                  example: Mother and Child
+                code:
+                  type: string
+                  description: Short code of the database
+                  example: MCR
+                schema:
+                  allOf:
+                  - $ref: upstream-api/database-api.yaml#/components/schemas/databaseSchema
+                  required:
+                  - creationDate
+                  - description
+                  - filename
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: upstream-api/database-api.yaml#/components/schemas/databaseSchema
+      operationId: modifyDatabase
+  /databases:
+    get:
+      tags:
+      - Databases
+      description: API endpoint that allows user to get information about all databases
+      parameters:
+      - $ref: upstream-api/database-api.yaml#/components/parameters/Information-Mediator-Client
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: upstream-api/database-api.yaml#/components/schemas/databasesSchema
+      security:
+      - database__apiKey: []
+      operationId: listDatabases
+components:
+  securitySchemes:
+    data__apiKey:
+      $ref: upstream-api/data-api.json#/components/securitySchemes/apiKey
+    database__apiKey:
+      $ref: upstream-api/database-api.yaml#/components/securitySchemes/apiKey
+x-operation-id-aliases:
+- operationId: getDatabase
+  source: upstream-api/database-api.yaml
+  method: get
+  path: /database/{id}
+- operationId: deleteDatabase
+  source: upstream-api/database-api.yaml
+  method: delete
+  path: /database/{id}
+- operationId: modifyDatabase
+  source: upstream-api/database-api.yaml
+  method: post
+  path: /database/modify
+- operationId: listDatabases
+  source: upstream-api/database-api.yaml
+  method: get
+  path: /databases
