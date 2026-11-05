@@ -1327,8 +1327,9 @@ components:
         partition, and effective trusted purpose. The fingerprint binds the method, canonical
         target URI, content type, canonical body, and every declared semantic header. A missing,
         malformed, or oversized key returns `400` before processing. The deployment publishes
-        `idempotencyReplayWindow`; after expiry, it may process the key as new only if its profile
-        permits. Within the window, a completed matching retry returns the original status, body,
+        its replay window as `write.idempotencyReplayWindow` on each discovered operation that
+        takes this key; after the window, the service processes a reused key as a new request.
+        Within the window, a completed matching retry returns the original status, body,
         `Content-Type`, and `Location`, with per-attempt headers regenerated. Fingerprint mismatch
         returns `422`; a matching in-flight retry returns `409`. Before disclosing a stored result,
         the service rechecks current authorisation, effective trusted purpose, and disclosure
@@ -1951,10 +1952,19 @@ components:
       type: object
       additionalProperties: false
       minProperties: 1
-      description: Advisory Write metadata copied from the linked operation contract.
+      description: >-
+        Advisory Write metadata: the companion read copied from the linked operation contract and
+        the deployment's idempotency replay window.
       properties:
         companionRead:
           $ref: '#/components/schemas/CompanionReadIdentity'
+        idempotencyReplayWindow:
+          type: integer
+          minimum: 1
+          maximum: 31536000
+          description: >-
+            Seconds for which the deployment retains an `Idempotency-Key` and replays its
+            completed result. After the window, a reused key is processed as a new request.
     CapabilityOperation:
       type: object
       additionalProperties: false
@@ -2149,6 +2159,29 @@ components:
               write:
                 description: Write metadata required for a guarded mutation.
                 required: [companionRead]
+        - description: Operations that take Idempotency-Key publish the deployment's replay window.
+          if:
+            description: Match Write operations whose requests carry Idempotency-Key.
+            required: [family, capability]
+            properties:
+              family: {const: write, description: Match Write operations.}
+              capability:
+                enum:
+                  - create
+                  - update
+                  - transition
+                  - change-requests
+                  - change-request-approve
+                  - change-request-reject
+                  - change-request-withdraw
+                description: Match capabilities whose operations require Idempotency-Key.
+          then:
+            description: Require the published idempotency replay window.
+            required: [write]
+            properties:
+              write:
+                description: Write metadata carrying the replay window.
+                required: [idempotencyReplayWindow]
         - description: Conditional-read is available only on Retrieve.
           if:
             description: Detect conditional-read on a recognised capability.
@@ -2375,6 +2408,8 @@ components:
                   contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                   family: write
                   capability: create
+                  write:
+                    idempotencyReplayWindow: 86400
                 - operationId: updateRecord
                   contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                   family: write
@@ -2383,6 +2418,7 @@ components:
                     companionRead:
                       operationId: retrieveRecord
                       view: record-public
+                    idempotencyReplayWindow: 86400
                 - operationId: applyRecordTransition
                   contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                   family: write
@@ -2391,6 +2427,7 @@ components:
                     companionRead:
                       operationId: retrieveRecord
                       view: record-public
+                    idempotencyReplayWindow: 86400
           operations:
             - registry: https://registry.example/registries/records
               operation:
@@ -2398,6 +2435,8 @@ components:
                 contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                 family: write
                 capability: change-requests
+                write:
+                  idempotencyReplayWindow: 86400
             - registry: https://registry.example/registries/records
               operation:
                 operationId: listChangeRequests
@@ -2416,18 +2455,24 @@ components:
                 contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                 family: write
                 capability: change-request-approve
+                write:
+                  idempotencyReplayWindow: 86400
             - registry: https://registry.example/registries/records
               operation:
                 operationId: rejectChangeRequest
                 contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                 family: write
                 capability: change-request-reject
+                write:
+                  idempotencyReplayWindow: 86400
             - registry: https://registry.example/registries/records
               operation:
                 operationId: withdrawChangeRequest
                 contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                 family: write
                 capability: change-request-withdraw
+                write:
+                  idempotencyReplayWindow: 86400
             - registry: https://registry.example/registries/records
               operation:
                 operationId: getOperation
@@ -3185,18 +3230,23 @@ components:
           properties:
             type: {const: https://govstack.global/problems/digital-registries/unsupported-media-type, description: Stable unsupported-media-type problem type.}
             status: {const: 415, description: HTTP Unsupported Media Type status.}
+    InvalidContentProblem:
+      description: >-
+        Semantic validation failure of a request body, for Read criteria and Write content
+        alike, with field errors as JSON Pointers.
+      allOf:
+        - $ref: '#/components/schemas/ValidationProblem'
+        - type: object
+          description: Bind semantic field validation failure to its 422 identity.
+          required: [type, title, status, traceId]
+          properties:
+            type: {const: https://govstack.global/problems/digital-registries/invalid-content, description: Stable invalid-content problem type.}
+            status: {const: 422, description: HTTP Unprocessable Content status.}
     UnprocessableContentProblem:
       description: Semantic body validation failure or idempotency fingerprint mismatch.
       required: [type, title, status, traceId]
       oneOf:
-        - allOf:
-            - $ref: '#/components/schemas/ValidationProblem'
-            - type: object
-              description: Bind semantic field validation failure to its 422 identity.
-              required: [type, title, status, traceId]
-              properties:
-                type: {const: https://govstack.global/problems/digital-registries/invalid-content, description: Stable invalid-content problem type.}
-                status: {const: 422, description: HTTP Unprocessable Content status.}
+        - $ref: '#/components/schemas/InvalidContentProblem'
         - allOf:
             - $ref: '#/components/schemas/Problem'
             - type: object
@@ -3579,9 +3629,9 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/ValidationProblem'
+            $ref: '#/components/schemas/InvalidContentProblem'
           example:
-            type: https://govstack.global/problems/digital-registries/invalid-field
+            type: https://govstack.global/problems/digital-registries/invalid-content
             title: Request validation failed
             status: 422
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f

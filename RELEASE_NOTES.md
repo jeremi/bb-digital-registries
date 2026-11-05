@@ -24,6 +24,8 @@ The 29 October 2026 revision makes logical Collections explicit in the canonical
 
 The Record model accepts stable source identifiers within a Registry and permits Registry and schema context through the endpoint, versioned contract, or response. Source revision, lifecycle, and recording time are not required unless a selected capability or profile requires them. Field meanings remain documented.
 
+The 5 November 2026 revision publishes each deployment's idempotency replay window as `write.idempotencyReplayWindow` on every discovered operation that takes `Idempotency-Key`, and states that a key reused after the window is processed as a new request. Lookup and Search semantic validation failures now use the `invalid-content` problem type that Write already used, replacing `invalid-field`; the idempotency fingerprint mismatch keeps its own type.
+
 The [household](api/examples/household-registry.openapi.yaml) and [birth-registration](api/examples/birth-registration.openapi.yaml) contracts illustrate nested components, Record references, recorded related details, and bounded arrays with declared completeness. API Design Guide `0.3.0-draft` accompanies these choices. Contract and example validation is published separately from implementation conformance testing.
 
 ### Contributors by release <a href="#versions-contributors-by-release" id="versions-contributors-by-release"></a>

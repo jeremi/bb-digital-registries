@@ -130,7 +130,9 @@ requires its view and can carry read features, fields, selectors, searches, and
 purpose annotations. Existing recognised read entries can omit `family`, which
 means Consultation; new Write and supporting entries explicitly use
 `family: write` and cannot carry those read annotations. Update and Transition
-instead identify their `write.companionRead`. Unknown future capabilities remain
+instead identify their `write.companionRead`. Every entry whose operation takes
+`Idempotency-Key` publishes the deployment's `write.idempotencyReplayWindow` in
+seconds; a key reused after it is processed as a new request. Unknown future capabilities remain
 skippable and do not acquire read-view requirements. Current authorisation remains
 decisive for every invocation. Discovery never promises access to a particular
 Record or grants mutation, review, application, or status authority. Empty

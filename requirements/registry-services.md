@@ -220,9 +220,9 @@ requirements:
     statement: Every selected Write operation defines retry and idempotency behaviour, binds an idempotency key to the authenticated consumer, operation, target, and canonical request content, and applies current authentication and authorisation on every attempt without treating the key as authority.
     documentation: |
       Purpose: A consumer can recover from a lost response without accidentally repeating a change or replaying another consumer's request.
-      Prerequisite: The contract declares the idempotency-key syntax, retention, replay result, and conflict outcome.
-      Constraint: Reuse with different bound content fails explicitly. Reuse after permission loss does not execute or disclose a result that current policy withholds. Expiry does not imply that a repeated mutation is safe.
-      Verification: Retry before, during, and after commit with the same key and content; change the content, operation, target, consumer, purpose, and permissions; then retry after retention expiry. Confirm one committed effect and the declared current-authorisation outcomes.
+      Prerequisite: The contract declares the idempotency-key syntax, replay result, and conflict outcome; capability discovery publishes the deployment's replay window.
+      Constraint: Reuse with different bound content fails explicitly. Reuse after permission loss does not execute or disclose a result that current policy withholds. A key reused after the replay window is processed as a new request, so expiry does not imply that a repeated mutation is safe.
+      Verification: Retry before, during, and after commit with the same key and content; change the content, operation, target, consumer, purpose, and permissions; then retry after the replay window. Confirm one committed effect within the window, processing as a new request after it, and the declared current-authorisation outcomes.
     test: resources/write-testing.md#write-7
   - id:
     status: DRAFT
@@ -2095,12 +2095,13 @@ The baseline permits a workflow to coordinate several independently committed co
 ### Retries and idempotency <a href="#write-retries-and-idempotency" id="write-retries-and-idempotency"></a>
 
 Every selected primary operation accepts the contract's idempotency key and binds it to the authenticated consumer, operation, Registry, Collection, target where present, trusted purpose where required, and canonical request content.
-The contract declares key syntax, retention, the replay response, and the conflict returned when the key is reused with different bound content.
+The contract declares key syntax, the replay response, and the conflict returned when the key is reused with different bound content.
+The deployment publishes its retention as the replay window in capability discovery.
 
 A retry with the same key and content cannot create a second committed effect.
 The service still applies current authentication and authorisation before executing or disclosing the replayed result.
 An idempotency key is neither a credential nor a reservation of future authority.
-After the declared retention period, a consumer cannot assume that repeating a mutation is safe and obtains current state before deciding how to recover.
+After the published replay window, the service processes a reused key as a new request, so a consumer cannot assume that repeating a mutation is safe and obtains current state before deciding how to recover.
 
 
 ### Concurrency and commit guards <a href="#write-concurrency-and-commit-guards" id="write-concurrency-and-commit-guards"></a>

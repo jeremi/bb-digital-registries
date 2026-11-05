@@ -537,7 +537,8 @@ class ConsultationExtensionTests(unittest.TestCase):
                 "companionRead": {
                     "operationId": "retrieveRecord",
                     "view": "record-public",
-                }
+                },
+                "idempotencyReplayWindow": 86400,
             },
         }
         check.validate(operation)
@@ -553,6 +554,23 @@ class ConsultationExtensionTests(unittest.TestCase):
                 }
             )
         )
+
+    def test_keyed_write_discovery_publishes_the_replay_window(self):
+        check = schema("CapabilityOperation")
+        create = {
+            "operationId": "createRecord",
+            "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml",
+            "family": "write",
+            "capability": "create",
+            "write": {"idempotencyReplayWindow": 86400},
+        }
+        check.validate(create)
+        self.assertFalse(check.is_valid({key: value for key, value in create.items() if key != "write"}))
+        self.assertFalse(check.is_valid({**create, "write": {"idempotencyReplayWindow": 0}}))
+        unpublished = {key: value for key, value in create.items() if key != "write"}
+        for capability in ("change-requests", "change-request-approve", "change-request-reject", "change-request-withdraw"):
+            self.assertFalse(check.is_valid({**unpublished, "capability": capability}), capability)
+        check.validate({**unpublished, "capability": "change-request-list"})
 
     def test_temporal_search_example_echoes_selection_on_empty_pages(self):
         witnessed = False
