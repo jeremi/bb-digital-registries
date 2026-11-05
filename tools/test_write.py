@@ -99,7 +99,9 @@ class WriteArtifactTests(unittest.TestCase):
         )
         write.validate_no_duplicate_yaml_keys(canonical)
 
-    def test_composed_contract_reuses_record_identity_and_keeps_workflow_ids_opaque(self):
+    def test_composed_contract_reuses_record_identity_and_keeps_workflow_ids_opaque(
+        self,
+    ):
         contract = yaml.safe_load((API / "openapi.yaml").read_text())
         schemas = contract["components"]["schemas"]
         self.assertEqual(
@@ -172,7 +174,9 @@ class WriteArtifactTests(unittest.TestCase):
     def test_write_validator_does_not_require_idempotency_for_read_posts(self):
         contract = yaml.safe_load(write.WRITE.read_text())
         search = operation(contract, "searchRecords")
-        self.assertIsNone(write._header_parameter(write.WRITE, search, "Idempotency-Key"))
+        self.assertIsNone(
+            write._header_parameter(write.WRITE, search, "Idempotency-Key")
+        )
         write.validate_write_document(
             contract,
             write.WRITE,
@@ -201,6 +205,80 @@ class WriteArtifactTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             write.validate_contract_fixture(wrong_etag)
 
+    def test_record_mutation_receipt_tags_are_optional_but_must_agree_when_both_exist(
+        self,
+    ):
+        fixtures = {item["name"]: item for item in write.contract_fixture_items()}
+        for name in (
+            "direct-create-without-receipt-tag",
+            "direct-create-header-only-receipt-tag",
+            "direct-create-body-only-receipt-tag",
+            "direct-create",
+        ):
+            with self.subTest(fixture=name):
+                write.validate_contract_fixture(fixtures[name])
+
+        fixture = deepcopy(fixtures["direct-create"])
+
+        without_tags = deepcopy(fixture)
+        without_tags["response"]["headers"].pop("ETag")
+        without_tags["response"]["body"].pop("etag")
+        write.validate_contract_fixture(without_tags)
+
+        header_only = deepcopy(fixture)
+        header_only["response"]["body"].pop("etag")
+        write.validate_contract_fixture(header_only)
+
+        body_only = deepcopy(fixture)
+        body_only["response"]["headers"].pop("ETag")
+        write.validate_contract_fixture(body_only)
+
+        mismatch = deepcopy(fixture)
+        mismatch["response"]["body"]["etag"] = '"different-guard-state"'
+        with self.assertRaises(ValueError):
+            write.validate_contract_fixture(mismatch)
+
+    def test_idempotency_replay_and_fingerprint_fixtures_are_exact(self):
+        fixtures = {item["name"]: item for item in write.contract_fixture_items()}
+        required = {
+            "direct-create-completed-replay",
+            "direct-update",
+            "direct-update-completed-replay",
+            "direct-update-if-match-fingerprint-mismatch",
+            "idempotency-in-flight",
+            "idempotency-reconciliation-required",
+        }
+        self.assertTrue(required <= fixtures.keys())
+        write.validate_contract_fixture_set(list(fixtures.values()))
+
+        replay = deepcopy(fixtures["direct-update-completed-replay"])
+        replay["response"]["headers"]["ETag"] = '"not-the-original-result"'
+        with self.assertRaises(ValueError):
+            write.validate_contract_fixture_set(
+                [
+                    fixtures["direct-update"],
+                    replay,
+                    fixtures["direct-update-if-match-fingerprint-mismatch"],
+                    fixtures["idempotency-in-flight"],
+                    fixtures["idempotency-reconciliation-required"],
+                ]
+            )
+
+        mismatch = deepcopy(fixtures["direct-update-if-match-fingerprint-mismatch"])
+        mismatch["request"]["headers"]["If-Match"] = fixtures["direct-update"][
+            "request"
+        ]["headers"]["If-Match"]
+        with self.assertRaises(ValueError):
+            write.validate_contract_fixture_set(
+                [
+                    fixtures["direct-update"],
+                    fixtures["direct-update-completed-replay"],
+                    mismatch,
+                    fixtures["idempotency-in-flight"],
+                    fixtures["idempotency-reconciliation-required"],
+                ]
+            )
+
     def test_create_location_supports_declared_prefix_and_encoded_segment_ids(self):
         with tempfile.TemporaryDirectory() as directory:
             contract = Path(directory) / "openapi.yaml"
@@ -210,9 +288,7 @@ class WriteArtifactTests(unittest.TestCase):
                         "servers": [
                             {
                                 "url": "https://{host}/registry",
-                                "variables": {
-                                    "host": {"default": "registry.example"}
-                                },
+                                "variables": {"host": {"default": "registry.example"}},
                             }
                         ]
                     }
@@ -344,9 +420,7 @@ class WriteArtifactTests(unittest.TestCase):
 
         conditional = deepcopy(journeys["conditional-update"])
         handoff = next(
-            link
-            for link in conditional["links"]
-            if link.get("version") == "if-match"
+            link for link in conditional["links"] if link.get("version") == "if-match"
         )
         target = next(
             step for step in conditional["steps"] if step["step"] == handoff["to"]
@@ -440,9 +514,7 @@ class WriteArtifactTests(unittest.TestCase):
                 if item["kind"] == "conditional-update"
             )
         )
-        update = next(
-            step for step in journey["steps"] if step["step"] == "update"
-        )
+        update = next(step for step in journey["steps"] if step["step"] == "update")
         update["committedGuardEvaluationId"] = "different-guard-evaluation"
         with self.assertRaises(ValueError):
             write.validate_combined_journey(journey)
@@ -532,9 +604,7 @@ class WriteArtifactTests(unittest.TestCase):
             write.validate_combined_journey(governed)
 
         governed = deepcopy(journeys["governed-application-read"])
-        approve = next(
-            step for step in governed["steps"] if step["step"] == "approve"
-        )
+        approve = next(step for step in governed["steps"] if step["step"] == "approve")
         approve["response"]["body"]["input"]["data"]["label"] = "Other proposal"
         with self.assertRaises(ValueError):
             write.validate_combined_journey(governed)
@@ -564,6 +634,7 @@ class WriteArtifactTests(unittest.TestCase):
             "collection": "individuals",
             "capability": "create",
             "inputSchema": "#/components/schemas/CreatePerson",
+            "idempotencyReplayWindow": 86400,
         }
         check.validate(baseline)
         check.validate(
@@ -774,6 +845,24 @@ class WriteContractMutationTests(unittest.TestCase):
             else:
                 write.DOCUMENTS[uri] = previous
 
+    def validate_concrete_document(self, document):
+        concrete_source = API / "index.yaml"
+        uri = concrete_source.resolve().as_uri()
+        missing = object()
+        previous = write.DOCUMENTS.get(uri, missing)
+        write.DOCUMENTS[uri] = document
+        try:
+            write.validate_write_document(
+                document,
+                concrete_source,
+                require_reference_surface=False,
+            )
+        finally:
+            if previous is missing:
+                write.DOCUMENTS.pop(uri, None)
+            else:
+                write.DOCUMENTS[uri] = previous
+
     def assert_rejected(self, document):
         with self.assertRaises((ValueError, ValidationError)):
             self.validate_document(document, require_reference_surface=True)
@@ -827,14 +916,17 @@ class WriteContractMutationTests(unittest.TestCase):
         }
         submission = governed["paths"]["/v1/change-requests"]["post"]
 
-        def proposal(kind, input_name):
-            return {
+        def proposal(kind, input_name, media_type=None):
+            value = {
                 "type": "object",
                 "properties": {
                     "kind": {"const": kind},
                     "input": {"$ref": f"#/components/schemas/{input_name}"},
                 },
             }
+            if media_type is not None:
+                value["properties"]["inputMediaType"] = {"const": media_type}
+            return value
 
         governed["components"]["schemas"]["CreateOnlyChangeRequest"] = {
             "oneOf": [proposal("create", "CreateInput")]
@@ -850,7 +942,8 @@ class WriteContractMutationTests(unittest.TestCase):
         multi = deepcopy(governed)
         multi["components"]["schemas"]["CreateOnlyChangeRequest"]["oneOf"] = [
             proposal("create", "CreateInput"),
-            proposal("update", "UpdateInput"),
+            proposal("update", "UpdateInput", "application/merge-patch+json"),
+            proposal("update", "JsonPatchInput", "application/json-patch+json"),
             proposal("transition", "TransitionInput"),
             proposal("create", "TransitionInput"),
         ]
@@ -861,7 +954,9 @@ class WriteContractMutationTests(unittest.TestCase):
             self.canonical["paths"]["/v1/collections/{collectionId}/records"]
         )
         partial["components"]["schemas"]["CreateOnlyChangeRequest"] = {
-            "oneOf": [proposal("update", "UpdateInput")]
+            "oneOf": [
+                proposal("update", "JsonPatchInput", "application/json-patch+json")
+            ]
         }
         self.validate_document(partial)
 
@@ -894,6 +989,276 @@ class WriteContractMutationTests(unittest.TestCase):
             "application/merge-patch+json"
         ]["schema"] = {"$ref": "#/components/schemas/TransitionInput"}
         self.assert_rejected(broken)
+
+    def test_mutating_operations_publish_static_replay_window_and_guarded_update_policy(
+        self,
+    ):
+        mutators = {
+            operation_id: operation_value
+            for _route, method, operation_value in write.operations(self.canonical)
+            if method in {"post", "put", "patch", "delete"}
+            and write.EXTENSION in operation_value
+            for operation_id in [operation_value["operationId"]]
+        }
+        self.assertEqual(
+            {
+                operation_id: item[write.EXTENSION]["idempotencyReplayWindow"]
+                for operation_id, item in mutators.items()
+            },
+            {operation_id: 86400 for operation_id in mutators},
+        )
+        self.assertEqual(
+            operation(self.canonical, "updateRecord")[write.EXTENSION][
+                "concurrencyPolicy"
+            ],
+            "required",
+        )
+
+        missing_window = deepcopy(self.canonical)
+        operation(missing_window, "createRecord")[write.EXTENSION].pop(
+            "idempotencyReplayWindow"
+        )
+        self.assert_rejected(missing_window)
+
+        wrong_policy = deepcopy(self.canonical)
+        operation(wrong_policy, "updateRecord")[write.EXTENSION][
+            "concurrencyPolicy"
+        ] = "unsupported"
+        self.assert_rejected(wrong_policy)
+
+        drifted_discovery = deepcopy(self.canonical)
+        discovery_examples = drifted_discovery["components"]["schemas"][
+            "CallerCapabilities"
+        ]["examples"]
+        discovered_create = next(
+            node
+            for _pointer, node in write.nodes(discovery_examples)
+            if isinstance(node, dict) and node.get("operationId") == "createRecord"
+        )
+        discovered_create["write"]["idempotencyReplayWindow"] = 3600
+        self.assert_rejected(drifted_discovery)
+
+    def test_update_media_type_matches_extension_and_json_patch_is_selectable(self):
+        mismatch = deepcopy(self.canonical)
+        operation(mismatch, "updateRecord")[write.EXTENSION]["inputMediaType"] = (
+            "application/json-patch+json"
+        )
+        self.assert_rejected(mismatch)
+
+        json_patch = deepcopy(self.canonical)
+        update = operation(json_patch, "updateRecord")
+        update["requestBody"]["content"] = {
+            "application/json-patch+json": {
+                "schema": {"$ref": "#/components/schemas/JsonPatchInput"}
+            }
+        }
+        update[write.EXTENSION]["inputSchema"] = "#/components/schemas/JsonPatchInput"
+        update[write.EXTENSION]["inputMediaType"] = "application/json-patch+json"
+        self.validate_document(json_patch, require_reference_surface=True)
+
+        both = deepcopy(json_patch)
+        operation(both, "updateRecord")["requestBody"]["content"][
+            "application/merge-patch+json"
+        ] = {"schema": {"$ref": "#/components/schemas/UpdateInput"}}
+        self.assert_rejected(both)
+
+    def test_concrete_json_patch_requires_finite_typed_writable_paths(self):
+        def direct_profile():
+            profile = deepcopy(self.canonical)
+            profile["paths"] = {
+                route: item
+                for route, item in profile["paths"].items()
+                if route.startswith("/v1/collections/")
+                and not route.endswith("/transition")
+            }
+            update = operation(profile, "updateRecord")
+            update["requestBody"]["content"] = {
+                "application/json-patch+json": {
+                    "schema": {"$ref": "#/components/schemas/PersonJsonPatchInput"}
+                }
+            }
+            update[write.EXTENSION]["inputSchema"] = (
+                "#/components/schemas/PersonJsonPatchInput"
+            )
+            update[write.EXTENSION]["inputMediaType"] = "application/json-patch+json"
+            return profile
+
+        def operation_branch(op, path, value_schema=None):
+            properties = {
+                "op": {"const": op},
+                "path": {"const": path},
+            }
+            required = ["op", "path"]
+            if value_schema is not None:
+                properties["value"] = value_schema
+                required.append("value")
+            return {
+                "type": "object",
+                "additionalProperties": False,
+                "required": required,
+                "properties": properties,
+            }
+
+        narrowed = direct_profile()
+        narrowed["components"]["schemas"]["PersonJsonPatchInput"] = {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+                "oneOf": [
+                    operation_branch("add", "/data/label", {"type": "string"}),
+                    operation_branch("remove", "/data/label"),
+                    operation_branch("replace", "/data/label", {"type": "string"}),
+                    operation_branch("replace", "/data/active", {"type": "boolean"}),
+                ]
+            },
+        }
+        self.validate_concrete_document(narrowed)
+
+        schema = narrowed["components"]["schemas"]["PersonJsonPatchInput"]
+        write.validate_schema_value(
+            write.EXAMPLE_API,
+            schema,
+            [{"op": "replace", "path": "/data/label", "value": "Changed"}],
+        )
+        for invalid in (
+            [{"op": "replace", "path": "/data/other", "value": "Changed"}],
+            [{"op": "replace", "path": "/data/label", "value": 3}],
+            [{"op": "replace", "path": "/data/bad~2escape", "value": "x"}],
+            [{"op": "replace", "path": "/data/members/0", "value": "x"}],
+            [{"op": "replace", "path": "/data/members/-", "value": "x"}],
+        ):
+            with self.subTest(invalid=invalid), self.assertRaises(ValidationError):
+                write.validate_schema_value(write.EXAMPLE_API, schema, invalid)
+
+        generic = direct_profile()
+        generic["components"]["schemas"]["PersonJsonPatchInput"] = {
+            "$ref": "#/components/schemas/JsonPatchInput"
+        }
+        with self.assertRaises(ValueError):
+            self.validate_concrete_document(generic)
+
+        for unsafe_path in (
+            "/data/bad~2escape",
+            "/data/members/0",
+            "/data/members/-",
+        ):
+            with self.subTest(unsafe_path=unsafe_path):
+                unsafe = deepcopy(narrowed)
+                unsafe["components"]["schemas"]["PersonJsonPatchInput"]["items"][
+                    "oneOf"
+                ][0]["properties"]["path"] = {"const": unsafe_path}
+                with self.assertRaises(ValueError):
+                    self.validate_concrete_document(unsafe)
+
+        dynamic = deepcopy(narrowed)
+        dynamic["components"]["schemas"]["PersonJsonPatchInput"]["items"]["oneOf"][0][
+            "properties"
+        ]["path"] = {
+            "type": "string",
+            "pattern": "^/data/",
+        }
+        with self.assertRaises(ValueError):
+            self.validate_concrete_document(dynamic)
+
+        governed = deepcopy(self.canonical)
+        governed["paths"] = {
+            route: item
+            for route, item in governed["paths"].items()
+            if route
+            in {
+                "/v1/collections/{collectionId}/records/{recordId}",
+                "/v1/change-requests",
+            }
+        }
+        governed["components"]["schemas"]["PersonJsonPatchInput"] = deepcopy(
+            narrowed["components"]["schemas"]["PersonJsonPatchInput"]
+        )
+        governed["components"]["schemas"]["PersonJsonPatchProposal"] = {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": [
+                        "kind",
+                        "target",
+                        "baseETag",
+                        "inputMediaType",
+                        "input",
+                    ],
+                    "properties": {
+                        "kind": {"const": "update"},
+                        "target": {"$ref": "#/components/schemas/RecordTarget"},
+                        "baseETag": {"$ref": "#/components/schemas/StrongETag"},
+                        "inputMediaType": {"const": "application/json-patch+json"},
+                        "input": {"$ref": "#/components/schemas/PersonJsonPatchInput"},
+                    },
+                }
+            ]
+        }
+        submission = operation(governed, "submitChangeRequest")
+        submission["requestBody"]["content"]["application/json"]["schema"] = {
+            "$ref": "#/components/schemas/PersonJsonPatchProposal"
+        }
+        submission[write.EXTENSION]["inputSchema"] = (
+            "#/components/schemas/PersonJsonPatchProposal"
+        )
+        self.validate_concrete_document(governed)
+
+        generic_governed = deepcopy(governed)
+        generic_governed["components"]["schemas"]["PersonJsonPatchProposal"]["oneOf"][
+            0
+        ]["properties"]["input"] = {"$ref": "#/components/schemas/JsonPatchInput"}
+        with self.assertRaises(ValueError):
+            self.validate_concrete_document(generic_governed)
+
+    def test_governed_update_media_type_selects_the_matching_input_shape(self):
+        schema = self.canonical["components"]["schemas"]["CreateChangeRequest"]
+        merge_patch = {
+            "kind": "update",
+            "target": {"collectionId": "records", "recordId": "r_42"},
+            "baseETag": '"record-v1"',
+            "inputMediaType": "application/merge-patch+json",
+            "input": {"data": {"label": "Changed"}},
+        }
+        json_patch = {
+            **merge_patch,
+            "inputMediaType": "application/json-patch+json",
+            "input": [{"op": "replace", "path": "/data/label", "value": "Changed"}],
+        }
+        write.validate_schema_value(write.WRITE, schema, merge_patch)
+        write.validate_schema_value(write.WRITE, schema, json_patch)
+        for invalid in (
+            {**merge_patch, "input": json_patch["input"]},
+            {**json_patch, "input": merge_patch["input"]},
+            {
+                **json_patch,
+                "input": [{"op": "move", "from": "/data/a", "path": "/data/b"}],
+            },
+        ):
+            with self.subTest(invalid=invalid), self.assertRaises(ValidationError):
+                write.validate_schema_value(write.WRITE, schema, invalid)
+
+    def test_recursive_schema_graph_is_cycle_safe_and_not_ignored(self):
+        valid = deepcopy(self.canonical)
+        valid["components"]["schemas"]["RecursiveNode"] = {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "label": {"type": "string"},
+                "child": {"$ref": "#/components/schemas/RecursiveNode"},
+            },
+        }
+        valid["components"]["schemas"]["CreateInput"]["properties"]["data"] = {
+            "$ref": "#/components/schemas/RecursiveNode"
+        }
+        self.validate_document(valid, require_reference_surface=True)
+
+        forbidden = deepcopy(valid)
+        forbidden["components"]["schemas"]["RecursiveNode"]["properties"]["actor"] = {
+            "type": "string"
+        }
+        self.assert_rejected(forbidden)
 
     def test_preconditions_and_idempotency_are_required_and_typed(self):
         broken = deepcopy(self.canonical)
@@ -933,6 +1298,23 @@ class WriteContractMutationTests(unittest.TestCase):
             "#/components/parameters/IfMatch",
         )
         self.assert_rejected(broken)
+
+    def test_companion_and_change_request_tags_remain_required_and_strong(self):
+        optional_companion = deepcopy(self.canonical)
+        optional_companion["components"]["headers"]["StrongETag"]["required"] = False
+        self.assert_rejected(optional_companion)
+
+        optional_review = deepcopy(self.canonical)
+        optional_review["components"]["responses"]["ChangeRequestApproved"]["headers"][
+            "ETag"
+        ] = {"$ref": "#/components/headers/MutationETag"}
+        self.assert_rejected(optional_review)
+
+        weak_receipt = deepcopy(self.canonical)
+        weak_receipt["components"]["headers"]["MutationETag"]["schema"] = {
+            "type": "string"
+        }
+        self.assert_rejected(weak_receipt)
 
     def test_selected_operations_keep_distinct_oauth_scopes(self):
         broken = deepcopy(self.canonical)
@@ -1177,6 +1559,42 @@ class WriteExchangeMutationTests(unittest.TestCase):
         ]
         with self.assertRaises(ValueError):
             write.validate_exchange(write.EXAMPLE_API, invalid_success)
+
+    def test_approved_error_identifier_and_negotiation_cases_are_fixture_backed(self):
+        fixtures = {exchange["name"]: exchange for exchange in self.exchanges}
+        expected = {
+            "individualUpdateMissingIfMatch": 428,
+            "individualUpdateUnsupportedMediaType": 415,
+            "individualCreateUnacceptableRepresentation": 406,
+            "individualUpdateMalformedRecordIdentifier": 400,
+            "individualCreateMalformedIdempotencyKey": 400,
+            "individualCreateWholeInputValidationFailure": 422,
+            "individualCreateCallerGrantMissing": 403,
+            "individualCreateDeploymentCredentialFailure": 500,
+            "individualUpdateIdempotencyInFlight": 409,
+            "individualUpdateIdempotencyReconciliationRequired": 409,
+            "individualUpdateAcceptProblemDetailsBodylessSuccess": 204,
+        }
+        self.assertEqual(
+            {name: fixtures[name]["response"]["status"] for name in expected},
+            expected,
+        )
+        for name in expected:
+            write.validate_exchange(write.EXAMPLE_API, fixtures[name])
+
+        whole_input = fixtures["individualCreateWholeInputValidationFailure"]
+        self.assertEqual(whole_input["response"]["body"]["errors"][0]["pointer"], "")
+
+        in_flight = fixtures["individualUpdateIdempotencyInFlight"]
+        reconciliation = fixtures["individualUpdateIdempotencyReconciliationRequired"]
+        self.assertIn(
+            "retry-after",
+            {name.casefold() for name in in_flight["response"]["headers"]},
+        )
+        self.assertNotIn(
+            "retry-after",
+            {name.casefold() for name in reconciliation["response"]["headers"]},
+        )
 
     def test_headers_are_case_insensitive_but_required(self):
         exchange = self.exchange_status(204)

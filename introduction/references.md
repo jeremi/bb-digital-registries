@@ -20,6 +20,9 @@ These references inform the capability direction. Only the requirements and cano
 - [EU SEMIC Core Vocabularies](https://interoperable-europe.ec.europa.eu/collection/semic-support-centre/solution/core-vocabularies)
 - [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
 - [RFC 9457: Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457.html)
+- [RFC 7396: JSON Merge Patch](https://www.rfc-editor.org/rfc/rfc7396.html)
+- [RFC 6902: JSON Patch](https://www.rfc-editor.org/rfc/rfc6902.html)
+- [IETF Idempotency-Key draft revision 07](https://www.ietf.org/archive/id/draft-ietf-httpapi-idempotency-key-header-07.html)
 - [RFC 10008: The HTTP QUERY Method](https://www.rfc-editor.org/rfc/rfc10008.html), considered for a future binding
 - [JSON:API 1.1](https://jsonapi.org/format/1.1/), considered as an alternative representation convention
 - [RFC 9727: api-catalog Well-Known URI and Link Relation](https://www.rfc-editor.org/rfc/rfc9727.html)

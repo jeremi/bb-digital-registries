@@ -49,6 +49,7 @@ paths:
         collection: birth-registrations
         capability: create
         inputSchema: ./write-examples.schema.json#/$defs/BirthDeclarationCreateInput
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '../write.openapi.yaml#/components/parameters/Traceparent'
         - $ref: '../write.openapi.yaml#/components/parameters/IdempotencyKey'
@@ -93,6 +94,8 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteForbidden'
         '404':
           $ref: '../write.openapi.yaml#/components/responses/WriteCollectionNotAvailable'
+        '406':
+          $ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '../write.openapi.yaml#/components/responses/Conflict'
         '415':
@@ -103,8 +106,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
   /v1/collections/households/records:
     post:
       operationId: createHousehold
@@ -121,6 +128,7 @@ paths:
         collection: households
         capability: create
         inputSchema: ./write-examples.schema.json#/$defs/HouseholdCreateInput
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '../write.openapi.yaml#/components/parameters/Traceparent'
         - $ref: '../write.openapi.yaml#/components/parameters/IdempotencyKey'
@@ -150,12 +158,15 @@ paths:
         '401': {$ref: '../write.openapi.yaml#/components/responses/WriteUnauthorized'}
         '403': {$ref: '../write.openapi.yaml#/components/responses/WriteForbidden'}
         '404': {$ref: '../write.openapi.yaml#/components/responses/WriteCollectionNotAvailable'}
+        '406': {$ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'}
         '409': {$ref: '../write.openapi.yaml#/components/responses/Conflict'}
         '415': {$ref: '../write.openapi.yaml#/components/responses/WriteUnsupportedMediaType'}
         '422': {$ref: '../write.openapi.yaml#/components/responses/UnprocessableContent'}
         '429': {$ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'}
         '500': {$ref: '../write.openapi.yaml#/components/responses/WriteInternalError'}
+        '502': {$ref: '../write.openapi.yaml#/components/responses/BadGateway'}
         '503': {$ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'}
+        '504': {$ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'}
   /v1/collections/individuals/records:
     post:
       operationId: createIndividual
@@ -169,6 +180,7 @@ paths:
         collection: individuals
         capability: create
         inputSchema: ./write-examples.schema.json#/$defs/IndividualCreateInput
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '../write.openapi.yaml#/components/parameters/Traceparent'
         - $ref: '../write.openapi.yaml#/components/parameters/IdempotencyKey'
@@ -192,12 +204,15 @@ paths:
         '401': {$ref: '../write.openapi.yaml#/components/responses/WriteUnauthorized'}
         '403': {$ref: '../write.openapi.yaml#/components/responses/WriteForbidden'}
         '404': {$ref: '../write.openapi.yaml#/components/responses/WriteCollectionNotAvailable'}
+        '406': {$ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'}
         '409': {$ref: '../write.openapi.yaml#/components/responses/Conflict'}
         '415': {$ref: '../write.openapi.yaml#/components/responses/WriteUnsupportedMediaType'}
         '422': {$ref: '../write.openapi.yaml#/components/responses/UnprocessableContent'}
         '429': {$ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'}
         '500': {$ref: '../write.openapi.yaml#/components/responses/WriteInternalError'}
+        '502': {$ref: '../write.openapi.yaml#/components/responses/BadGateway'}
         '503': {$ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'}
+        '504': {$ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'}
   /v1/collections/individuals/records/{recordId}:
     get:
       operationId: retrieveIndividualForWrite
@@ -246,6 +261,8 @@ paths:
         capability: update
         inputSchema: ./write-examples.schema.json#/$defs/IndividualUpdateInput
         inputMediaType: application/merge-patch+json
+        concurrencyPolicy: required
+        idempotencyReplayWindow: 86400
         companionRead:
           operationId: retrieveIndividualForWrite
           view: individual-write
@@ -266,9 +283,9 @@ paths:
                 preferred_name: Som
       responses:
         '204':
-          description: Person updated and committed; response is bodyless.
+          description: Person updated and committed; response is bodyless and can include the new strong guard.
           headers:
-            ETag: {$ref: '../write.openapi.yaml#/components/headers/StrongETag'}
+            ETag: {$ref: '../write.openapi.yaml#/components/headers/MutationETag'}
             Cache-Control: {$ref: '../write.openapi.yaml#/components/headers/WriteCacheControl'}
         '400': {$ref: '../write.openapi.yaml#/components/responses/WriteBadRequest'}
         '401': {$ref: '../write.openapi.yaml#/components/responses/WriteUnauthorized'}
@@ -281,7 +298,9 @@ paths:
         '428': {$ref: '../write.openapi.yaml#/components/responses/PreconditionRequired'}
         '429': {$ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'}
         '500': {$ref: '../write.openapi.yaml#/components/responses/WriteInternalError'}
+        '502': {$ref: '../write.openapi.yaml#/components/responses/BadGateway'}
         '503': {$ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'}
+        '504': {$ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'}
   /v1/collections/birth-registrations/records/{recordId}:
     get:
       operationId: retrieveBirthRegistrationForWrite
@@ -334,6 +353,7 @@ paths:
         inputSchema: ./write-examples.schema.json#/$defs/BirthCorrectionInput
         action: correct-birth
         transitionProfile: publicschema-birth-correction
+        idempotencyReplayWindow: 86400
         companionRead:
           operationId: retrieveBirthRegistrationForWrite
           view: birth-registration-write
@@ -374,6 +394,8 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteForbidden'
         '404':
           $ref: '../write.openapi.yaml#/components/responses/WriteRecordNotAvailable'
+        '406':
+          $ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '../write.openapi.yaml#/components/responses/Conflict'
         '412':
@@ -388,8 +410,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
   /v1/collections/households/records/{recordId}:
     get:
       operationId: retrieveHouseholdForWrite
@@ -441,6 +467,7 @@ paths:
         inputSchema: ./write-examples.schema.json#/$defs/HouseholdAddMemberInput
         action: add-member
         transitionProfile: publicschema-household-add-member
+        idempotencyReplayWindow: 86400
         companionRead:
           operationId: retrieveHouseholdForWrite
           view: household-write
@@ -476,6 +503,8 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteForbidden'
         '404':
           $ref: '../write.openapi.yaml#/components/responses/WriteRecordNotAvailable'
+        '406':
+          $ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '../write.openapi.yaml#/components/responses/Conflict'
         '412':
@@ -490,8 +519,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
   /v1/change-requests:
     post:
       operationId: submitChangeRequest
@@ -508,6 +541,7 @@ paths:
         registry: https://registry.example/registries/example
         capability: change-requests
         inputSchema: ./write-examples.schema.json#/$defs/PublicSchemaChangeRequestInput
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '../write.openapi.yaml#/components/parameters/Traceparent'
         - $ref: '../write.openapi.yaml#/components/parameters/IdempotencyKey'
@@ -545,6 +579,8 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteForbidden'
         '404':
           $ref: '../write.openapi.yaml#/components/responses/TargetNotAvailable'
+        '406':
+          $ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '../write.openapi.yaml#/components/responses/Conflict'
         '415':
@@ -555,8 +591,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}:
     get:
       operationId: getChangeRequest
@@ -588,8 +628,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}/approve:
     post:
       operationId: approveChangeRequest
@@ -604,6 +648,7 @@ paths:
       x-govstack-digital-registries-write:
         registry: https://registry.example/registries/example
         capability: change-requests
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '../write.openapi.yaml#/components/parameters/ChangeRequestId'
         - $ref: '../write.openapi.yaml#/components/parameters/Traceparent'
@@ -626,6 +671,8 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteForbidden'
         '404':
           $ref: '../write.openapi.yaml#/components/responses/ChangeRequestNotAvailable'
+        '406':
+          $ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '../write.openapi.yaml#/components/responses/Conflict'
         '412':
@@ -638,8 +685,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}/reject:
     post:
       operationId: rejectChangeRequest
@@ -651,6 +702,7 @@ paths:
       x-govstack-digital-registries-write:
         registry: https://registry.example/registries/example
         capability: change-requests
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '../write.openapi.yaml#/components/parameters/ChangeRequestId'
         - $ref: '../write.openapi.yaml#/components/parameters/Traceparent'
@@ -673,6 +725,8 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteForbidden'
         '404':
           $ref: '../write.openapi.yaml#/components/responses/ChangeRequestNotAvailable'
+        '406':
+          $ref: '../write.openapi.yaml#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '../write.openapi.yaml#/components/responses/Conflict'
         '412':
@@ -685,8 +739,12 @@ paths:
           $ref: '../write.openapi.yaml#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '../write.openapi.yaml#/components/responses/WriteInternalError'
+        '502':
+          $ref: '../write.openapi.yaml#/components/responses/BadGateway'
         '503':
           $ref: '../write.openapi.yaml#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '../write.openapi.yaml#/components/responses/GatewayTimeout'
 components:
   securitySchemes:
     serviceOAuth:
@@ -734,7 +792,7 @@ components:
         Location:
           $ref: '../write.openapi.yaml#/components/headers/Location'
         ETag:
-          $ref: '../write.openapi.yaml#/components/headers/StrongETag'
+          $ref: '../write.openapi.yaml#/components/headers/MutationETag'
         Cache-Control:
           $ref: '../write.openapi.yaml#/components/headers/WriteCacheControl'
       content:
@@ -758,7 +816,7 @@ components:
         Location:
           $ref: '../write.openapi.yaml#/components/headers/Location'
         ETag:
-          $ref: '../write.openapi.yaml#/components/headers/StrongETag'
+          $ref: '../write.openapi.yaml#/components/headers/MutationETag'
         Cache-Control:
           $ref: '../write.openapi.yaml#/components/headers/WriteCacheControl'
       content:
@@ -779,7 +837,7 @@ components:
         Location:
           $ref: '../write.openapi.yaml#/components/headers/Location'
         ETag:
-          $ref: '../write.openapi.yaml#/components/headers/StrongETag'
+          $ref: '../write.openapi.yaml#/components/headers/MutationETag'
         Cache-Control:
           $ref: '../write.openapi.yaml#/components/headers/WriteCacheControl'
       content:
@@ -791,10 +849,10 @@ components:
             recordId: person_105
             etag: '"person-v1"'
     BirthTransitionApplied:
-      description: Birth correction committed authoritatively with a new strong target ETag.
+      description: Birth correction committed authoritatively, optionally returning the new strong target ETag.
       headers:
         ETag:
-          $ref: '../write.openapi.yaml#/components/headers/StrongETag'
+          $ref: '../write.openapi.yaml#/components/headers/MutationETag'
         Cache-Control:
           $ref: '../write.openapi.yaml#/components/headers/WriteCacheControl'
       content:
@@ -806,10 +864,10 @@ components:
             recordId: birth_19
             etag: '"birth-v8"'
     HouseholdTransitionApplied:
-      description: Household membership transition committed atomically with a new strong target ETag.
+      description: Household membership transition committed atomically, optionally returning the new strong target ETag.
       headers:
         ETag:
-          $ref: '../write.openapi.yaml#/components/headers/StrongETag'
+          $ref: '../write.openapi.yaml#/components/headers/MutationETag'
         Cache-Control:
           $ref: '../write.openapi.yaml#/components/headers/WriteCacheControl'
       content:

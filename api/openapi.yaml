@@ -3,73 +3,76 @@ info:
   title: GovStack Digital Registries API
   version: 1.0.0-draft
   description: |-
-    This draft reference describes how clients read and change Registry Records through declared
-    collections. A deployment selects the operations it supports and publishes its own
-    OpenAPI contract with concrete collection paths and schemas. The `records` collection
-    and `https://registry.example/registries/records` Registry Identifier are generic
-    reference values.
+    This draft API description covers Record reads and writes through logical Collections.
+    Deployments select the operations they support and publish concrete Collection paths and
+    schemas. The `records` Collection and `https://registry.example/registries/records` Registry
+    Identifier are generic reference values.
 
     ### Understand the data
 
-    - A **Registry** holds records for which a named authority accepts responsibility
-      within a declared scope.
-    - A **Record** represents an entity, place, asset, or event within that Registry.
-    - A **Collection** groups Records for API access and declares its Registry, membership,
-      supported operations, and representation schemas or views. It need not correspond
-      to a database table. One API can expose several collections.
-    - A **permitted view** contains the Record data and metadata that the caller is
-      authorised to receive. It can be filtered or redacted.
+    A Registry holds Records about entities, places, assets, or events for which a named
+    authority accepts responsibility within a declared scope. Each Collection groups Records
+    for API access and declares its Registry, membership, supported operations, and
+    representation schemas or views; it need not correspond to a database table. One API can
+    expose several Collections. A permitted view contains the data and metadata authorised
+    for the caller, including any filtering or redaction.
 
-    Deployments select at least one Consultation or Write capability. Consultation provides:
+    ### Choose operations
+
+    Deployments select at least one Consultation or Write capability. Selecting one capability
+    selects no other.
 
     | Capability | Use it to |
     | --- | --- |
     | Retrieve | Read one Record by its stable identifier. |
-    | Lookup | Read one Record using a declared exact selector, such as a registration number. |
+    | Lookup | Read one Record using a declared exact selector. |
     | List | Read a page of Records in a declared order. |
     | Search | Run a declared typed search and read a page of results. |
     | Revision List | Read a page of retained source revisions for one Record. |
     | Revision Retrieve | Read one retained source revision by its identifier. |
+    | Create | Create one authoritative Record. |
+    | Update | Change the permitted content of an existing Record. |
+    | Transition | Apply one published named transition to an existing Record. |
+    | Change Requests | Submit an immutable proposal for review and separately authorised application. |
 
-    Write independently provides direct Create, direct Update, named Transition, and governed
-    Change Requests. Selecting one capability selects no other. A submitted Change Request is
-    immutable and non-authoritative until separately authorised application succeeds. A 202
-    response identifies actual background work and never proves a Record commit, approval, or
-    application.
+    A submitted Change Request has no authoritative Record effect until application succeeds.
+    A `202` response identifies actual background work; it does not prove a Record commit,
+    approval, or application.
 
     ### Find a deployed API
 
-    Start with `/.well-known/api-catalog` at the API origin (scheme, host, and port, without
-    a path). This RFC 9727 linkset is a document containing links to the deployed OpenAPI
-    contract and Registry Core metadata. The metadata identifies the
-    Registry, its name, authority, authoritative scope, and specification version. It also
-    associates the service with its Registry, supported API families, endpoint, and deployed
-    contract. The contract declares the Registry Identifier from this metadata. An external
-    catalogue can repeat the metadata but does not replace the origin's linkset.
+    Start with `/.well-known/api-catalog` at the API origin: scheme, host, and port, without a
+    path. This RFC 9727 linkset links the deployed OpenAPI contract and Registry Core metadata.
+    The metadata identifies the Registry, its name, authority, authoritative scope, and
+    specification version. It associates each service with its Registry, API families,
+    endpoint, and deployed contract. Operations declare the Registry Identifier from that
+    metadata. An external catalogue can repeat the metadata but does not replace the origin's
+    linkset.
 
-    Use the deployed contract to find typed data and input schemas, field meanings,
-    authorisation, pagination policy, and source currency. Source currency describes how
-    up to date the returned information is, including any material replication or cache
-    delay. Where caller discovery is supported, it provides metadata about collections and
-    operations visible to the authenticated caller. Discovery does not grant access to
-    Records; authorisation is evaluated on every read.
+    The deployed contract defines input and output schemas, field meanings, authorisation,
+    pagination, and source currency, including material replication or cache delay. Optional
+    caller discovery describes operations visible to the authenticated caller. Discovery
+    grants no access; current authorisation is evaluated on every operation request.
 
     ### Read within the declared limits
 
-    Each read applies the caller's permitted view. Only when Update or Transition designates the
-    canonical Retrieve through `companionRead` does that Retrieve become its current authoritative
-    guard view. It returns a strong ETag without granting mutation authority or widening the
-    permitted representation. Operations can additionally declare
-    `conditional-read`, `field-selection`, `complete-traversal`, `snapshot-traversal`,
-    `recorded-time`, `effective-time`, or `purpose-bound` features. Omission selects none.
-    This combined reference contract selects conditional-read on Retrieve. Read-only deployment
-    profiles can omit that feature and its validator. Ordinary pagination limits
-    the response size, with declared resource limits and source consistency. It does not
-    promise exhaustive traversal, a snapshot, or bounded database work. Public operations
-    declare `security: []`.
+    Operations can declare `conditional-read`, `field-selection`, `complete-traversal`,
+    `snapshot-traversal`, `recorded-time`, `effective-time`, or `purpose-bound`. Omission
+    selects none.
 
-    Transport uses TLS 1.3 or later. The `/v1` paths identify this API compatibility line;
-    `info.version` versions the draft HTTP contract.
+    Only when Update or Transition names a Retrieve through `companionRead` does that read
+    provide the current authoritative strong ETag for the permitted view. It grants no
+    mutation authority and does not widen the representation.
+    This combined reference contract selects conditional-read on Retrieve. Read-only deployment
+    profiles can omit that feature and its validator.
+
+    Ordinary pagination bounds response size. It does not promise exhaustive traversal, a
+    snapshot, or bounded database work.
+
+    ### Transport and language
+
+    Transport uses TLS 1.3 or later. The `/v1` paths identify the HTTP compatibility line;
+    `info.version` versions this draft contract. Public operations declare `security: []`.
 
     The default response language is English (`en`). A deployment may select another default
     or localise Problem `title` and `detail`. It then declares that default and follows API
@@ -314,16 +317,21 @@ paths:
     patch:
       operationId: updateRecord
       summary: Update one Record directly
-      description: >-
+      description: |-
         Applies `UpdateInput` to the writable Record representation as an RFC 7396 JSON Merge
         Patch. Only `data` is writable. The closed schema rejects `recordId`, source evidence,
-        authority-owned state, and other control members. This reference contract leaves domain
-        members below `data` unconstrained; each deployment narrows them in its published contract.
-        Under RFC 7396, a null domain member removes that member. Send the strong `ETag` from the
-        companion read in `If-Match`; weak validators are not accepted. Authorisation, policy,
-        target state, and the guard are re-evaluated atomically with commit. A mismatch returns
-        generic `412` without identifying changed guard state. A synchronous commit returns
-        bodyless `204` with the new strong `ETag`.
+        authority-owned state, and other control members. Domain members below `data` are
+        unconstrained in this reference; each deployment narrows them in its published contract.
+        A null domain member removes that member under RFC 7396.
+
+        Send the strong `ETag` from the companion read in `If-Match`; weak validators are not
+        accepted. `concurrencyPolicy: required` identifies this guarded contract. Authorisation,
+        policy, target state, and the guard are re-evaluated atomically with commit. A mismatch
+        returns generic `412` without identifying changed guard state.
+
+        A synchronous commit returns bodyless `204`. `Accept` alone does not make that bodyless
+        success unacceptable. The response can include the new strong `ETag` as a mutation
+        receipt.
       tags: [Write]
       security:
         - citizenOAuth: [bb:digital-registries:record:update]
@@ -334,6 +342,8 @@ paths:
         capability: update
         inputSchema: '#/components/schemas/UpdateInput'
         inputMediaType: application/merge-patch+json
+        concurrencyPolicy: required
+        idempotencyReplayWindow: 86400
         companionRead:
           operationId: retrieveRecord
           view: record-public
@@ -377,8 +387,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/collections/{collectionId}/records:
     get:
       operationId: listRecords
@@ -439,8 +453,10 @@ paths:
         Creates one Record in the selected Collection. A synchronous `201` response means that the
         authoritative commit has completed and returns the new Record URI in `Location`. The
         operation returns `202` only when it accepts actual commit work for asynchronous execution.
-        The deployment replaces `CreateInput.data` with its domain schema. Retries follow the
-        shared `Idempotency-Key` contract.
+        The server assigns the public Record identifier; this is create-only and cannot overwrite
+        an existing Record through upsert behaviour. An adapter can allocate the identifier it
+        sends to its source. The deployment replaces `CreateInput.data` with its domain schema.
+        Retries follow the shared `Idempotency-Key` contract.
       tags: [Write]
       security:
         - citizenOAuth: [bb:digital-registries:record:create]
@@ -450,6 +466,7 @@ paths:
         collection: records
         capability: create
         inputSchema: '#/components/schemas/CreateInput'
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '#/components/parameters/CollectionId'
         - $ref: '#/components/parameters/Traceparent'
@@ -476,6 +493,8 @@ paths:
           $ref: '#/components/responses/WriteForbidden'
         '404':
           $ref: '#/components/responses/WriteCollectionNotAvailable'
+        '406':
+          $ref: '#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '#/components/responses/Conflict'
         '415':
@@ -486,8 +505,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/collections/{collectionId}/lookup:
     post:
       operationId: lookupRecord
@@ -498,9 +521,12 @@ paths:
         callers. Matching respects the declared collection membership and uniqueness scope.
         Keys may be composite or derived from declared verified caller context.
 
-        If no matching Record can be disclosed to the caller, the operation uses `404`.
-        A uniqueness violation uses generic `500`, subject to the policy on disclosing
-        whether a Record exists. Malformed or structurally invalid input uses `400`.
+        Protected-existence handling is applied before ambiguity is disclosed. No disclosable
+        match, and ambiguity involving protected candidates, use the same unresolved `404`.
+        After that check, `502` means a correctly configured unique Lookup received an invalid
+        multiple-result response from an upstream dependency. `500` means this deployment's own
+        uniqueness declaration or mapping is wrong, or a native Registry violated its invariant.
+        The operation never chooses an arbitrary first match. Malformed or structurally invalid input uses `400`.
         Structurally valid input with an unknown selector or invalid domain values uses `422`.
 
         This synchronous read is retryable without an `Idempotency-Key`. Selector values
@@ -554,7 +580,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
         '502':
-          $ref: '#/components/responses/BadGateway'
+          $ref: '#/components/responses/LookupBadGateway'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
         '504':
@@ -766,6 +792,7 @@ paths:
         inputSchema: '#/components/schemas/TransitionInput'
         action: transition
         transitionProfile: record-transition
+        idempotencyReplayWindow: 86400
         companionRead:
           operationId: retrieveRecord
           view: record-public
@@ -798,6 +825,8 @@ paths:
           $ref: '#/components/responses/WriteForbidden'
         '404':
           $ref: '#/components/responses/WriteRecordNotAvailable'
+        '406':
+          $ref: '#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '#/components/responses/Conflict'
         '412':
@@ -812,20 +841,28 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/change-requests:
     post:
       operationId: submitChangeRequest
       summary: Submit an immutable change proposal
-      description: >-
-        Creates one immutable, non-authoritative proposal in pending review, with no Record side
-        effect. It uses the corresponding direct operation's typed `CreateInput`, `UpdateInput`, or
-        `TransitionInput`. Update and transition proposals bind the source Record's strong
-        validator in `baseETag`; update also declares `inputMediaType`. Trusted actor and purpose
-        come from verified authorisation context, never client-supplied actor, approval, decision,
-        or review-state fields. Completed creation returns `201` with `Location`; waiting for
-        review is not asynchronous execution.
+      description: |-
+        Creates one immutable, non-authoritative proposal in pending review, with no Record
+        side effect. The proposal uses the typed input declared for its Create, Update, or
+        Transition. Public direct-write operations are optional. For Update, `inputMediaType`
+        identifies the declared Merge Patch or JSON Patch input.
+
+        Update and transition proposals bind the source Record's strong validator in `baseETag`.
+        Trusted actor and purpose come from verified authorisation context, never client-supplied
+        actor, approval, decision, or review-state fields.
+
+        Completed proposal creation returns `201` with `Location`. Waiting for review is not
+        asynchronous execution.
       tags: [Change Requests]
       security:
         - citizenOAuth: [bb:digital-registries:change-request:submit]
@@ -834,6 +871,12 @@ paths:
         registry: https://registry.example/registries/records
         capability: change-requests
         inputSchema: '#/components/schemas/CreateChangeRequest'
+        idempotencyReplayWindow: 86400
+        purpose:
+          required: true
+          binding: access-token-claim
+          claim: purpose
+          allowedPurposes: [registry-correction]
       parameters:
         - $ref: '#/components/parameters/Traceparent'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -864,6 +907,8 @@ paths:
           $ref: '#/components/responses/WriteForbidden'
         '404':
           $ref: '#/components/responses/TargetNotAvailable'
+        '406':
+          $ref: '#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '#/components/responses/Conflict'
         '415':
@@ -874,24 +919,33 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
     get:
       operationId: listChangeRequests
       summary: List caller-visible change requests
-      description: >-
-        Returns a bounded page of Change Requests visible to the current caller and context. Empty
-        results return `200` with an empty `items` array. Order is ascending `submittedAt`, with
-        `changeRequestId` as the unique tie-breaker. The integrity-protected cursor binds the
-        authenticated actor and tenant partition, trusted purpose, Registry and Collection scope,
-        filters, order, and effective page size; it expires under `changeRequestCursorLifetime`.
-        Malformed, expired, tampered, or context-mismatched cursors return `400` and never restart
-        traversal. Every page is reauthorised under current policy. Traversal reads current state,
-        not a snapshot: new requests can appear later in order, but state changes do not reorder an
-        existing request. The
-        deployment publishes `changeRequestResultWindow` and a processing-time bound; exceeding the
-        latter returns `503` with `Retry-After`. A null `nextCursor` marks completion. Responses use
-        `no-store` and disclose no protected requests through counts, ordering, or errors.
+      description: |-
+        Returns a bounded page of Change Requests visible to the current caller and context.
+        Empty results return `200` with an empty `items` array. Order is ascending `submittedAt`,
+        with `changeRequestId` as the unique tie-breaker.
+
+        The integrity-protected cursor binds the authenticated actor and tenant partition,
+        trusted purpose, Registry and Collection scope, filters, order, and effective page size.
+        It expires under `changeRequestCursorLifetime`. Malformed, expired, tampered, or
+        context-mismatched cursors return `400` and never restart traversal. Every page is
+        reauthorised under current policy.
+
+        Traversal reads current state, not a snapshot. New requests can appear later in order;
+        state changes do not reorder an existing request. The deployment publishes
+        `changeRequestResultWindow` and a processing-time bound. Exceeding the latter returns
+        `503` with `Retry-After`.
+
+        A null `nextCursor` marks completion. Responses use `no-store` and disclose no protected
+        requests through counts, ordering, or errors.
       tags: [Change Requests]
       security:
         - citizenOAuth: [bb:digital-registries:change-request:read]
@@ -917,8 +971,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}:
     get:
       operationId: getChangeRequest
@@ -957,21 +1015,29 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}/approve:
     post:
       operationId: approveChangeRequest
       summary: Approve the exact proposal version
-      description: >-
-        Approves the proposal version selected by the request resource's strong `If-Match`.
-        `If-Match` guards the Change Request representation; the stored `baseETag` independently
-        guards the source Record at commit. Approval cannot create trusted purpose, extend grants,
-        or bypass current authorisation. This review-only operation returns `200` with approval
-        recorded and application `not-started`. An internal worker with the independent
-        `bb:digital-registries:change-request:apply` grant can later attempt application; review
-        authority alone cannot. Optional `ReviewDecisionInput` can retain a human comment as
-        governance context, not Record data, authority, purpose, or a decision selector.
+      description: |-
+        Approves the proposal version selected by the Change Request's strong `If-Match`.
+        This precondition guards the Change Request representation. For changes to an existing
+        Record, the stored `baseETag` independently guards the source Record at commit. Approval
+        cannot create trusted purpose, extend grants, or bypass current authorisation.
+
+        This review-only operation returns `200` with approval recorded and application
+        `not-started`. A Registry-managed or external component with the independent
+        `bb:digital-registries:change-request:apply` grant can later attempt application.
+        A caller with only review authority cannot attempt application.
+
+        Optional `ReviewDecisionInput` can retain a human comment as governance context, not
+        Record data, authority, purpose, or a decision selector.
       tags: [Change Requests]
       security:
         - citizenOAuth: [bb:digital-registries:change-request:review]
@@ -979,6 +1045,7 @@ paths:
       x-govstack-digital-registries-write:
         registry: https://registry.example/registries/records
         capability: change-requests
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '#/components/parameters/ChangeRequestId'
         - $ref: '#/components/parameters/Traceparent'
@@ -1001,6 +1068,8 @@ paths:
           $ref: '#/components/responses/WriteForbidden'
         '404':
           $ref: '#/components/responses/ChangeRequestNotAvailable'
+        '406':
+          $ref: '#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '#/components/responses/Conflict'
         '412':
@@ -1013,8 +1082,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}/reject:
     post:
       operationId: rejectChangeRequest
@@ -1030,6 +1103,7 @@ paths:
       x-govstack-digital-registries-write:
         registry: https://registry.example/registries/records
         capability: change-requests
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '#/components/parameters/ChangeRequestId'
         - $ref: '#/components/parameters/Traceparent'
@@ -1052,6 +1126,8 @@ paths:
           $ref: '#/components/responses/WriteForbidden'
         '404':
           $ref: '#/components/responses/ChangeRequestNotAvailable'
+        '406':
+          $ref: '#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '#/components/responses/Conflict'
         '412':
@@ -1064,8 +1140,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/change-requests/{changeRequestId}/withdraw:
     post:
       operationId: withdrawChangeRequest
@@ -1082,6 +1162,7 @@ paths:
       x-govstack-digital-registries-write:
         registry: https://registry.example/registries/records
         capability: change-requests
+        idempotencyReplayWindow: 86400
       parameters:
         - $ref: '#/components/parameters/ChangeRequestId'
         - $ref: '#/components/parameters/Traceparent'
@@ -1104,6 +1185,8 @@ paths:
           $ref: '#/components/responses/WriteForbidden'
         '404':
           $ref: '#/components/responses/ChangeRequestNotAvailable'
+        '406':
+          $ref: '#/components/responses/WriteNotAcceptable'
         '409':
           $ref: '#/components/responses/Conflict'
         '412':
@@ -1116,8 +1199,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /v1/operations/{operationId}:
     get:
       operationId: getOperation
@@ -1155,8 +1242,12 @@ paths:
           $ref: '#/components/responses/WriteTooManyRequests'
         '500':
           $ref: '#/components/responses/WriteInternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/WriteServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
 components:
   securitySchemes:
     citizenOAuth:
@@ -1211,7 +1302,10 @@ components:
       name: recordId
       in: path
       required: true
-      description: Stable opaque identifier within the selected registry, encoded as one path segment.
+      description: >-
+        Stable opaque identifier within the selected Registry, canonically percent-encoded as one
+        path segment. Malformed encoding, decoded separators, query or fragment delimiters, and
+        segment escape are rejected with 400 before source access.
       schema:
         $ref: '#/components/schemas/RecordId'
     RevisionId:
@@ -1260,7 +1354,9 @@ components:
       in: query
       required: false
       description: |-
-        Selects source state recorded no later than this RFC 3339 instant. Omission selects the current recorded state unless another temporal coordinate is supplied. Declare only when recorded-time is selected.
+        Selects source state recorded no later than this RFC 3339 instant. Omission selects the
+        current recorded state unless another temporal coordinate is supplied. A concrete API
+        description includes this parameter only when the operation selects `recorded-time`.
       schema:
         $ref: '#/components/schemas/RecordedAsOf'
     EffectiveAt:
@@ -1268,7 +1364,10 @@ components:
       in: query
       required: false
       description: |-
-        Selects source state applicable at this calendar date or RFC 3339 instant. Omission selects the currently applicable state unless another temporal coordinate is supplied. Declare only when effective-time is selected.
+        Selects source state applicable at this calendar date or RFC 3339 instant. Omission
+        selects the currently applicable state unless another temporal coordinate is supplied.
+        A concrete API description includes this parameter only when the operation selects
+        `effective-time`.
       schema:
         $ref: '#/components/schemas/EffectiveAt'
     Sort:
@@ -1320,21 +1419,42 @@ components:
       name: Idempotency-Key
       in: header
       required: true
-      description: >-
-        Opaque, client-generated, high-entropy Structured Field String, including quotation marks,
-        with at most 200 characters inside them; UUID values are recommended. Replay lookup binds
-        the method, canonical target URI, authenticated client, tenant or equivalent authorisation
-        partition, and effective trusted purpose. The fingerprint binds the method, canonical
-        target URI, content type, canonical body, and every declared semantic header. A missing,
-        malformed, or oversized key returns `400` before processing. The deployment publishes
-        its replay window as `write.idempotencyReplayWindow` on each discovered operation that
-        takes this key; after the window, the service processes a reused key as a new request.
-        Within the window, a completed matching retry returns the original status, body,
-        `Content-Type`, and `Location`, with per-attempt headers regenerated. Fingerprint mismatch
-        returns `422`; a matching in-flight retry returns `409`. Before disclosing a stored result,
-        the service rechecks current authorisation, effective trusted purpose, and disclosure
-        policy. A purpose change cannot select the stored result because purpose is in the lookup
-        scope. The key never preserves or creates a grant.
+      description: |-
+        Opaque, client-generated, high-entropy Structured Field String, including quotation
+        marks, with at most 200 characters inside them; UUID values are recommended. For example,
+        `Idempotency-Key: "018f47d2-4c42-7ca4-bf47-2bd31f88b922"`. Bare values are malformed.
+        A missing, malformed, or oversized key returns `400` before processing.
+
+        Replay lookup binds the method, canonical target URI, authenticated client, tenant or
+        equivalent authorisation partition, and effective trusted purpose. The fingerprint binds
+        the method, canonical target URI, request content type, canonical body, `If-Match` where
+        present, negotiated success representation, and every other declared semantics-changing
+        header.
+
+        Each mutating operation publishes its authoritative guaranteed-minimum replay window in
+        `x-govstack-digital-registries-write.idempotencyReplayWindow`. Optional caller discovery
+        copies the same integer in `write.idempotencyReplayWindow`. The clock starts when
+        processing begins.
+
+        Within that window, a completed matching retry returns the original status, body,
+        `Content-Type`, `Location`, and any returned `ETag`, with per-attempt headers regenerated.
+        After current authentication and disclosure checks, matching completed replay is resolved
+        before current target preconditions.
+
+        Other retry outcomes are:
+
+        - Fingerprint mismatch: `422`.
+        - Processing or automatic recovery continues: `409 idempotency-in-flight` with `Retry-After`.
+        - Operator reconciliation is needed: `409 idempotency-reconciliation-required` without
+          `Retry-After`.
+
+        Beyond the guaranteed window, the client can assume neither replay nor fresh execution.
+        Unresolved claims never become fresh attempts through expiry. A fresh key represents a
+        new intent, not recovery of an uncertain old write.
+
+        Before disclosing a stored result, the service rechecks current authorisation, effective
+        trusted purpose, and disclosure policy. A purpose change cannot select the stored result
+        because purpose is in the lookup scope. The key never preserves or creates a grant.
       schema:
         type: string
         minLength: 3
@@ -1357,14 +1477,16 @@ components:
       required: false
       description: >-
         Opaque, integrity-protected continuation from the preceding Change Request page; omit it
-        for the first page. It binds caller context, trusted purpose, Registry and Collection
-        scope, filters, deterministic order, and effective page size, and expires under
-        `changeRequestCursorLifetime`. Invalid continuation returns `400` and never restarts
-        traversal.
+        for the first page. It binds effective caller and tenant identity, trusted purpose,
+        visibility, Registry and Collection scope, filters, deterministic order, and effective
+        page size, and expires under `changeRequestCursorLifetime`. It does not bind the access
+        token instance or irrelevant claim changes, so token refresh alone does not break a
+        traversal. Every page is reauthorised. Invalid continuation returns `400` and never
+        restarts traversal.
       schema:
         type: string
         minLength: 1
-        maxLength: 2048
+        maxLength: 4096
   headers:
     CacheControl:
       description: >-
@@ -1434,12 +1556,30 @@ components:
       schema:
         $ref: '#/components/schemas/StrongETag'
       example: '"record-7fa9"'
+    MutationETag:
+      description: >-
+        Optional strong validator identifying the committed guard state in a Record mutation
+        receipt. When both the response body and header carry it they agree, and completed replay
+        returns it unchanged. A caller that needs another guarded mutation after a tagless success
+        obtains a fresh guard through an authorised companion read or another permitted channel.
+      schema:
+        $ref: '#/components/schemas/StrongETag'
+      example: '"record-7fa9"'
     Location:
-      description: URI of the created Record, change request, or asynchronous Operation.
+      description: >-
+        URI of the created Record, change request, or asynchronous Operation. Record URIs use the
+        same logical RecordId bounds and canonical single-segment encoding as Record paths.
       required: true
       schema:
         type: string
         format: uri-reference
+    Allow:
+      description: Methods available on this disclosed resource path.
+      required: true
+      schema:
+        type: string
+        minLength: 1
+      example: GET, PATCH
   schemas:
     CollectionId:
       type: string
@@ -1457,13 +1597,23 @@ components:
     RecordId:
       type: string
       minLength: 1
-      description: >-
-        Stable opaque identifier unique across all collections in the selected Registry,
-        unchanged throughout the Record's lifecycle and never reassigned to a different Record.
-        The same Record retains its identifier across collections and views. Suitable source
-        identifiers are retained. Exposed identifiers are non-personal and safe for URL
-        references. Collection actions occupy a separate namespace, so source identifiers such
-        as lookup and search remain valid Record Identifiers.
+      maxLength: 2048
+      pattern: '^[^/?#\s]+(?![\s\S])'
+      description: |-
+        Stable opaque identifier for one Record:
+
+        - Unique across all collections in the selected Registry, unchanged throughout the
+          Record's lifecycle, and never reassigned to a different Record.
+        - The same Record retains its identifier across collections and views. Suitable source
+          identifiers are retained.
+        - Concrete contracts can narrow the finite bound and alphabet but do not assume UUIDs,
+          ASCII-only identifiers, or a universal 256-character ceiling.
+        - Exposed identifiers are non-personal and canonically percent-encoded as one path
+          segment. Decoded slash, query, and fragment delimiters are invalid.
+        - The same schema governs path identifiers, selector values that represent Record
+          identity, write and governed targets, returned Records, mutation results, and Record URIs.
+        - Collection actions occupy a separate namespace, so source identifiers such as `lookup`
+          and `search` remain valid Record Identifiers.
       examples: [r_42]
     RecordedAsOf:
       type: string
@@ -1728,7 +1878,9 @@ components:
         Return this URL-safe, opaque, integrity-protected token unchanged. It contains no
         personal data and is bound to:
 
-        - Service, Registry, collection, selected view, applicable access context, and operation.
+        - Service, Registry, collection, selected view, effective caller and tenant identity,
+          visibility, and operation. It excludes the access-token instance and irrelevant claim
+          changes, so token refresh alone does not break traversal.
         - All path selectors, including the parent `recordId` for `revision-list`.
         - Search name, criteria, ordering, effective field and temporal selection, effective
           trusted purpose, and `pageSize`.
@@ -1956,6 +2108,10 @@ components:
         Advisory Write metadata: the companion read copied from the linked operation contract and
         the deployment's idempotency replay window.
       properties:
+        concurrencyPolicy:
+          type: string
+          const: required
+          description: Guarded Update requires a strong If-Match checked atomically with mutation.
         companionRead:
           $ref: '#/components/schemas/CompanionReadIdentity'
         idempotencyReplayWindow:
@@ -1963,8 +2119,9 @@ components:
           minimum: 1
           maximum: 31536000
           description: >-
-            Seconds for which the deployment retains an `Idempotency-Key` and replays its
-            completed result. After the window, a reused key is processed as a new request.
+            Guaranteed minimum completed-result replay window in seconds, measured from the
+            start of processing. Beyond it neither replay nor fresh execution is guaranteed,
+            and an unresolved claim never becomes a fresh attempt through expiry.
     CapabilityOperation:
       type: object
       additionalProperties: false
@@ -2141,7 +2298,6 @@ components:
               anyOf:
                 - {required: [view], description: Write operations do not return a Record read view.}
                 - {required: [features], description: Read features belong to Consultation operations.}
-                - {required: [purpose], description: Read purpose metadata belongs to Consultation operations.}
                 - {required: [readableFields], description: Readable fields belong to Consultation operations.}
                 - {required: [searches], description: Search names belong to Consultation operations.}
                 - {required: [selectors], description: Selector names belong to Consultation operations.}
@@ -2415,6 +2571,7 @@ components:
                   family: write
                   capability: update
                   write:
+                    concurrencyPolicy: required
                     companionRead:
                       operationId: retrieveRecord
                       view: record-public
@@ -2435,6 +2592,11 @@ components:
                 contract: https://registry.example/contracts/1.0.0-draft/openapi.yaml
                 family: write
                 capability: change-requests
+                purpose:
+                  required: true
+                  binding: access-token-claim
+                  claim: purpose
+                  allowedPurposes: [registry-correction]
                 write:
                   idempotencyReplayWindow: 86400
             - registry: https://registry.example/registries/records
@@ -2617,6 +2779,77 @@ components:
       examples:
         - data:
             label: Corrected label
+    JsonPatchOperation:
+      description: >-
+        One conservative RFC 6902 operation against a declared writable data path. This generic
+        reference skeleton supports add, remove and replace. A concrete profile replaces or
+        narrows the permitted JSON Pointer paths to explicit typed writable fields. Test, copy,
+        move, and positional array changes remain available only when a concrete profile declares
+        their permissions and concurrency semantics; this skeleton does not define them.
+      oneOf:
+        - type: object
+          description: Add a typed value at a declared writable path.
+          additionalProperties: false
+          required: [op, path, value]
+          properties:
+            op: {const: add, description: Add or replace a value at the declared writable path.}
+            path:
+              type: string
+              minLength: 6
+              maxLength: 2048
+              pattern: '^/data(?:/(?:[^~/\x00-\x1F\x7F-\x9F]|~[01])*)+(?![\s\S])'
+              description: >-
+                RFC 6901 JSON Pointer below /data. Each concrete contract narrows this generic
+                valid-pointer skeleton to its explicit typed writable paths.
+            value:
+              description: Value supplied by this add operation.
+        - type: object
+          description: Remove the value at a declared writable path.
+          additionalProperties: false
+          required: [op, path]
+          properties:
+            op: {const: remove, description: Remove the value at the declared writable path.}
+            path:
+              type: string
+              minLength: 6
+              maxLength: 2048
+              pattern: '^/data(?:/(?:[^~/\x00-\x1F\x7F-\x9F]|~[01])*)+(?![\s\S])'
+              description: >-
+                RFC 6901 JSON Pointer below /data. Each concrete contract narrows this generic
+                valid-pointer skeleton to its explicit typed writable paths.
+        - type: object
+          description: Replace a typed value at a declared writable path.
+          additionalProperties: false
+          required: [op, path, value]
+          properties:
+            op: {const: replace, description: Replace the value at the declared writable path.}
+            path:
+              type: string
+              minLength: 6
+              maxLength: 2048
+              pattern: '^/data(?:/(?:[^~/\x00-\x1F\x7F-\x9F]|~[01])*)+(?![\s\S])'
+              description: >-
+                RFC 6901 JSON Pointer below /data. Each concrete contract narrows this generic
+                valid-pointer skeleton to its explicit typed writable paths.
+            value:
+              description: Replacement value supplied by this operation.
+    JsonPatchInput:
+      type: array
+      minItems: 1
+      maxItems: 100
+      description: >-
+        RFC 6902 JSON Patch alternative for a concrete Update operation that declares
+        application/json-patch+json. Every operation applies atomically or none has effect, and
+        the resulting Record must satisfy its schema. This generic valid-pointer skeleton is not
+        sufficient domain mapping: a concrete profile declares explicit typed writable paths and
+        their permissions. Supporting this shape does not require the same concrete operation to
+        support Merge Patch.
+      items:
+        $ref: '#/components/schemas/JsonPatchOperation'
+      examples:
+        - - op: replace
+            path: /data/label
+            value: Corrected label
     TransitionInput:
       type: object
       additionalProperties: false
@@ -2686,23 +2919,47 @@ components:
             input:
               $ref: '#/components/schemas/CreateInput'
         - type: object
-          description: Update proposal bound to a source Record validator and merge-patch media type.
+          description: >-
+            Update proposal bound to a source Record validator and the concrete operation's one
+            declared registered patch format. The reference illustrates both formats; a deployment
+            need not support both.
           additionalProperties: false
           required: [kind, target, baseETag, inputMediaType, input]
           properties:
             kind:
               const: update
-              description: Proposal to apply a merge patch to an existing Record.
+              description: Proposal to apply the declared patch format to an existing Record.
             target:
               $ref: '#/components/schemas/RecordTarget'
             baseETag:
               $ref: '#/components/schemas/StrongETag'
             inputMediaType:
               type: string
-              const: application/merge-patch+json
-              description: Registered patch format governing UpdateInput.data.
+              enum: [application/merge-patch+json, application/json-patch+json]
+              description: Registered patch format governing the input shape.
             input:
-              $ref: '#/components/schemas/UpdateInput'
+              oneOf:
+                - $ref: '#/components/schemas/UpdateInput'
+                - $ref: '#/components/schemas/JsonPatchInput'
+          allOf:
+            - if:
+                description: Select the Merge Patch proposal input.
+                properties:
+                  inputMediaType: {const: application/merge-patch+json, description: Select Merge Patch input.}
+                required: [inputMediaType]
+              then:
+                description: Require the object-shaped Merge Patch input.
+                properties:
+                  input: {$ref: '#/components/schemas/UpdateInput'}
+            - if:
+                description: Select the JSON Patch proposal input.
+                properties:
+                  inputMediaType: {const: application/json-patch+json, description: Select JSON Patch input.}
+                required: [inputMediaType]
+              then:
+                description: Require the array-shaped JSON Patch input.
+                properties:
+                  input: {$ref: '#/components/schemas/JsonPatchInput'}
         - type: object
           description: Named transition proposal bound to a source Record validator.
           additionalProperties: false
@@ -2745,9 +3002,11 @@ components:
         - comment: Reviewed against the submitted evidence.
     WriteResult:
       type: object
-      required: [collectionId, recordId, etag]
+      required: [collectionId, recordId]
       description: >-
-        Receipt for an authoritative Record mutation, not a domain Record representation.
+        Receipt for an authoritative Record mutation, not a domain Record representation. Identity
+        and truthful acknowledgement are mandatory; the strong mutation-receipt validator is
+        optional. When supplied, it identifies the committed guard state and replays unchanged.
         Readers accept additive response-envelope fields.
       properties:
         collectionId:
@@ -2834,8 +3093,8 @@ components:
           type: string
           enum: [create, update, transition]
           description: >-
-            Proposed semantic change: create adds a Record, update applies a merge patch, and
-            transition applies one published named action.
+            Proposed semantic change: create adds a Record, update applies the operation's declared
+            registered patch format, and transition applies one published named action.
           examples: [update]
         target:
           description: Target Collection and, for update or transition, stable Record identifier.
@@ -2845,7 +3104,7 @@ components:
           $ref: '#/components/schemas/StrongETag'
         inputMediaType:
           type: string
-          const: application/merge-patch+json
+          enum: [application/merge-patch+json, application/json-patch+json]
           description: Registered patch media type required for update proposals.
         reviewState:
           type: string
@@ -2900,11 +3159,33 @@ components:
               kind: {const: update, description: Update proposal discriminator.}
             required: [kind]
           then:
-            description: Update requires an existing target, source validator, media type, and UpdateInput.
+            description: Update requires an existing target, source validator, media type, and matching patch input.
             required: [baseETag, inputMediaType]
             properties:
               target: {$ref: '#/components/schemas/RecordTarget'}
-              input: {$ref: '#/components/schemas/UpdateInput'}
+              input:
+                oneOf:
+                  - $ref: '#/components/schemas/UpdateInput'
+                  - $ref: '#/components/schemas/JsonPatchInput'
+            allOf:
+              - if:
+                  description: Select retained Merge Patch proposal content.
+                  properties:
+                    inputMediaType: {const: application/merge-patch+json, description: Select Merge Patch input.}
+                  required: [inputMediaType]
+                then:
+                  description: Retain the object-shaped Merge Patch input.
+                  properties:
+                    input: {$ref: '#/components/schemas/UpdateInput'}
+              - if:
+                  description: Select retained JSON Patch proposal content.
+                  properties:
+                    inputMediaType: {const: application/json-patch+json, description: Select JSON Patch input.}
+                  required: [inputMediaType]
+                then:
+                  description: Retain the array-shaped JSON Patch input.
+                  properties:
+                    input: {$ref: '#/components/schemas/JsonPatchInput'}
         - if:
             description: Select the named transition proposal branch.
             properties:
@@ -3188,8 +3469,46 @@ components:
           properties:
             type: {const: https://govstack.global/problems/digital-registries/not-acceptable, description: Stable not-acceptable problem type.}
             status: {const: 406, description: HTTP Not Acceptable status.}
+    MethodNotAllowedProblem:
+      description: The disclosed resource path does not offer the requested method.
+      required: [type, title, status, traceId]
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          description: Bind routing method rejection to the 405 method-not-allowed identity.
+          required: [type, title, status, traceId]
+          properties:
+            type: {const: https://govstack.global/problems/digital-registries/method-not-allowed, description: Stable method-not-allowed problem type.}
+            status: {const: 405, description: HTTP Method Not Allowed status.}
+    IdempotencyInFlightProblem:
+      description: >-
+        A matching request is processing or automatic recovery is still running. Retry the same
+        request with the same key after the response's Retry-After delay.
+      required: [type, title, status, traceId]
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          description: Bind a matching in-flight retry to its distinct 409 identity.
+          required: [type, title, status, traceId]
+          properties:
+            type: {const: https://govstack.global/problems/digital-registries/idempotency-in-flight, description: Stable in-flight idempotency problem type.}
+            status: {const: 409, description: HTTP Conflict status.}
+    IdempotencyReconciliationRequiredProblem:
+      description: >-
+        The authoritative effect remains unknown and operator action is required. The client does
+        not automatically re-execute the request or substitute a fresh key. Once reconciliation
+        resolves the claim, the original key can return the recorded outcome.
+      required: [type, title, status, traceId]
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          description: Bind an unresolved claim requiring manual reconciliation to its 409 identity.
+          required: [type, title, status, traceId]
+          properties:
+            type: {const: https://govstack.global/problems/digital-registries/idempotency-reconciliation-required, description: Stable reconciliation-required problem type.}
+            status: {const: 409, description: HTTP Conflict status.}
     ConflictProblem:
-      description: State conflict or matching idempotent request still in flight.
+      description: State conflict or an unresolved idempotent request claim.
       required: [type, title, status, traceId]
       oneOf:
         - allOf:
@@ -3200,14 +3519,8 @@ components:
               properties:
                 type: {const: https://govstack.global/problems/digital-registries/state-conflict, description: Stable state-conflict problem type.}
                 status: {const: 409, description: HTTP Conflict status.}
-        - allOf:
-            - $ref: '#/components/schemas/Problem'
-            - type: object
-              description: Bind a matching in-flight retry to its distinct 409 identity.
-              required: [type, title, status, traceId]
-              properties:
-                type: {const: https://govstack.global/problems/digital-registries/idempotency-in-flight, description: Stable in-flight idempotency problem type.}
-                status: {const: 409, description: HTTP Conflict status.}
+        - $ref: '#/components/schemas/IdempotencyInFlightProblem'
+        - $ref: '#/components/schemas/IdempotencyReconciliationRequiredProblem'
     PreconditionFailedProblem:
       description: A supplied strong If-Match validator did not match current state.
       required: [type, title, status, traceId]
@@ -3289,6 +3602,17 @@ components:
           properties:
             type: {const: https://govstack.global/problems/digital-registries/internal-error, description: Stable internal-error problem type.}
             status: {const: 500, description: HTTP Internal Server Error status.}
+    BadGatewayProblem:
+      description: A gateway-dependent deployment received an invalid upstream response.
+      required: [type, title, status, traceId]
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          description: Bind an invalid upstream response to the 502 bad-gateway identity.
+          required: [type, title, status, traceId]
+          properties:
+            type: {const: https://govstack.global/problems/digital-registries/bad-gateway, description: Stable bad-gateway problem type.}
+            status: {const: 502, description: HTTP Bad Gateway status.}
     ServiceUnavailableProblem:
       description: Service temporarily cannot accept work.
       required: [type, title, status, traceId]
@@ -3300,6 +3624,17 @@ components:
           properties:
             type: {const: https://govstack.global/problems/digital-registries/service-unavailable, description: Stable service-unavailable problem type.}
             status: {const: 503, description: HTTP Service Unavailable status.}
+    GatewayTimeoutProblem:
+      description: A gateway-dependent upstream operation exceeded its time budget.
+      required: [type, title, status, traceId]
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          description: Bind upstream timeout to the 504 gateway-timeout identity.
+          required: [type, title, status, traceId]
+          properties:
+            type: {const: https://govstack.global/problems/digital-registries/gateway-timeout, description: Stable gateway-timeout problem type.}
+            status: {const: 504, description: HTTP Gateway Timeout status.}
   responses:
     ApiCatalog:
       description: >-
@@ -3367,18 +3702,22 @@ components:
           schema:
             $ref: '#/components/schemas/Record'
     StrongRecord:
-      description: >-
-        The permitted Record view used by the canonical companion read. Its body and required
-        strong ETag come from one current authoritative guard evaluation in the effective
-        authorisation, disclosure, purpose, and field-selection context. The tag is a valid strong
-        validator for the selected representation and also invalidates when any authoritative
-        field or source condition changes in a way that can alter that mutation's validation,
-        mapping, or committed effect. Unrelated hidden state need not invalidate it. The opaque tag
-        encodes no source value; receiving the representation, the tag, or a change in the tag
-        grants no mutation authority and identifies no changed state. A shared view name alone does
-        not make this tag equal to a mutation success tag. Equality is meaningful only when the
-        read observes that exact committed guard state with no intervening mutation-relevant
-        change, and uses the same effective context.
+      description: |-
+        Returns the permitted Record view and a required strong ETag for the selected companion
+        read. The body and tag come from one current authoritative guard evaluation in the
+        effective authorisation, disclosure, purpose, and field-selection context.
+
+        The tag is a valid strong validator for the selected representation. It also invalidates
+        when any authoritative field or source condition changes in a way that can alter the
+        mutation's validation, mapping, or committed effect. Unrelated hidden state need not
+        invalidate it.
+
+        The opaque tag encodes no source value. Receiving the representation, the tag, or a change
+        in the tag grants no mutation authority and identifies no changed state.
+
+        A shared view name alone does not make this tag equal to a mutation success tag. Equality
+        is meaningful only when the read observes that exact committed guard state, with no
+        intervening mutation-relevant change, and uses the same effective context.
       headers:
         Cache-Control:
           $ref: '#/components/headers/CacheControl'
@@ -3491,8 +3830,9 @@ components:
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     Forbidden:
       description: >-
-        Access to the operation or view is denied. Protected Record existence uses the 404
-        response.
+        The current authenticated caller lacks the operation or view grant. Protected Record
+        existence uses the 404 response. A broken service credential or deployment configuration
+        is a server-side failure and is not translated blindly from an upstream 403.
       headers:
         Cache-Control:
           $ref: '#/components/headers/CacheControl'
@@ -3587,6 +3927,25 @@ components:
             title: Response media type not supported
             status: 406
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    MethodNotAllowed:
+      description: >-
+        The disclosed resource path exists but does not offer this method. Allow lists the methods
+        the caller can discover. An absent path uses routing 404, and protected existence remains
+        concealed rather than being revealed through 405.
+      headers:
+        Allow:
+          $ref: '#/components/headers/Allow'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/MethodNotAllowedProblem'
+          example:
+            type: https://govstack.global/problems/digital-registries/method-not-allowed
+            title: Method not allowed
+            status: 405
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     ContentTooLarge:
       description: The request exceeds the deployment's published body-size limit.
       headers:
@@ -3630,14 +3989,37 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/InvalidContentProblem'
-          example:
-            type: https://govstack.global/problems/digital-registries/invalid-content
-            title: Request validation failed
-            status: 422
-            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
-            errors:
-              - pointer: /values/registrationNumber
-                message: The registration number does not match the declared format.
+          examples:
+            selector:
+              summary: The Lookup selector is not declared
+              value:
+                type: https://govstack.global/problems/digital-registries/invalid-content
+                title: Request validation failed
+                status: 422
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+                errors:
+                  - pointer: /selector
+                    message: The selector is not declared by this operation.
+            value:
+              summary: A selector value violates its domain contract
+              value:
+                type: https://govstack.global/problems/digital-registries/invalid-content
+                title: Request validation failed
+                status: 422
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+                errors:
+                  - pointer: /values/registrationNumber
+                    message: The registration number does not match the declared format.
+            wholeBody:
+              summary: The complete request body violates a cross-field rule
+              value:
+                type: https://govstack.global/problems/digital-registries/invalid-content
+                title: Request validation failed
+                status: 422
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+                errors:
+                  - pointer: ''
+                    message: The request body contains an invalid combination of fields.
     TooManyRequests:
       description: >-
         The gateway enforces its published quota scope and supplies Retry-After. Advisory
@@ -3658,10 +4040,11 @@ components:
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     InternalError:
       description: >-
-        Request failure, including a source contract violation. Protected-existence policy
-        precedes Record-specific diagnostics. Problem text excludes personal data, source
-        counts and internal details; type is the sole machine identifier, with code and
-        timestamp omitted.
+        Request failure caused by this deployment, including incorrect uniqueness declarations,
+        mapping or configuration errors, and native Registry invariant violations.
+        Protected-existence policy precedes Record-specific diagnostics. Problem text excludes
+        personal data, source counts and internal details; type is the sole machine identifier,
+        with code and timestamp omitted.
       headers:
         Cache-Control:
           $ref: '#/components/headers/CacheControl'
@@ -3675,17 +4058,38 @@ components:
             status: 500
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     BadGateway:
-      description: The registry adapter received an unusable upstream response; no upstream details are exposed.
+      description: >-
+        A correctly configured gateway-dependent deployment received an unusable upstream
+        response; no upstream details are exposed. Adapter deployment alone does not make a
+        deployment-owned mapping or invariant failure a 502.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/WriteCacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/BadGatewayProblem'
+          example:
+            type: https://govstack.global/problems/digital-registries/bad-gateway
+            title: Upstream request failed
+            status: 502
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    LookupBadGateway:
+      description: >-
+        After protected-existence handling, a correctly configured unique Lookup received an
+        invalid multiple-result response from an upstream dependency. The service returns no
+        candidate and never chooses an arbitrary first match. Deployment-owned uniqueness,
+        mapping or configuration errors, and native Registry invariant violations use 500.
       headers:
         Cache-Control:
           $ref: '#/components/headers/CacheControl'
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/BadGatewayProblem'
           example:
             type: https://govstack.global/problems/digital-registries/bad-gateway
-            title: Upstream request failed
+            title: Upstream Lookup response violated the declared contract
             status: 502
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     ServiceUnavailable:
@@ -3705,14 +4109,17 @@ components:
             status: 503
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     GatewayTimeout:
-      description: The upstream read exceeded its time budget; no partial or fabricated record is returned.
+      description: >-
+        An upstream operation exceeded its time budget; no partial or fabricated result is
+        returned. For a write, this status does not prove rollback or authorise re-execution with
+        a fresh idempotency key.
       headers:
         Cache-Control:
-          $ref: '#/components/headers/CacheControl'
+          $ref: '#/components/headers/WriteCacheControl'
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/GatewayTimeoutProblem'
           example:
             type: https://govstack.global/problems/digital-registries/gateway-timeout
             title: Upstream request timed out
@@ -3722,13 +4129,15 @@ components:
       description: >-
         Record created and authoritatively committed. Location identifies the same Record as the
         response body and the createdRecord link. Reading it remains separately authorised and
-        follows the declared source-currency contract. The body etag equals the ETag header. A
-        later companion GET returns that same new guard only when it observes that exact committed
-        guard state with no intervening mutation-relevant change, has reached companion currency,
-        and uses the same effective authorisation, disclosure, purpose, and field selection.
+        follows the declared source-currency contract. The body etag and ETag header are each
+        optional; when both are present their values agree. A later companion GET returns that same new guard only when it observes that exact
+        committed guard state with no intervening mutation-relevant change, has reached companion
+        currency, and uses the same effective authorisation, disclosure, purpose, and field
+        selection. A known server-allocated identifier plus reliable acknowledgement can establish
+        this receipt without readback; uncertain acknowledgement follows reconciliation semantics.
       headers:
         Location: {$ref: '#/components/headers/Location'}
-        ETag: {$ref: '#/components/headers/StrongETag'}
+        ETag: {$ref: '#/components/headers/MutationETag'}
         Cache-Control: {$ref: '#/components/headers/WriteCacheControl'}
       content:
         application/json:
@@ -3743,13 +4152,13 @@ components:
             recordId: '$response.body#/recordId'
     RecordUpdated:
       description: >-
-        Record updated and authoritatively committed; response is bodyless. The ETag is the new
-        guard. A later companion GET returns the same value only when it observes that exact
+        Record updated and authoritatively committed; response is bodyless. An optional ETag is the
+        new guard. A later companion GET returns the same value only when it observes that exact
         committed guard state with no intervening mutation-relevant change, has reached companion
         currency, and uses the same effective authorisation, disclosure, purpose, and field
         selection.
       headers:
-        ETag: {$ref: '#/components/headers/StrongETag'}
+        ETag: {$ref: '#/components/headers/MutationETag'}
         Cache-Control: {$ref: '#/components/headers/WriteCacheControl'}
       links:
         updatedRecord:
@@ -3760,12 +4169,13 @@ components:
             recordId: '$request.path.recordId'
     TransitionApplied:
       description: >-
-        Transition applied and authoritatively committed. The body etag equals the ETag header. A
-        later companion GET returns that same new guard only when it observes that exact committed
-        guard state with no intervening mutation-relevant change, has reached companion currency,
-        and uses the same effective authorisation, disclosure, purpose, and field selection.
+        Transition applied and authoritatively committed. The body etag and ETag header are each
+        optional; when both are present their values agree. A later companion GET returns that same new guard only when it
+        observes that exact committed guard state with no intervening mutation-relevant change,
+        has reached companion currency, and uses the same effective authorisation, disclosure,
+        purpose, and field selection.
       headers:
-        ETag: {$ref: '#/components/headers/StrongETag'}
+        ETag: {$ref: '#/components/headers/MutationETag'}
         Cache-Control: {$ref: '#/components/headers/WriteCacheControl'}
       content:
         application/json:
@@ -3925,7 +4335,10 @@ components:
             status: 401
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     WriteForbidden:
-      description: Authenticated caller is not authorised for this operation.
+      description: >-
+        Authenticated caller is not authorised for this operation. Protected target existence
+        uses the matching 404 response. Broken shared source credentials, missing source filters,
+        and deployment configuration failures are server-side errors, not caller 403 responses.
       headers:
         Cache-Control: {$ref: '#/components/headers/WriteCacheControl'}
       content:
@@ -3995,7 +4408,10 @@ components:
           schema: {$ref: '#/components/schemas/NotAvailableProblem'}
           example: *notAvailableProblem
     WriteNotAcceptable:
-      description: No response representation matches Accept.
+      description: >-
+        No response representation matches Accept. For a new body-returning mutation, negotiation
+        is rejected before the service accepts or executes the mutation. A bodyless 204 success is
+        not rejected solely because Accept lists only Problem Details.
       headers:
         Cache-Control: {$ref: '#/components/headers/WriteCacheControl'}
       content:
@@ -4008,18 +4424,41 @@ components:
             traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     Conflict:
       description: >-
-        Current state conflicts with the operation, or a matching idempotent retry remains in
-        flight. Failed If-Match uses 412 instead.
+        Current state conflicts with the operation, or the outcome of a matching idempotent request
+        is unresolved. `idempotency-in-flight` means processing or automatic recovery continues and
+        requires Retry-After. `idempotency-reconciliation-required` means operator action is needed
+        and omits Retry-After. Neither problem proves rollback. Failed If-Match uses 412 instead.
       headers:
+        Retry-After:
+          description: >-
+            Required for idempotency-in-flight and omitted for
+            idempotency-reconciliation-required or an ordinary state conflict.
+          schema:
+            type: string
+          example: '30'
         Cache-Control: {$ref: '#/components/headers/WriteCacheControl'}
       content:
         application/problem+json:
           schema: {$ref: '#/components/schemas/ConflictProblem'}
-          example:
-            type: https://govstack.global/problems/digital-registries/state-conflict
-            title: Current state conflicts with the request
-            status: 409
-            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+          examples:
+            stateConflict:
+              value:
+                type: https://govstack.global/problems/digital-registries/state-conflict
+                title: Current state conflicts with the request
+                status: 409
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+            inFlight:
+              value:
+                type: https://govstack.global/problems/digital-registries/idempotency-in-flight
+                title: Matching request is still being resolved
+                status: 409
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+            reconciliationRequired:
+              value:
+                type: https://govstack.global/problems/digital-registries/idempotency-reconciliation-required
+                title: Operator reconciliation is required
+                status: 409
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
     PreconditionFailed:
       description: If-Match did not match the current strong validator.
       headers:

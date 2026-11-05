@@ -48,8 +48,8 @@ requirements:
     documentation: |
       Purpose: An API consumer resolves a Record from a declared exact domain key without depending on the Registry's Record Identifier.
       Prerequisite: Every selector declares its required key components, comparison and normalisation rules, uniqueness scope, and any components derived from verified consumer context.
-      Constraint: A selector can be composite and resolves at most one Record. A permitted unique match in the selected collection returns that Record; zero matches produce the unresolved outcome. A source uniqueness violation produces a failure governed by disclosure policy. Invalid, incomplete, incorrectly typed, and unsupported inputs are rejected. A fully context-derived selector accepts an empty caller-supplied `values` object.
-      Verification: Exercise known, unknown, incomplete, incorrectly typed, and unsupported inputs, plus a source uniqueness violation. Verify comparison rules, composite keys where supported, context-derived components where declared, and protected-existence handling.
+      Constraint: A selector can be composite and resolves at most one Record. A permitted unique match in the selected collection returns that Record; zero matches produce the unresolved outcome. Protected ambiguity produces the same unresolved `404` as an unknown or protected Record. After that protection check, the declared contract may use `502` for an upstream dependency that violates correctly configured uniqueness, while the deployment's own incorrect uniqueness declaration, mapping or configuration error, or native Registry invariant violation uses `500`. Adapter or gateway deployment alone does not require `502`. The service never chooses an arbitrary first match. Invalid, incomplete, incorrectly typed, and unsupported inputs are rejected. An unknown selector points the validation error at `/selector`; an invalid selector value points at `/values` or the offending child member. A fully context-derived selector accepts an empty caller-supplied `values` object.
+      Verification: Exercise known, unknown, incomplete, incorrectly typed, and unsupported inputs, protected ambiguity, an upstream multiple-result response under a correct declaration, and an incorrect deployment declaration or native invariant violation. Verify comparison rules, composite keys where supported, context-derived components where declared, protected-existence handling, the contract's declared cause-based upstream response and required `500` mapping for own or native faults, and the validation-error pointers.
     test: resources/testing.md#consultation-4
   - id:
     key: consultation-list
@@ -143,8 +143,8 @@ requirements:
     statement: The Digital Registry accepts an authorised typed Update input for one existing Record in a declared target Registry and Collection and either atomically commits the permitted change against the required current target state or accepts separately identifiable asynchronous work that rechecks that state at commit.
     documentation: |
       Purpose: An authorised API consumer changes the declared content of one authoritative Record without losing concurrent changes.
-      Prerequisite: The operation publishes its input schema, target Registry and Collection, operation grant, update semantics, and strong precondition mechanism.
-      Constraint: Selecting Update does not select Create, Transition, or Change Requests. The operation changes only the fields and components allowed by its contract and does not require the Registry to expose retained revision history.
+      Prerequisite: The operation publishes its input schema, target Registry and Collection, operation grant, registered patch format, strong precondition mechanism, and `concurrencyPolicy: required` in its Write operation extension.
+      Constraint: Selecting Update does not select Create, Transition, or Change Requests. In this revision `required` is the only supported concurrency policy: `If-Match` is mandatory, omitted guards return `428`, and stale guards return `412`. Missing or unknown policy metadata never authorises an unguarded write. The operation changes only the fields and components allowed by its contract and does not require the Registry to expose retained revision history.
       Verification: Exercise every declared synchronous and asynchronous path with valid and invalid inputs, omitted and stale preconditions, concurrent writers, unauthorised changes, and fields outside the permitted update shape. Confirm one atomic committed result or an explicit unsuccessful outcome without partial mutation.
     test: resources/write-testing.md#write-2
   - id:
@@ -217,12 +217,12 @@ requirements:
     interaction: PROTOCOL
     contract: requirements/registry-services.md#write-retries-and-idempotency
     applies_when: [write-create, write-update, write-transition, write-change-requests]
-    statement: Every selected Write operation defines retry and idempotency behaviour, binds an idempotency key to the authenticated consumer, operation, target, and canonical request content, and applies current authentication and authorisation on every attempt without treating the key as authority.
+    statement: Every selected Write operation defines retry and idempotency behaviour, publishes its minimum replay guarantee in the static operation contract, binds an idempotency key to the authenticated consumer, operation, target, canonical request content, and every semantics-changing header, and applies current authentication and authorisation on every attempt without treating the key as authority.
     documentation: |
       Purpose: A consumer can recover from a lost response without accidentally repeating a change or replaying another consumer's request.
-      Prerequisite: The contract declares the idempotency-key syntax, replay result, and conflict outcome; capability discovery publishes the deployment's replay window.
-      Constraint: Reuse with different bound content fails explicitly. Reuse after permission loss does not execute or disclose a result that current policy withholds. A key reused after the replay window is processed as a new request, so expiry does not imply that a repeated mutation is safe.
-      Verification: Retry before, during, and after commit with the same key and content; change the content, operation, target, consumer, purpose, and permissions; then retry after the replay window. Confirm one committed effect within the window, processing as a new request after it, and the declared current-authorisation outcomes.
+      Prerequisite: The static Write operation extension declares `idempotencyReplayWindow`, the contract declares the quoted Structured Field String key syntax, replay result, fingerprint inputs, unresolved-outcome problems, and conflict outcomes, and optional capability discovery copies the same replay-window value when it exposes the operation.
+      Constraint: The fingerprint includes `If-Match`, request media type, and every other documented semantics-changing header. After current authentication and disclosure checks, a matching completed retry is resolved before current target preconditions and replays the original status, body, `Content-Type`, `Location`, and any returned `ETag`; attempt-specific headers are regenerated. Different bound content fails explicitly. The replay window is a guaranteed minimum whose clock start is documented. Beyond it, the client cannot assume replay or fresh execution. An unresolved claim survives response loss, restart, and replay-window expiry and cannot be re-executed under that claim while its effect remains unknown. Processing or automatic recovery returns `409 idempotency-in-flight` with `Retry-After`; an operator-action state returns `409 idempotency-reconciliation-required` without `Retry-After`. Client recovery guidance says not to substitute a fresh key for the same uncertain old intent; this does not require the service to infer business-intent identity across arbitrary new keys. After authorised reconciliation, the original key can replay the recorded result. Applicable `502` or `504` responses do not prove rollback, and neither asynchronous Write nor a public reconciliation endpoint is required.
+      Verification: Retry before, during, and after commit with the same key and content; change the content, operation, target, `If-Match`, another semantics-changing header, consumer, purpose, and permissions; lose an acknowledgement; restart during recovery; and retry before and after the guaranteed window. Confirm one committed effect for matching retries within the guaranteed window and for an unresolved claim until resolution, exact result replay with regenerated attempt headers, current-authorisation outcomes, retention of unresolved claims across restart and expiry, the two distinct `409` recovery states, published client guidance against fresh-key recovery of the uncertain intent, and replay of the recorded result after reconciliation.
     test: resources/write-testing.md#write-7
   - id:
     status: DRAFT
@@ -236,7 +236,7 @@ requirements:
     documentation: |
       Purpose: Concurrent writers do not silently lose one another's committed changes.
       Prerequisite: The service exposes a strong opaque validator or another contract-defined compare-and-commit token for the target representation.
-      Constraint: The guard is checked atomically with commit. It protects the current target and does not require the Registry to publish or retain revision history. A submitted change request retains its source precondition for later re-evaluation.
+      Constraint: The guard is checked atomically with commit. Every published Update declares `concurrencyPolicy: required`; no missing, unknown, hybrid, or caller-optional policy authorises an unguarded Update. Transition and governed application to existing Records retain the same mandatory guard. The guard protects the current target and does not require the Registry to publish or retain revision history. A submitted change request retains its source precondition for later re-evaluation.
       Verification: Submit omitted, malformed, matching, and stale guards; race two matching attempts; and change the target between request approval and application. Confirm that only a guard matching the commit-time target can commit.
     test: resources/write-testing.md#write-8
   - id:
@@ -282,7 +282,7 @@ requirements:
     documentation: |
       Purpose: A consumer can distinguish a committed Record change, a submitted request, and accepted asynchronous work, and an assessor can reconstruct the decision without inferring facts outside the declared audit scope.
       Prerequisite: The service publishes each response contract and documents correlation under the inherited API guidance plus audit retention, access, integrity, clock, and redaction boundaries.
-      Constraint: A successful bodyless response can identify its existing target through the request URI and validator and need not invent a response body. Source or recording time is included only when the source supplies it with documented source-backed semantics. Audit evidence does not by itself prove legal authority, consent, downstream use, or source facts that the operation did not validate. Sensitive request content is protected in retained evidence.
+      Constraint: A successful bodyless response can identify its existing target through the request URI and need not invent a response body or validator. Record mutation-receipt ETags are optional, but a supplied tag identifies the committed guard state, replays unchanged, and agrees between header and body when both carry it. Strong ETags remain mandatory on companion reads used for guarded writes, and exact Change Request validators remain mandatory for review. A known server-allocated identifier plus reliable acknowledgement of committed creation can supply a truthful Create receipt without universal readback or an ETag. An allocated identifier without reliable commitment follows unresolved-outcome recovery. Source or recording time is included only when the source supplies it with documented source-backed semantics. Audit evidence does not by itself prove legal authority, consent, downstream use, or source facts that the operation did not validate. Sensitive request content is protected in retained evidence.
       Evidence: Protocol responses and integrity-protected audit records correlated according to the declared policy across success, rejection, replay, review, asynchronous processing, and commit failure.
       Verification: Correlate protocol responses with authoritative state, request state, and audit evidence. Exercise body-bearing and bodyless success where declared, rejection, idempotent replay, and failure before and after commit, checking target or resource identification and honest status without requiring an invented timestamp or body.
     test: resources/write-testing.md#write-11
@@ -404,12 +404,12 @@ requirements:
     interaction: PROTOCOL
     contract: requirements/registry-services.md#write-change-request-listing
     applies_when: [write-change-requests]
-    statement: A Change Request listing operation, when offered, returns only permitted requests in deterministic bounded Pages, uses an opaque integrity-protected cursor bound to the caller context, Registry, Collection, filters, ordering, and effective page size, and reauthorises every Page without claiming exhaustive or snapshot traversal unless separately declared.
+    statement: A Change Request listing operation, when offered, returns only permitted requests in deterministic bounded Pages, uses an opaque integrity-protected cursor bound to effective identity, client or tenant partition, purpose, visibility, Registry, Collection, filters, ordering, view, and effective page size, and reauthorises every Page without binding to a token instance or claiming exhaustive or snapshot traversal unless separately declared.
     documentation: |
       Purpose: Reviewers can traverse authorised work queues without unbounded responses, cursor substitution, or protected-request disclosure.
       Condition: The service offers Change Request listing.
       Prerequisite: The contract declares filters, deterministic order and unique tie-breaker, default and maximum page sizes, cursor expiry, source-consistency behaviour, timeout outcome, and any result-window bound.
-      Constraint: Malformed, expired, tampered, or context-mismatched cursors fail explicitly and never restart silently. Empty and short Pages retain the Page shape and a non-null cursor advances; `null` marks completion under the declared baseline semantics.
+      Constraint: Malformed, expired, tampered, or context-mismatched cursors fail explicitly and never restart silently. Token refresh and irrelevant claim changes do not invalidate a cursor when effective context is unchanged. A cursor is at most 4,096 characters in the shared contract, and a concrete operation can declare a narrower limit. Empty and short Pages retain the Page shape and a non-null cursor advances; `null` marks completion under the declared baseline semantics.
       Verification: Traverse zero, one, and multi-page permitted fixtures; change each bound context value and permissions between Pages; exercise malformed, expired, and tampered cursors, declared limits, timeout, protected-only matches, and source changes.
     test: resources/write-testing.md#write-19
   - id:
@@ -418,13 +418,13 @@ requirements:
     observability: AUDITABLE
     mutability: EXTENSIBLE
     interaction: INTERNAL
-    statement: The Digital Registry keeps each Record Identifier unchanged throughout the Record's lifecycle and revisions and never reassigns it to another Record.
+    statement: The Digital Registry keeps each Record Identifier unchanged throughout the Record's lifecycle and revisions, never reassigns it to another Record, and declares one finite bounded logical Record Identifier schema and canonical single-path-segment encoding consistently across every operation and representation that carries the identifier.
     documentation: |
       Purpose: A Record reference remains unambiguous after changes, retirement, archival, or deletion.
       Prerequisite: The implementation has a documented Record Identifier lifecycle policy, which can be the source system's policy adopted by an adaptor.
-      Constraint: An adaptor over an existing source can inherit the source's identifier policy when that policy keeps identifiers stable and prevents reassignment.
+      Constraint: An adaptor over an existing source can inherit the source's identifier policy when that policy keeps identifiers stable and prevents reassignment. The same logical schema applies to path identifiers, selector values, Write and governed targets, returned Records, mutation results, and Record URIs such as `Location`. The deployment declares suitable finite length and character or encoding bounds; this specification does not impose a universal UUID, ASCII-only alphabet, or 256-character ceiling. Malformed encoding or path-segment escape is rejected before source access.
       Evidence: The identifier lifecycle policy and evidence covering successive revisions, distinct Records, retirement, archival, and deletion.
-      Verification: Review the policy and evidence showing that successive revisions retain the same identifier, distinct Records do not share an identifier, and retired identifiers are not returned to the allocation pool.
+      Verification: Review the policy and evidence showing that successive revisions retain the same identifier, distinct Records do not share an identifier, retired identifiers are not returned to the allocation pool, every identifier location applies the same logical constraints and URI encoding, declared finite bounds are enforced, and malformed or escaping path encodings reach no source operation.
     test: resources/testing.md#core-3
   - id:
     status: DRAFT
@@ -454,7 +454,7 @@ requirements:
       Purpose: A caller learns which declared read, Write, and supporting workflow operations are currently disclosed as available to it, while every invocation remains separately authorised.
       Condition: The Digital Registry offers caller capability discovery. Offering it does not by itself satisfy the minimum Registry service choice.
       Prerequisite: The service publishes the bounded response schema and authentication requirements.
-      Constraint: The filtering context includes a verified purpose when one is present. The document can omit operations whose required purpose is absent from that context; discovery itself does not select `purpose-bound` or create a new purpose input. Authentication of discovery does not require a universal Record-read entitlement. The document contains at most 64 Collections, each with at most 16 operations, plus at most 64 root operations outside a Collection path. The root `operations` member is optional and omission means an empty array. `collectionId` is unique within `collections`, and each `(contract, operationId)` pair is unique within its operation catalogue. A recognised Consultation entry requires `view` and can additionally publish bounded `readableFields`, selector and named Search identifiers, feature annotations, and purpose requirements. Existing recognised read entries can omit `family`, which is interpreted as `consultation`; a new Write or supporting workflow entry explicitly declares `family: write` and carries no read-only view, feature, field, selector, or Search annotations. `readableFields` describes fields the caller can receive under current policy. It is distinct from `field-selection`, does not advertise a `fields` input, and need not be present even when readable fields exist. Update and Transition entries additionally identify their exact `write.companionRead` operation and view. Root entries identify the Registry and nest one operation without inventing a Collection. An entry with an unknown future capability remains skippable and is not forced into Consultation view or Write metadata rules.
+      Constraint: The filtering context includes a verified purpose when one is present. The document can omit operations whose required purpose is absent from that context; discovery itself does not select `purpose-bound` or create a new purpose input. A recognised Read or Write entry can disclose the common purpose annotation, which must agree with the authoritative operation contract and never grants authority. Authentication of discovery does not require a universal Record-read entitlement. The document contains at most 64 Collections, each with at most 16 operations, plus at most 64 root operations outside a Collection path. The root `operations` member is optional and omission means an empty array. `collectionId` is unique within `collections`, and each `(contract, operationId)` pair is unique within its operation catalogue. A recognised Consultation entry requires `view` and can additionally publish bounded `readableFields`, selector and named Search identifiers, feature annotations, and purpose requirements. Existing recognised read entries can omit `family`, which is interpreted as `consultation`; a new Write or supporting workflow entry explicitly declares `family: write` and carries no read-only view, feature, field, selector, or Search annotations. `readableFields` describes fields the caller can receive under current policy. It is distinct from `field-selection`, does not advertise a `fields` input, and need not be present even when readable fields exist. Update and Transition entries additionally identify their exact `write.companionRead` operation and view. Write entries copy the authoritative operation's `idempotencyReplayWindow`. Root entries identify the Registry and nest one operation without inventing a Collection. An entry with an unknown future capability remains skippable and is not forced into Consultation view or Write metadata rules.
       Constraint: Known discovery annotations agree with the linked operation's Registry context, explicit or inferred family, capability, view and selectable features where applicable, purpose declaration, and companion read where applicable. Capability and feature annotations in `CallerCapabilities` are extensible for forward-compatible advisory discovery: a client skips an operation entry whose capability annotation it does not understand and ignores unknown feature annotations on an otherwise understood entry. The normative Registry operation extensions in the linked versioned contract remain closed to the capability and feature values defined by that contract version. Unknown discovery metadata never grants authority, adds an operation, or widens fields. The identifiers point into the contract; the response does not reproduce their complete schemas. Contradictory duplicates or known metadata produce the declared explicit validation failure; the service does not silently merge them. The response uses `Cache-Control: no-store`. If the caller-available description exceeds a declared array or document bound, the service returns its declared explicit error instead of truncating entries, silently omitting authorised capabilities, or substituting empty arrays. Only `collections: []` together with an omitted or empty root `operations` member means that no operation is visible to that caller.
       Constraint: The document is advisory. It does not grant read, Write, submission, review, application, or Operation-status authority; replace authorisation at invocation time; promise access to any particular resource; require disclosure of every readable field; or define a reusable profile model. An omitted operation or field establishes only that it is not disclosed as available in that response.
       Verification: Request discovery under callers and trusted contexts with different Consultation, Write, and workflow permissions, including a caller with disclosed Write operations but no Record-read grant. Validate Collection and root-operation bounds, unique Collection identifiers and `(contract, operationId)` pairs, Registry context, explicit and compatibility-inferred family handling, capability vocabularies, contract agreement, required recognised Consultation views, forbidden read annotations on Write operations, Update and Transition companion reads, optional-root omission, `readableFields`, selectors, searches, known features, purpose requirements, and `no-store`; confirm that `readableFields` does not imply `field-selection`. Submit an unknown capability annotation and verify that the entry is skipped without a read-view requirement; submit an unknown advisory feature and verify that it is ignored without granting authority. Confirm that the linked operation extensions still reject unknown capability and feature values. Submit contradictory duplicates and contradictory known metadata and exceed every declared bound, verifying explicit failures without merge, truncation, or silent omission. Then verify that every discovered operation still performs current authorisation and that no Record, mutation, review, application, or workflow permission can be inferred.
@@ -762,12 +762,13 @@ requirements:
     contract: resources/api.yml
     api_operation_id: lookupRecord
     applies_when: [consultation-lookup]
-    statement: The Lookup operation gives unknown and protected Records and protected-key source uniqueness violations the same unresolved outcome, including equivalent protocol status, security-relevant metadata, error type, response structure, and non-Record-specific values, without Record-specific data and with independently generated trace and correlation values.
+    statement: The Lookup operation gives unknown and protected Records and protected-key ambiguity the same unresolved `404` outcome, including equivalent protocol status, security-relevant metadata, error type, response structure, and non-Record-specific values, without Record-specific data and with independently generated trace and correlation values.
     documentation: |
       Purpose: A caller cannot determine protected Record or key existence from the unresolved outcome.
       Condition: The access policy protects Record or key existence.
       Prerequisite: The access policy declares which Records and selector keys have protected existence. Protected, unknown, and source-uniqueness-violation fixtures are available under the same consumer context.
-      Verification: Compare protected, unknown, and protected-key uniqueness-violation Lookup fixtures under the same consumer context and check every listed aspect of the outcome and its trace values.
+      Constraint: Only after the protection check may a disclosable multiple-result failure use declared `502` for a correctly configured selector whose upstream violates uniqueness. It uses `500` for an incorrect deployment declaration or mapping, a configuration error, or a native Registry invariant violation. Adapter or gateway deployment alone does not select `502`, and no case returns an arbitrary first match.
+      Verification: Compare protected, unknown, and protected-key ambiguity Lookup fixtures under the same consumer context and check every listed aspect of the outcome and its trace values. Then exercise the disclosable upstream, deployment, and native failure causes and verify their `502` and `500` mappings without arbitrary selection.
     test: resources/testing.md#consultation-3
   - id:
     status: DRAFT
@@ -944,10 +945,10 @@ requirements:
     contract: resources/api.yml
     api_operation_id: listRecords
     applies_when: [consultation-list]
-    statement: The List operation uses a declared deterministic default order with a unique tie-breaker, returns a bounded Page under current authorisation on each request, and advances continuation that preserves the Collection, operation, query, view, and effective field selection where supported to an explicit completion signal, rejecting invalid continuation with 400 invalid-cursor.
+    statement: The List operation uses a declared deterministic default order with a unique tie-breaker implementable by its deployed paging strategy, returns a bounded Page under current authorisation on each request, and advances continuation bound to effective identity, client or tenant partition, purpose, visibility, Collection, operation, query semantics, view, effective page size, and effective field selection where supported, but not to a token instance, to an explicit completion signal, rejecting invalid continuation with 400 invalid-cursor.
     documentation: |
       Purpose: A consumer browses bounded result Pages to an explicit completion signal without silent restarts under the declared source consistency and limit policy.
-      Prerequisite: The contract declares cursor expiry, page-size bounds, resource limits, deterministic order, unique tie-breaker, and traversal consistency.
+      Prerequisite: The contract declares cursor expiry, a cursor limit no greater than 4,096 characters, page-size bounds, resource limits, deterministic order, unique tie-breaker, and traversal consistency. The tie-breaker can be a source-supported unique field or an adapter-maintained strategy; it need not be `recordId` or a source-native column.
       Constraint: The contract declares resource limits, timeout behaviour, and any limits on the traversable result set. Baseline pagination supports browsing under the declared source consistency and limit policy. It does not establish a complete export or a snapshot; the `complete-traversal` and `snapshot-traversal` features add those guarantees.
       Constraint: Live pagination can observe source changes that move, add, or remove Records and cause omissions or repeats. Disclosure policy governs counts, page sizes, and continuation patterns, including short or empty advancing Pages. Response bounds and timeout controls do not require a particular database pagination technique or a page-size-proportional bound on source work.
       Consumer guidance (informative): Consumers treat cursors as opaque, return them unchanged with the original query inputs, and follow the completion signal, including when an intermediate Page is empty.
@@ -1162,10 +1163,10 @@ requirements:
     contract: resources/api.yml
     api_operation_id: searchRecords
     applies_when: [consultation-search]
-    statement: The Search operation uses a declared deterministic default order with a unique tie-breaker, returns a bounded Page under current authorisation on each request, and advances continuation that preserves the Collection, operation, query, view, and effective field selection where supported to an explicit completion signal, rejecting invalid continuation with 400 invalid-cursor.
+    statement: The Search operation uses a declared deterministic default order with a unique tie-breaker implementable by its deployed paging strategy, returns a bounded Page under current authorisation on each request, and advances continuation bound to effective identity, client or tenant partition, purpose, visibility, Collection, operation, query semantics, view, effective page size, and effective field selection where supported, but not to a token instance, to an explicit completion signal, rejecting invalid continuation with 400 invalid-cursor.
     documentation: |
       Purpose: A consumer browses bounded result Pages to an explicit completion signal without silent restarts under the declared source consistency and limit policy.
-      Prerequisite: The contract declares cursor expiry, page-size bounds, resource limits, deterministic order, unique tie-breaker, and traversal consistency.
+      Prerequisite: The contract declares cursor expiry, a cursor limit no greater than 4,096 characters, page-size bounds, resource limits, deterministic order, unique tie-breaker, and traversal consistency. The tie-breaker can be a source-supported unique field or an adapter-maintained strategy; it need not be `recordId` or a source-native column.
       Constraint: The contract declares resource limits, timeout behaviour, and any limits on the traversable result set. Baseline pagination supports browsing under the declared source consistency and limit policy. It does not establish a complete export or a snapshot; the `complete-traversal` and `snapshot-traversal` features add those guarantees.
       Constraint: Live pagination can observe source changes that move, add, or remove Records and cause omissions or repeats. Disclosure policy governs counts, page sizes, and continuation patterns, including short or empty advancing Pages. Response bounds and timeout controls do not require a particular database pagination technique or a page-size-proportional bound on source work.
       Consumer guidance (informative): Consumers treat cursors as opaque, return them unchanged with the original query inputs, and follow the completion signal, including when an intermediate Page is empty.
@@ -1413,10 +1414,10 @@ requirements:
     contract: resources/api.yml
     api_operation_id: listRecordRevisions
     applies_when: [consultation-revision-list]
-    statement: The Revision List operation uses a declared deterministic default order with a unique tie-breaker, returns a bounded Page under current authorisation on each request, and advances continuation that preserves the Collection, operation, query, view, effective field selection where supported, and parent recordId to an explicit completion signal, rejecting invalid continuation with 400 invalid-cursor.
+    statement: The Revision List operation uses a declared deterministic default order with a unique tie-breaker implementable by its deployed paging strategy, returns a bounded Page under current authorisation on each request, and advances continuation bound to effective identity, client or tenant partition, purpose, visibility, Collection, operation, query semantics, view, effective page size, effective field selection where supported, and parent recordId, but not to a token instance, to an explicit completion signal, rejecting invalid continuation with 400 invalid-cursor.
     documentation: |
       Purpose: A consumer browses bounded result Pages to an explicit completion signal without silent restarts under the declared source consistency and limit policy.
-      Prerequisite: The contract declares cursor expiry, page-size bounds, resource limits, deterministic order, unique tie-breaker, and traversal consistency. Revision List also declares its parent Record binding.
+      Prerequisite: The contract declares cursor expiry, a cursor limit no greater than 4,096 characters, page-size bounds, resource limits, deterministic order, unique tie-breaker, and traversal consistency. The tie-breaker can be a source-supported unique field or an adapter-maintained strategy; it need not be `recordId` or a source-native column. Revision List also declares its parent Record binding.
       Constraint: The contract declares resource limits, timeout behaviour, and any limits on the traversable result set. Baseline pagination supports browsing under the declared source consistency and limit policy. It does not establish a complete export or a snapshot.
       Constraint: Live pagination can observe source changes that move, add, or remove Records and cause omissions or repeats. Disclosure policy governs counts, page sizes, and continuation patterns, including short or empty advancing Pages. Response bounds and timeout controls do not require a particular database pagination technique or a page-size-proportional bound on source work.
       Consumer guidance (informative): Consumers treat cursors as opaque, return them unchanged with the original query inputs, and follow the completion signal, including when an intermediate Page is empty.
@@ -1744,7 +1745,7 @@ The published service contract supplies the following information for its select
 | Representation | JSON Schemas for the Record view and responses; adopted models and versions; mappings, local constraints, and extensions. |
 | Field meanings | Meaning, units, code lists, and omitted, null, or empty values, preserving the semantics of adopted models. |
 | Lookup and Search | Names, typed inputs, required components, comparison and normalisation rules, uniqueness scope, and matching semantics. Reusable Search semantics name the supported equality, range, set-membership, and prefix operators without requiring a universal query language. |
-| Pagination | Supported equality filters and sorting where offered, deterministic default order with a unique tie-breaker, page-size limits, cursor expiry, source consistency and concurrent-change behaviour, and any complete or snapshot traversal guarantee. |
+| Pagination | Supported equality filters and sorting where offered, deterministic default order with a unique tie-breaker implementable by the deployed paging strategy, page-size limits, cursor limit up to 4,096 characters, cursor expiry and effective-context binding, source consistency and concurrent-change behaviour, and any complete or snapshot traversal guarantee. |
 | Access and currency | Authentication requirements, access policy for the declared view, and source currency, including material replication or cache delay. |
 | Resource limits | Request and response bounds, configured timeout behaviour and failure outcome, and any source-query or scan limits. A page-size limit does not establish a bound on source rows examined or database work. |
 | Field selection | Supported top-level `data` field names, default field set, mandatory fields if any, selection bounds, omission semantics, and response schema. |
@@ -1915,7 +1916,7 @@ Revision operations use a separately declared history view, such as `record-hist
 
 #### Continuation <a href="#consultation-continuation" id="consultation-continuation"></a>
 
-The first request selects `pageSize`, defaulting to 20 and bounded to 100 in the canonical contract. A continuation repeats the original criteria, search name where applicable, sorting, temporal selection, and effective field selection with the cursor. Field order does not change the selected set; omission uses the declared default. It can omit `pageSize` to retain the bound value or supply that same value; a different value produces `400 invalid-cursor`. Cursors are opaque, URL-safe, integrity-protected, and exclude personal data. They bind the operation, Registry, Collection, query, view, temporal context, effective field set and size, effective purpose where required, and applicable access context. A Revision List cursor also binds its parent `recordId`; replay under another parent produces `400 invalid-cursor`. Cursors do not grant authority; every Page is reauthorised. The deployment declares expiry and rejects malformed, expired, or mismatched cursors, including continuations whose declared semantics it can no longer preserve. A short or empty Page can carry a non-null `nextCursor` when source processing advances. An adapter can wrap a source offset, page number, or continuation token while preserving these rules.
+The first request selects `pageSize`, defaulting to 20 and bounded to 100 in the canonical contract. A continuation repeats the original criteria, search name where applicable, sorting, temporal selection, and effective field selection with the cursor. Field order does not change the selected set; omission uses the declared default. It can omit `pageSize` to retain the bound value or supply that same value; a different value produces `400 invalid-cursor`. Cursors are opaque, URL-safe, integrity-protected, exclude personal data, and are at most 4,096 characters in the shared contract, with narrower concrete limits permitted. They bind effective identity, client or tenant partition, purpose, visibility, operation, Registry, Collection, query semantics, view, temporal context, effective field set and size, and applicable access context, but not a token instance or irrelevant claim changes. A Revision List cursor also binds its parent `recordId`; replay under another parent produces `400 invalid-cursor`. Cursors do not grant authority; every Page is reauthorised. The deployment declares expiry and rejects malformed, expired, or mismatched cursors, including continuations whose declared semantics it can no longer preserve. A short or empty Page can carry a non-null `nextCursor` when source processing advances. An adapter can wrap a source offset, page number, continuation token, or compact server-side handle while preserving these rules.
 
 A non-null `pageInfo.nextCursor` enables continuation; `null` marks completion of the declared traversal. Baseline completion follows the published consistency and result-limit policy. Only `complete-traversal` establishes exhaustive membership, and only `snapshot-traversal` establishes a fixed source snapshot. When supplied, `pageInfo.total` is the exact count of the full permitted query at the documented evaluation point, before applying the continuation boundary: the current page's evaluation for live reads or the fixed source snapshot evaluated under current disclosure rights for snapshot traversal. Disclosure policy decides whether it is offered at all. Services omit an unavailable total. OpenAPI defines the cursor format, limits, and error responses.
 
@@ -2021,6 +2022,11 @@ Every selected primary operation publishes:
 - idempotency, precondition, validation, error, and acknowledgement behaviour; and
 - synchronous or asynchronous success outcomes.
 
+Each selected mutating operation also publishes `idempotencyReplayWindow` in its static Write operation extension.
+Caller capability discovery is optional and, when offered, copies that authoritative value rather than becoming a prerequisite for safe retry.
+Each Update publishes `concurrencyPolicy: required`.
+Missing or unknown policy metadata never authorises an unguarded Update.
+
 The target is the institutionally governed Registry and a logical API Collection, not an internal table or workflow queue.
 Publishing an operation, grant name, or metadata entry does not grant authority.
 The service evaluates current policy on every attempt.
@@ -2041,12 +2047,21 @@ The binding does not require a public Change Request application endpoint.
 ### Direct Write semantics <a href="#write-direct-write-semantics" id="write-direct-write-semantics"></a>
 
 Create accepts the complete typed declaration input published for its Collection and returns a durable acknowledgement only after one Record is created or asynchronous work is accepted.
-The Registry assigns or accepts Record identity only as declared by the contract.
+Public POST Create uses server-assigned identity.
+An adapter is the server at this boundary and can allocate the identifier it sends to its source.
+A known allocated identifier plus reliable acknowledgement that creation committed can provide a truthful receipt without universal readback or an ETag; allocation alone does not establish commitment or replay safety.
+Create-only behaviour is explicit and never acts as an upsert that can overwrite an existing Record.
+This revision defines no public caller-selected-identifier PUT profile.
 A preview never allocates authoritative identity.
 
 Update accepts only the fields or components declared by its typed correction or update input.
 The contract states whether an omitted field is unchanged, cleared, defaulted, or invalid.
-The service does not infer generic patch semantics from the HTTP method or schema shape.
+Every Update selects an exact registered patch format in its concrete operation.
+RFC 7396 JSON Merge Patch is the reference choice.
+RFC 6902 JSON Patch is an optional alternative, and an implementation need not support both.
+A restricted Merge Patch can limit writable paths, but nested object values retain recursive merge semantics; whole-object replacement is instead expressed honestly with an applicable JSON Patch `replace` operation.
+The complete patch applies atomically or has no effect, and the resulting Record satisfies its schema.
+The service does not infer generic patch semantics from the HTTP method or schema shape, and neither patch format manufactures source concurrency protection.
 
 Transition accepts one declared transition name and its typed input.
 Each transition declares its valid source conditions, resulting semantics, and operation grant.
@@ -2094,30 +2109,48 @@ The baseline permits a workflow to coordinate several independently committed co
 
 ### Retries and idempotency <a href="#write-retries-and-idempotency" id="write-retries-and-idempotency"></a>
 
-Every selected primary operation accepts the contract's idempotency key and binds it to the authenticated consumer, operation, Registry, Collection, target where present, trusted purpose where required, and canonical request content.
-The contract declares key syntax, the replay response, and the conflict returned when the key is reused with different bound content.
-The deployment publishes its retention as the replay window in capability discovery.
+Every selected primary operation accepts the contract's quoted Structured Field String idempotency key and binds it to the authenticated consumer, operation, Registry, Collection, target where present, trusted purpose where required, canonical request content, `If-Match`, request media type, and every other documented semantics-changing header.
+The contract declares key syntax, the replay response, the fingerprint, and the conflict returned when the key is reused with different bound content.
+Each static Write operation extension publishes `idempotencyReplayWindow` as its guaranteed minimum replay window and states when the clock starts.
+Optional caller capability discovery copies the same value when it exposes that operation.
 
-A retry with the same key and content cannot create a second committed effect.
-The service still applies current authentication and authorisation before executing or disclosing the replayed result.
+Within the guaranteed replay window, a retry with the same key and content cannot create a second committed effect.
+After current authentication and disclosure checks, a matching completed retry is resolved before current target preconditions.
+It replays the original status, body, `Content-Type`, `Location`, and any returned `ETag` unchanged, while attempt-specific, temporal, security, tracing, rate-limit, retry, and hop-by-hop headers are regenerated or omitted.
 An idempotency key is neither a credential nor a reservation of future authority.
-After the published replay window, the service processes a reused key as a new request, so a consumer cannot assume that repeating a mutation is safe and obtains current state before deciding how to recover.
+Beyond the guaranteed window, the client cannot assume either replay or fresh execution; the deployment can retain protection longer, reject reuse, or process an unrecognised key according to its published policy.
+
+An unresolved write claim survives response loss, restart, and expiry of the guaranteed replay window.
+The service does not re-execute it while its authoritative effect remains unknown, and the client does not substitute a fresh key to force another attempt at the same intent.
+Processing or automatic recovery returns `409 idempotency-in-flight` with `Retry-After`.
+When automatic recovery has stopped and operator action is required, the service returns `409 idempotency-reconciliation-required` without `Retry-After`.
+After authorised reconciliation resolves the claim, the original key can replay the recorded result.
+An applicable `502` or `504` response does not prove rollback.
+This recovery policy requires neither asynchronous Write nor a public reconciliation endpoint.
 
 
 ### Concurrency and commit guards <a href="#write-concurrency-and-commit-guards" id="write-concurrency-and-commit-guards"></a>
 
+Every Update declares one explicit concurrency policy, `required`, in its deployed operation contract.
+This revision publishes no `unsupported` or hybrid policy.
 Update and Transition require a strong opaque precondition for the current target representation.
 A Change Request that proposes a change to an existing Record captures the same source precondition at submission.
-The service rejects an omitted, malformed, or stale required precondition and checks a matching precondition atomically with commit.
+Update rejects an omitted required `If-Match` with `428` and a stale value with `412`; the service checks a matching precondition atomically with commit.
+Transition and governed application to existing Records retain their mandatory guards.
+Create is independently selectable and needs no comparison against an existing Record.
 
 For a selected companion read, the response body and strong ETag come from one current authoritative guard evaluation. The tag is a valid strong HTTP validator for the permitted representation. It also invalidates when an authoritative field or source condition changes in a way that can alter the selected mutation's validation, mapping, or committed effect. Unrelated hidden state need not invalidate it.
 
 The tag is opaque, encodes no source value, widens no authority, and does not identify which guard state changed. Its value and change cadence remain disclosure-controlled metadata. A deployment cannot designate a read as the companion under an effective authorisation, disclosure, purpose, or field-selection context that forbids revealing the tag or cadence. Update and Transition compare the guard atomically with commit and return the generic `412` outcome on mismatch without identifying the changed state.
+The shared validator length bound remains finite. An adapter with a longer native version value can use a keyed digest or a stored opaque handle rather than embed that native value or increase every deployment's header budget.
 
 The commit guard protects the current target representation.
 It does not require a public revision-history operation, retained historical representations, or reconstruction of a revision sequence.
 If two writers start from the same target state, at most one can commit under that guard.
 Ordinary non-companion read projections retain their declared source currency and can lag without weakening the companion guard.
+
+An unconditional Update policy remains an unpublished future candidate until a named Registry and client demonstrate the need and pass boundary-level tests with ordinary user-interface, import, and other writers enabled.
+Those tests must establish atomic application of the declared patch scope that preserves concurrent changes to unrelated fields, honest last-writer-wins behaviour for same-field conflicts without claiming lost-update protection, explicit `400` rejection of a supplied `If-Match`, safe recovery after response loss and restart, and contract compatibility with no silent downgrade of guarded operations.
 
 
 ### Authority and purpose <a href="#write-authority-and-purpose" id="write-authority-and-purpose"></a>
@@ -2140,10 +2173,14 @@ A domain schema can contain fields with similar names as Record data, but those 
 
 ### Acknowledgement, provenance, and audit <a href="#write-acknowledgement-provenance-and-audit" id="write-acknowledgement-provenance-and-audit"></a>
 
-Every accepted Write uses its declared HTTP status, response schema, target URI, `Location`, or validator to identify the target, created resource, or asynchronous Operation and to distinguish authoritative commit, non-authoritative request creation, and accepted asynchronous work.
-A bodyless successful response can identify its existing target through the request URI and validator and does not need an invented response body.
+Every accepted Write uses its declared HTTP status, response schema, target URI, `Location`, or optional mutation-receipt validator to identify the target, created resource, or asynchronous Operation and to distinguish authoritative commit, non-authoritative request creation, and accepted asynchronous work.
+A bodyless successful response can identify its existing target through the request URI and does not need an invented response body or validator.
 The response does not claim that queued work committed, that a submitted proposal was approved, or that an approved request was applied.
 An acknowledgement of authoritative commit establishes that declared commit outcome. It does not grant the caller read permission, guarantee immediate visibility through a permitted projection, establish projection currency, or create a revision-history guarantee.
+Record mutation-receipt ETags are recommended when reliable but optional for Create, Update, Transition, and application results.
+When supplied, the tag identifies the committed guard state, replays unchanged, and agrees between header and body if both carry it.
+Strong tags remain mandatory on companion reads used for guarded writes, and exact Change Request validators remain mandatory for review.
+A later guarded mutation after a tagless success obtains a fresh guard through an authorised channel; profiles for repeated guarded writes by write-only callers require receipt tags or a permitted minimal companion view.
 A matching tag is expected only when a later companion read has reached companion currency and observes that exact committed state, with no intervening mutation-relevant change, under the same effective authorisation, disclosure, purpose, and field-selection context. A shared view name alone does not establish tag equality, and the contract does not promise that any future read will eventually return the mutation success tag.
 Correlation follows the inherited API guidance and the deployment's published policy rather than requiring a new Write-specific identifier in every response.
 
@@ -2162,6 +2199,8 @@ Independently generated trace and correlation values can differ.
 
 Authentication can fail before resource resolution.
 After protected resolution begins, the service does not return a more specific conflict or workflow outcome unless the caller is permitted to know that resource and context.
+A missing caller grant can produce `403` before protected target resolution.
+A source `403` is not translated blindly: a broken shared service credential, source outage, or deployment misconfiguration is a server-side failure unless the deployment has established that the response represents the protected target policy.
 
 
 ### Preview and authoritative state <a href="#write-preview-and-authoritative-state" id="write-preview-and-authoritative-state"></a>
@@ -2232,13 +2271,22 @@ A review operation can return `202` only when it also accepts actual background 
 A review-only decision does not return `202` merely because application might happen later.
 An accepted background job can be queued for a worker or scheduled execution and still correctly return `202`.
 Update and Transition use their contract-defined synchronous success only after authoritative commit.
+When a body-returning Write enforces response negotiation, it declares `406 Not Acceptable` and rejects an unacceptable success representation before accepting or executing a new mutation.
+A bodyless `204` success does not fail solely because `Accept` lists only Problem Details.
+Whole-input validation uses the required `ValidationProblem.errors` entry with the empty JSON Pointer `""`; configuration failures are server failures and are not disguised as caller-field errors.
+
+The audience-appropriate concrete contract identifies which operations are offered.
+An unoffered path uses routing `404`; where the same resource supports other disclosed methods, an unoffered method uses `405` with `Allow`.
+The service does not publish error-only stubs, and protected-existence handling still governs what can be disclosed.
 
 
 ### Change Request listing <a href="#write-change-request-listing" id="write-change-request-listing"></a>
 
 `listChangeRequests`, when offered, returns only requests permitted for the current caller and context.
-It uses deterministic ordering with a unique tie-breaker, bounded Pages, a declared default and maximum size, and opaque integrity-protected continuation.
-The cursor is bound to caller context, Registry, Collection, filters, order, and effective page size and expires under the published policy.
+It uses deterministic ordering with a unique tie-breaker implementable by the deployed paging strategy, bounded Pages, a declared default and maximum size, and opaque integrity-protected continuation.
+The cursor is bound to effective identity, client or tenant partition, purpose, visibility, Registry, Collection, filters, order, view, and effective page size and expires under the published policy.
+It is not bound to a token instance, so token refresh alone does not break traversal when effective context is unchanged.
+The shared cursor limit is 4,096 characters, and a concrete operation can declare a narrower limit.
 Every Page reauthorises.
 
 Malformed, tampered, expired, or context-mismatched cursors fail explicitly and never restart silently.
@@ -2251,6 +2299,7 @@ Baseline listing does not promise exhaustive traversal or a fixed source snapsho
 The four Write options are DRAFT and independently selectable under the existing `registry-service` variation point.
 Only requirements conditioned on a selected option apply to that option.
 Conditional facilities such as preview, withdrawal, asynchronous processing, and request listing apply only when offered.
+Selecting an optional operation or feature brings all of its declared guarantees into scope; optionality never weakens the behaviour required once selected.
 Stronger compound atomicity, exhaustive listing, snapshot listing, multi-approver policy, and domain-specific state machines are not baseline guarantees.
 
 The OpenAPI contract and examples support artifact review.
@@ -2322,7 +2371,7 @@ This workflow applies independently to List and Search. For the business example
 
 #### Preconditions <a href="#workflow-preconditions-3" id="workflow-preconditions-3"></a>
 
-1. The contract declares the collection or search, accepted inputs, deterministic ordering with a unique tie breaker, page and resource limits, timeout outcome, cursor lifetime, and any selectable features.
+1. The contract declares the collection or search, accepted inputs, deterministic ordering with a unique tie breaker implementable by its source or adapter paging strategy, page and resource limits, timeout outcome, cursor lifetime and maximum length no greater than 4,096 characters, and any selectable features. The tie-breaker need not be `recordId` or a source-native column.
 2. The consumer has the required credentials and request context.
 
 #### Interaction <a href="#workflow-interaction-3" id="workflow-interaction-3"></a>
@@ -2330,7 +2379,7 @@ This workflow applies independently to List and Search. For the business example
 1. The consumer sends the first request without a cursor, supplying the declared criteria and any supported ordering, page size, temporal selection, and field selection. GET List uses query parameters; POST Search carries temporal and field selection in its body.
 2. The Registry validates the request and evaluates current access and disclosure policy. A current-state request returns the latest permitted Page without temporal metadata; an applied temporal selection echoes its context at Page level even when `items` is empty. Items use the same Record schema for the selected view.
 3. For a non-null `nextCursor`, the consumer repeats the criteria, ordering, temporal selection, and effective field selection with that cursor. It may omit `pageSize` or repeat the effective size established by the first request.
-4. The Registry reauthorises the continuation and verifies its cursor binding, including the Collection, query, view, temporal context, effective field set, effective page size, and effective purpose when required. An invalid, expired, or mismatched cursor produces the declared failure.
+4. The Registry reauthorises the continuation and verifies its cursor binding, including effective identity, client or tenant partition, visibility, Collection, query semantics, view, temporal context, effective field set, effective page size, and effective purpose when required. It does not bind the cursor to the token instance or irrelevant claim changes. An invalid, expired, or mismatched cursor produces the declared failure.
 5. The consumer continues until `nextCursor` is `null`, including after short or empty Pages with a continuing cursor.
 
 #### Outcomes and limits <a href="#workflow-outcomes-and-limits" id="workflow-outcomes-and-limits"></a>

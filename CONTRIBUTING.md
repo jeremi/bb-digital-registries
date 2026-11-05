@@ -38,6 +38,8 @@ uv run python -m unittest discover -s tools -p 'test_*.py'
 uv run python tools/validate_specification.py
 uv run python tools/validate_consultation.py
 uv run python tools/validate_write.py
+uv run python tools/project_contract.py --validate api/examples/retrieve-only.openapi.yaml
+uv run python tools/project_contract.py --validate api/examples/retrieve-lookup.openapi.yaml
 ```
 
 These commands check the publication structure, links, requirement model and

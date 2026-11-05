@@ -1,0 +1,830 @@
+openapi: 3.1.2
+info:
+  title: GovStack Digital Registries API
+  version: 1.0.0-draft
+  description: |-
+    This draft API description covers Record reads and writes through logical Collections.
+    Deployments select the operations they support and publish concrete Collection paths and
+    schemas. The `records` Collection and `https://registry.example/registries/records` Registry
+    Identifier are generic reference values.
+
+    ### Understand the data
+
+    A Registry holds Records about entities, places, assets, or events for which a named
+    authority accepts responsibility within a declared scope. Each Collection groups Records
+    for API access and declares its Registry, membership, supported operations, and
+    representation schemas or views; it need not correspond to a database table. One API can
+    expose several Collections. A permitted view contains the data and metadata authorised
+    for the caller, including any filtering or redaction.
+
+    ### Choose operations
+
+    Deployments select at least one Consultation or Write capability. Selecting one capability
+    selects no other.
+
+    | Capability | Use it to |
+    | --- | --- |
+    | Retrieve | Read one Record by its stable identifier. |
+    | Lookup | Read one Record using a declared exact selector. |
+    | List | Read a page of Records in a declared order. |
+    | Search | Run a declared typed search and read a page of results. |
+    | Revision List | Read a page of retained source revisions for one Record. |
+    | Revision Retrieve | Read one retained source revision by its identifier. |
+    | Create | Create one authoritative Record. |
+    | Update | Change the permitted content of an existing Record. |
+    | Transition | Apply one published named transition to an existing Record. |
+    | Change Requests | Submit an immutable proposal for review and separately authorised application. |
+
+    A submitted Change Request has no authoritative Record effect until application succeeds.
+    A `202` response identifies actual background work; it does not prove a Record commit,
+    approval, or application.
+
+    ### Find a deployed API
+
+    Start with `/.well-known/api-catalog` at the API origin: scheme, host, and port, without a
+    path. This RFC 9727 linkset links the deployed OpenAPI contract and Registry Core metadata.
+    The metadata identifies the Registry, its name, authority, authoritative scope, and
+    specification version. It associates each service with its Registry, API families,
+    endpoint, and deployed contract. Operations declare the Registry Identifier from that
+    metadata. An external catalogue can repeat the metadata but does not replace the origin's
+    linkset.
+
+    The deployed contract defines input and output schemas, field meanings, authorisation,
+    pagination, and source currency, including material replication or cache delay. Optional
+    caller discovery describes operations visible to the authenticated caller. Discovery
+    grants no access; current authorisation is evaluated on every operation request.
+
+    ### Read within the declared limits
+
+    Operations can declare `conditional-read`, `field-selection`, `complete-traversal`,
+    `snapshot-traversal`, `recorded-time`, `effective-time`, or `purpose-bound`. Omission
+    selects none.
+
+    Only when Update or Transition names a Retrieve through `companionRead` does that read
+    provide the current authoritative strong ETag for the permitted view. It grants no
+    mutation authority and does not widen the representation.
+    The unified owner selects conditional-read on Retrieve. This generated baseline projection
+    omits that feature and its validator.
+
+    Ordinary pagination bounds response size. It does not promise exhaustive traversal, a
+    snapshot, or bounded database work.
+
+    ### Transport and language
+
+    Transport uses TLS 1.3 or later. The `/v1` paths identify the HTTP compatibility line;
+    `info.version` versions this draft contract. Public operations declare `security: []`.
+
+    The default response language is English (`en`). A deployment may select another default
+    or localise Problem `title` and `detail`. It then declares that default and follows API
+    Design Guide section 19 for `Accept-Language`, `Content-Language`, and `Vary`.
+  contact:
+    name: GovStack Digital Registries Working Group
+    url: https://github.com/GovStackWorkingGroup/bb-digital-registries
+  x-govstack-api-guide:
+    version: 0.3.0-draft
+    rulesetVersion: 0.3.0-draft
+servers:
+- url: https://{gatewayHost}
+  description: Deployment root; registry.example is non-production. A deployment may
+    add a stable routing prefix, such as /registry, before the versioned resource
+    paths. Each collection's contract supplies its Registry association and selected
+    view; callers do not repeat registryId on each request. API-family labels classify
+    operations independently of paths.
+  variables:
+    gatewayHost:
+      default: registry.example
+      description: Deployment gateway hostname; registry.example is non-production.
+security:
+- citizenOAuth:
+  - bb:digital-registries:record:read
+- serviceOAuth:
+  - bb:digital-registries:record:read
+x-govstack-contract-projection:
+  source: ../openapi.yaml
+  operationIds:
+  - retrieveRecord
+  preset: baseline-retrieve
+tags:
+- name: Read
+  description: Read authorised Records from declared collections and their associated
+    Registries.
+- name: Health
+  description: Bounded operational liveness without registry information.
+- name: Discovery
+  description: Locate the origin's API contracts and Registry metadata through the
+    RFC 9727 API catalog.
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check service liveness
+      description: Returns HTTP `200` when the service can accept work and `503` otherwise.
+        This bounded, unauthenticated check exposes only a public service label. Dependency
+        checks are limited to those that determine service availability.
+      tags:
+      - Health
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          description: The service is healthy and able to accept work.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /.well-known/api-catalog:
+    servers:
+    - url: https://{gatewayHost}
+      description: Origin root. RFC 8615 fixes well-known URIs at the origin, so a
+        deployment routing prefix does not apply to this path.
+      variables:
+        gatewayHost:
+          default: registry.example
+          description: Deployment gateway hostname; registry.example is non-production.
+    get:
+      operationId: getApiCatalog
+      summary: Get the API catalog
+      description: |-
+        Returns the RFC 9727 API catalog for this origin as an RFC 9264 linkset. For each
+        Digital Registries API at the origin, a `service-desc` link targets its OpenAPI
+        contract and a `service-meta` link, typed `application/ld+json`, targets the Registry
+        metadata document.
+
+        A deployment that restricts the catalog to an intended audience declares that access
+        requirement instead of `security: []`.
+      tags:
+      - Discovery
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          $ref: '#/components/responses/ApiCatalog'
+        '304':
+          $ref: '#/components/responses/ApiCatalogNotModified'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    head:
+      operationId: headApiCatalog
+      summary: Check the API catalog
+      description: Returns the API catalog response headers without a body, including
+        the `Link` header with the `api-catalog` relation that RFC 9727 requires for
+        `HEAD` requests.
+      tags:
+      - Discovery
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          $ref: '#/components/responses/ApiCatalogHeaders'
+        '500':
+          $ref: '#/components/responses/InternalErrorHeaders'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableHeaders'
+  /v1/collections/{collectionId}/records/{recordId}:
+    get:
+      operationId: retrieveRecord
+      summary: Retrieve one Record by its stable identifier
+      description: |-
+        Returns the permitted Record view for a stable identifier within this collection's
+        declared membership. Encode `recordId` as one path segment.
+
+        An absent Record, a Record outside the collection, and a Record whose existence
+        cannot be disclosed to the caller share the same `404` response. The response does
+        not reveal which condition applied. This baseline operation selects current state
+        and no selectable temporal feature.
+
+        When a Write operation selects this exact operation and view through `companionRead`,
+        the body and strong ETag come from one current authoritative guard evaluation. That
+        constraint applies only to the selected companion use, not to ordinary read-only
+        projections. The tag remains disclosure-controlled response metadata; a deployment
+        cannot select this operation as a companion when revealing the tag or its change cadence
+        is forbidden in the effective authorisation, disclosure, purpose, and field-selection
+        context.
+      tags:
+      - Read
+      x-govstack-digital-registries:
+        registry: https://registry.example/registries/records
+        collection: records
+        capability: retrieve
+        view: record-public
+      parameters:
+      - $ref: '#/components/parameters/CollectionId'
+      - $ref: '#/components/parameters/RecordId'
+      - $ref: '#/components/parameters/Traceparent'
+      responses:
+        '200':
+          $ref: '#/components/responses/Record'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`bad-request` identifies malformed or structurally invalid
+            input, including invalid or unsupported query parameters. This operation
+            has no request body or pagination controls.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/RecordNotAvailable'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+components:
+  parameters:
+    Traceparent:
+      name: traceparent
+      in: header
+      required: false
+      description: W3C Trace Context. Propagate valid context; create context when
+        absent or invalid. Problem traceId is the effective trace-id. Trace metadata
+        excludes personal data.
+      schema:
+        type: string
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Conditional request against the selected representation's ETag.
+        Authorisation precedes evaluation of the validator.
+      schema:
+        type: string
+    CollectionId:
+      name: collectionId
+      in: path
+      required: true
+      description: Collection selected by this reference catalogue. A deployed contract
+        replaces the enum with its declared literal collection identifiers. In example
+        URLs such as `/collections/records/records/r_42`, the first `records` is the
+        collection identifier; the second names the Record resource within that collection.
+      schema:
+        $ref: '#/components/schemas/CollectionId'
+    RecordId:
+      name: recordId
+      in: path
+      required: true
+      description: Stable opaque identifier within the selected Registry, canonically
+        percent-encoded as one path segment. Malformed encoding, decoded separators,
+        query or fragment delimiters, and segment escape are rejected with 400 before
+        source access.
+      schema:
+        $ref: '#/components/schemas/RecordId'
+  schemas:
+    Health:
+      type: object
+      description: Informational body, which may be omitted; only the HTTP status
+        determines liveness.
+      properties:
+        description:
+          type: string
+          description: Public human-readable service label with no internal details.
+      examples:
+      - description: Digital Registries API
+    Problem:
+      $ref: ../common/govstack-openapi-common.yaml#/components/schemas/Problem
+    ApiCatalog:
+      type: object
+      description: RFC 9264 linkset listing the APIs at this origin. Each Digital
+        Registries API has a service-desc link to its OpenAPI contract and a service-meta
+        link to its Registry metadata document.
+      required:
+      - linkset
+      properties:
+        linkset:
+          type: array
+          minItems: 1
+          description: Link context objects, such as one per API anchor.
+          items:
+            $ref: '#/components/schemas/LinkContext'
+    CollectionId:
+      type: string
+      enum:
+      - records
+      description: Canonical reference collection identifier. Deployment bindings
+        define their own bounded collection identifier enum and use literal values
+        in concrete paths.
+    RecordId:
+      type: string
+      minLength: 1
+      maxLength: 2048
+      pattern: ^[^/?#\s]+(?![\s\S])
+      description: |-
+        Stable opaque identifier for one Record:
+
+        - Unique across all collections in the selected Registry, unchanged throughout the
+          Record's lifecycle, and never reassigned to a different Record.
+        - The same Record retains its identifier across collections and views. Suitable source
+          identifiers are retained.
+        - Concrete contracts can narrow the finite bound and alphabet but do not assume UUIDs,
+          ASCII-only identifiers, or a universal 256-character ceiling.
+        - Exposed identifiers are non-personal and canonically percent-encoded as one path
+          segment. Decoded slash, query, and fragment delimiters are invalid.
+        - The same schema governs path identifiers, selector values that represent Record
+          identity, write and governed targets, returned Records, mutation results, and Record URIs.
+        - Collection actions occupy a separate namespace, so source identifiers such as `lookup`
+          and `search` remain valid Record Identifiers.
+      examples:
+      - r_42
+    Record:
+      type: object
+      description: Record identity and its typed, permitted domain view. Registry
+        identity, data schema and field meanings are supplied by the collection and
+        operation binding. data may include nested objects, embedded relationship
+        components, references and predefined related-data views with declared ownership
+        and temporal semantics. Revision, lifecycle and provenance fields, when supplied,
+        are source-backed. Readers accept additive envelope fields.
+      required:
+      - recordId
+      - data
+      properties:
+        recordId:
+          $ref: '#/components/schemas/RecordId'
+        data:
+          type: object
+          description: Caller-authorised domain view. A field-selection operation
+            admits omission of selectable fields within this same schema and always
+            retains recordId and data. Deployments should reuse suitable established
+            domain schemas and vocabularies, including national or sector schemas.
+            The contract identifies adopted models and versions and binds their concepts
+            to a concrete JSON Schema, documenting mappings, local constraints and
+            extensions. The view may contain typed nested structures and relationships.
+      examples:
+      - recordId: r_42
+        data:
+          legalName: Example Ltd
+          registrationStatus: DISSOLVED
+    RecordNotAvailableProblem:
+      description: A Record is absent, outside the selected Collection, or protected
+        from disclosure.
+      required:
+      - type
+      - title
+      - status
+      - traceId
+      allOf:
+      - $ref: '#/components/schemas/Problem'
+      - type: object
+        description: Bind every concealed or absent Record outcome to the stable read
+          identity.
+        required:
+        - type
+        - title
+        - status
+        - traceId
+        properties:
+          type:
+            const: https://govstack.global/problems/digital-registries/record-not-available
+            description: Stable Record-unavailable problem type.
+          status:
+            const: 404
+            description: HTTP Not Found status.
+    BadGatewayProblem:
+      description: A gateway-dependent deployment received an invalid upstream response.
+      required:
+      - type
+      - title
+      - status
+      - traceId
+      allOf:
+      - $ref: '#/components/schemas/Problem'
+      - type: object
+        description: Bind an invalid upstream response to the 502 bad-gateway identity.
+        required:
+        - type
+        - title
+        - status
+        - traceId
+        properties:
+          type:
+            const: https://govstack.global/problems/digital-registries/bad-gateway
+            description: Stable bad-gateway problem type.
+          status:
+            const: 502
+            description: HTTP Bad Gateway status.
+    GatewayTimeoutProblem:
+      description: A gateway-dependent upstream operation exceeded its time budget.
+      required:
+      - type
+      - title
+      - status
+      - traceId
+      allOf:
+      - $ref: '#/components/schemas/Problem'
+      - type: object
+        description: Bind upstream timeout to the 504 gateway-timeout identity.
+        required:
+        - type
+        - title
+        - status
+        - traceId
+        properties:
+          type:
+            const: https://govstack.global/problems/digital-registries/gateway-timeout
+            description: Stable gateway-timeout problem type.
+          status:
+            const: 504
+            description: HTTP Gateway Timeout status.
+    LinkContext:
+      type: object
+      description: One RFC 9264 link context. Members other than anchor are link relation
+        types, such as item, service-desc and service-meta.
+      properties:
+        anchor:
+          type: string
+          format: uri-reference
+          description: The link context URI.
+      additionalProperties:
+        type: array
+        minItems: 1
+        description: Target links for one relation type.
+        items:
+          $ref: '#/components/schemas/LinkTarget'
+    LinkTarget:
+      type: object
+      description: One RFC 9264 target link; further target attributes follow RFC
+        9264.
+      required:
+      - href
+      properties:
+        href:
+          type: string
+          format: uri-reference
+          description: The target URI.
+        type:
+          type: string
+          description: Media type hint for the target.
+        title:
+          type: string
+          description: Human-readable target label.
+  responses:
+    InternalError:
+      description: Request failure caused by this deployment, including incorrect
+        uniqueness declarations, mapping or configuration errors, and native Registry
+        invariant violations. Protected-existence policy precedes Record-specific
+        diagnostics. Problem text excludes personal data, source counts and internal
+        details; type is the sole machine identifier, with code and timestamp omitted.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://govstack.global/problems/digital-registries/internal-error
+            title: Request could not be completed
+            status: 500
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    ServiceUnavailable:
+      description: The service temporarily cannot accept work; no dependency topology
+        is exposed.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://govstack.global/problems/digital-registries/service-unavailable
+            title: Service temporarily unavailable
+            status: 503
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    ApiCatalog:
+      description: The API catalog linkset. RFC 9727 recommends the Content-Type profile
+        parameter "https://www.rfc-editor.org/info/rfc9727".
+      headers:
+        Link:
+          $ref: '#/components/headers/ApiCatalogLink'
+        ETag:
+          $ref: '#/components/headers/ApiCatalogETag'
+      content:
+        application/linkset+json:
+          schema:
+            $ref: '#/components/schemas/ApiCatalog'
+          example:
+            linkset:
+            - anchor: https://registry.example/
+              service-desc:
+              - href: https://registry.example/contracts/1.0.0-draft/openapi.yaml
+                type: application/vnd.oai.openapi
+                title: Digital Registries API
+              service-meta:
+              - href: https://registry.example/catalog
+                type: application/ld+json
+                title: Registry metadata for the records Registry
+    ApiCatalogNotModified:
+      description: The API catalog validator matches; the response is bodyless.
+      headers:
+        ETag:
+          $ref: '#/components/headers/ApiCatalogETag'
+    ApiCatalogHeaders:
+      description: The API catalog response headers, without a body.
+      headers:
+        Link:
+          $ref: '#/components/headers/ApiCatalogLink'
+        ETag:
+          $ref: '#/components/headers/ApiCatalogETag'
+    InternalErrorHeaders:
+      description: 'HEAD form of InternalError: the request could not be completed;
+        the response is bodyless.'
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+    ServiceUnavailableHeaders:
+      description: 'HEAD form of ServiceUnavailable: the service temporarily cannot
+        accept work; the response is bodyless.'
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+    Record:
+      description: One permitted Record in the published view. Retrieve and Lookup
+        share this envelope. ETag is not required unless conditional-read is selected
+        by Retrieve.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+        ETag:
+          $ref: '#/components/headers/ETag'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Record'
+    BadRequest:
+      description: |-
+        `bad-request` identifies malformed or structurally invalid input, including malformed
+        JSON, missing or undeclared body members, and incorrect JSON types. It also identifies
+        invalid or unsupported query parameters or invalid pagination controls, such as an
+        out-of-range `pageSize`. When `field-selection` is selected, empty, duplicate,
+        incorrectly typed or out-of-bounds selections and unsupported `fields` query values
+        use `400`.
+
+        `invalid-cursor` identifies a malformed, expired, or mismatched continuation,
+        including changed path selectors such as a `revision-list` parent `recordId`, request
+        criteria, ordering, effective `pageSize`, field or temporal selection, or trusted purpose.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            malformed:
+              value:
+                type: https://govstack.global/problems/digital-registries/bad-request
+                title: Invalid request
+                status: 400
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+            structure:
+              summary: A required request member is missing
+              value:
+                type: https://govstack.global/problems/digital-registries/bad-request
+                title: Invalid request
+                status: 400
+                detail: The request is missing a required member.
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+            cursor:
+              value:
+                type: https://govstack.global/problems/digital-registries/invalid-cursor
+                title: Invalid continuation
+                status: 400
+                traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    Unauthorized:
+      description: Missing or invalid access token; the problem reveals no record
+        existence.
+      headers:
+        WWW-Authenticate:
+          $ref: '#/components/headers/WwwAuthenticate'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://govstack.global/problems/digital-registries/unauthorized
+            title: Authentication required
+            status: 401
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    Forbidden:
+      description: The current authenticated caller lacks the operation or view grant.
+        Protected Record existence uses the 404 response. A broken service credential
+        or deployment configuration is a server-side failure and is not translated
+        blindly from an upstream 403.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://govstack.global/problems/digital-registries/forbidden
+            title: Operation not permitted
+            status: 403
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    RecordNotAvailable:
+      description: Absent Records, Records outside the declared collection and protected
+        existence return the same status, problem type and public detail. Record-specific
+        counts and hints are withheld.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RecordNotAvailableProblem'
+          example:
+            type: https://govstack.global/problems/digital-registries/record-not-available
+            title: Record not available
+            status: 404
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    NotAcceptable:
+      description: The requested response media type is not supported.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://govstack.global/problems/digital-registries/not-acceptable
+            title: Response media type not supported
+            status: 406
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    TooManyRequests:
+      description: The gateway enforces its published quota scope and supplies Retry-After.
+        Advisory RateLimit headers are gateway-owned.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://govstack.global/problems/digital-registries/too-many-requests
+            title: Request rate exceeded
+            status: 429
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    BadGateway:
+      description: A correctly configured gateway-dependent deployment received an
+        unusable upstream response; no upstream details are exposed. Adapter deployment
+        alone does not make a deployment-owned mapping or invariant failure a 502.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/WriteCacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/BadGatewayProblem'
+          example:
+            type: https://govstack.global/problems/digital-registries/bad-gateway
+            title: Upstream request failed
+            status: 502
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+    GatewayTimeout:
+      description: An upstream operation exceeded its time budget; no partial or fabricated
+        result is returned. For a write, this status does not prove rollback or authorise
+        re-execution with a fresh idempotency key.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/WriteCacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/GatewayTimeoutProblem'
+          example:
+            type: https://govstack.global/problems/digital-registries/gateway-timeout
+            title: Upstream request timed out
+            status: 504
+            traceId: 6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f
+  securitySchemes:
+    serviceOAuth:
+      type: oauth2
+      description: Confidential inter-BB client credentials. Tokens are audience-
+        and scope-restricted; sender-constrained access tokens are recommended.
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.example/token
+          scopes:
+            bb:digital-registries:record:read: Read an authorised write-capable Record
+              view.
+            bb:digital-registries:record:create: Attempt authorised direct Record
+              creation.
+            bb:digital-registries:record:update: Attempt authorised direct Record
+              update.
+            bb:digital-registries:record:transition: Attempt an authorised named Record
+              transition.
+            bb:digital-registries:change-request:submit: Submit an authorised immutable
+              proposal.
+            bb:digital-registries:change-request:read: Read caller-visible proposals
+              and states.
+            bb:digital-registries:change-request:review: Approve or reject an exact
+              proposal version.
+            bb:digital-registries:change-request:withdraw: Withdraw a proposal when
+              policy permits.
+            bb:digital-registries:change-request:apply: Execute an approved proposal
+              under current policy.
+            bb:digital-registries:operation:read: Read caller-visible asynchronous
+              operation state.
+    citizenOAuth:
+      type: oauth2
+      description: Citizen access-token authorisation backed by OpenID Connect. Authorization-code
+        clients use PKCE S256. Deployments publish issuer and audience. ID Tokens
+        are rejected.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.example/authorize
+          tokenUrl: https://identity.example/token
+          scopes:
+            bb:digital-registries:record:read: Read an authorised write-capable Record
+              view.
+            bb:digital-registries:record:create: Attempt authorised direct Record
+              creation.
+            bb:digital-registries:record:update: Attempt authorised direct Record
+              update.
+            bb:digital-registries:record:transition: Attempt an authorised named Record
+              transition.
+            bb:digital-registries:change-request:submit: Submit an authorised immutable
+              proposal.
+            bb:digital-registries:change-request:read: Read caller-visible proposals
+              and states.
+            bb:digital-registries:change-request:review: Approve or reject an exact
+              proposal version.
+            bb:digital-registries:change-request:withdraw: Withdraw a proposal when
+              policy permits.
+            bb:digital-registries:change-request:apply: Execute an approved proposal
+              under current policy.
+            bb:digital-registries:operation:read: Read caller-visible asynchronous
+              operation state.
+  headers:
+    CacheControl:
+      description: Protected reads and errors use no-store. Deployments may publish
+        another caching policy for public or properly isolated representations while
+        preserving authorisation.
+      schema:
+        type: string
+        const: no-store
+    RetryAfter:
+      description: Delay in seconds or HTTP-date before retrying; authoritative over
+        any advisory quota fields.
+      schema:
+        type: string
+      example: '30'
+    ApiCatalogLink:
+      description: Web Link with the api-catalog relation. Its target is this well-known
+        URI or the publisher's API catalog document location.
+      required: true
+      schema:
+        type: string
+        pattern: ;\s*rel\s*=\s*(?:api-catalog|"(?:[^"]*\s)?api-catalog(?:\s[^"]*)?")\s*(?:[;,]|(?![\s\S]))
+      example: </.well-known/api-catalog>; rel="api-catalog"
+    ApiCatalogETag:
+      description: Required HTTP representation validator for the API catalog linkset.
+      required: true
+      schema:
+        type: string
+      example: W/"representation-7fa9"
+    ETag:
+      description: HTTP representation validator, which may be omitted; it is not
+        a source revision identifier.
+      schema:
+        type: string
+      example: W/"representation-7fa9"
+    WwwAuthenticate:
+      description: Bearer authentication challenge, with no record-specific facts.
+      schema:
+        type: string
+      example: Bearer
+    WriteCacheControl:
+      description: Required no-store policy for protected Write and workflow responses.
+      required: true
+      schema:
+        type: string
+        const: no-store

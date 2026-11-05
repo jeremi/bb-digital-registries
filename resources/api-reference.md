@@ -22,7 +22,16 @@ can differ from a permitted read projection, and accepted values map as declared
 to authoritative state, retained provenance, or workflow-only context. A commit
 receipt establishes the declared commit outcome. It does not guarantee that the
 caller may retrieve the resulting Record, or that a permitted projection is
-immediately current.
+immediately current. A Record mutation-receipt ETag is optional; when supplied,
+it identifies the committed guard state and replays unchanged. Companion-read
+ETags for guarded writes and Change Request validators for exact review remain
+mandatory where those operations apply.
+
+Every mutating Write operation publishes its minimum replay guarantee as
+`idempotencyReplayWindow` in the static operation extension. Optional caller
+discovery copies that value when offered. Every Update declares
+`concurrencyPolicy: required`; this revision publishes no unguarded or hybrid
+Update policy.
 
 For Update and Transition, the declared companion Retrieve returns its permitted
 body and strong ETag from one current authoritative guard evaluation. The guard
@@ -42,4 +51,6 @@ The [birth-registration](api-examples/birth-registration.md),
 [household](api-examples/household.md) contracts show illustrative deployment
 bindings. The [Write examples](api-examples/README.md#non-normative-write-examples)
 show direct and approval-based changes. These examples do not add requirements
-to the canonical contract.
+to the canonical contract. Generated [Retrieve-only](../api/examples/retrieve-only.openapi.yaml)
+and [Retrieve plus Lookup](../api/examples/retrieve-lookup.openapi.yaml) profiles
+provide minimal concrete starting points without caller discovery or Write.

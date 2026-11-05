@@ -2264,6 +2264,298 @@
           "traceId": "55555555555555555555555555555555"
         }
       }
+    },
+    {
+      "name": "individualUpdateMissingIfMatch",
+      "operationId": "updateRecord",
+      "expectedRequestFailure": "missing-if-match",
+      "request": {
+        "path": "/v1/collections/individuals/records/person_105",
+        "headers": {
+          "Content-Type": "application/merge-patch+json",
+          "Idempotency-Key": "\"individual-update-missing-guard-018f47e5\""
+        },
+        "body": {"data": {"preferred_name": "Som"}}
+      },
+      "response": {
+        "status": 428,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/precondition-required",
+          "title": "If-Match is required",
+          "status": 428,
+          "traceId": "66666666666666666666666666666666"
+        }
+      }
+    },
+    {
+      "name": "individualUpdateUnsupportedMediaType",
+      "operationId": "updateRecord",
+      "expectedRequestFailure": "unsupported-media-type",
+      "request": {
+        "path": "/v1/collections/individuals/records/person_105",
+        "headers": {
+          "Content-Type": "application/json",
+          "Idempotency-Key": "\"individual-update-media-018f47e6\"",
+          "If-Match": "\"person-v1\""
+        },
+        "body": {"data": {"preferred_name": "Som"}}
+      },
+      "response": {
+        "status": 415,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/unsupported-media-type",
+          "title": "Unsupported media type",
+          "status": 415,
+          "traceId": "77777777777777777777777777777777"
+        }
+      }
+    },
+    {
+      "name": "individualCreateUnacceptableRepresentation",
+      "operationId": "createIndividual",
+      "expectedRequestFailure": "unacceptable-representation",
+      "request": {
+        "path": "/v1/collections/individuals/records",
+        "headers": {
+          "Accept": "application/problem+json",
+          "Content-Type": "application/json",
+          "Idempotency-Key": "\"individual-create-accept-018f47e7\""
+        },
+        "body": {
+          "data": {
+            "@context": "https://publicschema.org/ctx/draft.jsonld",
+            "@type": "https://publicschema.org/Person",
+            "given_name": "Somchai",
+            "family_name": "Example",
+            "date_of_birth": "1990-02-12"
+          }
+        }
+      },
+      "response": {
+        "status": 406,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/not-acceptable",
+          "title": "Representation not available",
+          "status": 406,
+          "traceId": "88888888888888888888888888888888"
+        }
+      }
+    },
+    {
+      "name": "individualUpdateMalformedRecordIdentifier",
+      "operationId": "updateRecord",
+      "expectedRequestFailure": "malformed-path-parameter",
+      "request": {
+        "path": "/v1/collections/individuals/records/person%2Fescape",
+        "headers": {
+          "Content-Type": "application/merge-patch+json",
+          "Idempotency-Key": "\"individual-update-id-018f47e8\"",
+          "If-Match": "\"person-v1\""
+        },
+        "body": {"data": {"preferred_name": "Som"}}
+      },
+      "response": {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/bad-request",
+          "title": "Malformed Record identifier",
+          "status": 400,
+          "traceId": "99999999999999999999999999999999"
+        }
+      }
+    },
+    {
+      "name": "individualCreateMalformedIdempotencyKey",
+      "operationId": "createIndividual",
+      "expectedRequestFailure": "malformed-idempotency-key",
+      "request": {
+        "path": "/v1/collections/individuals/records",
+        "headers": {
+          "Content-Type": "application/json",
+          "Idempotency-Key": "unquoted-key"
+        },
+        "body": {
+          "data": {
+            "@context": "https://publicschema.org/ctx/draft.jsonld",
+            "@type": "https://publicschema.org/Person",
+            "given_name": "Somchai",
+            "family_name": "Example",
+            "date_of_birth": "1990-02-12"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/bad-request",
+          "title": "Idempotency-Key must be a quoted Structured Field String",
+          "status": 400,
+          "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    {
+      "name": "individualCreateWholeInputValidationFailure",
+      "operationId": "createIndividual",
+      "expectedRequestFailure": "schema-validation",
+      "request": {
+        "path": "/v1/collections/individuals/records",
+        "headers": {
+          "Content-Type": "application/json",
+          "Idempotency-Key": "\"individual-whole-input-018f47e9\""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/invalid-content",
+          "title": "Invalid content",
+          "status": 422,
+          "traceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "errors": [{"pointer": "", "message": "The complete input is invalid."}]
+        }
+      }
+    },
+    {
+      "name": "individualCreateCallerGrantMissing",
+      "operationId": "createIndividual",
+      "request": {
+        "path": "/v1/collections/individuals/records",
+        "headers": {
+          "Content-Type": "application/json",
+          "Idempotency-Key": "\"individual-forbidden-018f47ea\""
+        },
+        "body": {
+          "data": {
+            "@context": "https://publicschema.org/ctx/draft.jsonld",
+            "@type": "https://publicschema.org/Person",
+            "given_name": "Somchai",
+            "family_name": "Example",
+            "date_of_birth": "1990-02-12"
+          }
+        }
+      },
+      "response": {
+        "status": 403,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/forbidden",
+          "title": "Not authorised for Create",
+          "status": 403,
+          "traceId": "cccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    {
+      "name": "individualCreateDeploymentCredentialFailure",
+      "operationId": "createIndividual",
+      "request": {
+        "path": "/v1/collections/individuals/records",
+        "headers": {
+          "Content-Type": "application/json",
+          "Idempotency-Key": "\"individual-config-failure-018f47eb\""
+        },
+        "body": {
+          "data": {
+            "@context": "https://publicschema.org/ctx/draft.jsonld",
+            "@type": "https://publicschema.org/Person",
+            "given_name": "Somchai",
+            "family_name": "Example",
+            "date_of_birth": "1990-02-12"
+          }
+        }
+      },
+      "response": {
+        "status": 500,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/internal-error",
+          "title": "Deployment credential failure",
+          "status": 500,
+          "traceId": "dddddddddddddddddddddddddddddddd"
+        }
+      }
+    },
+    {
+      "name": "individualUpdateIdempotencyInFlight",
+      "operationId": "updateRecord",
+      "request": {
+        "path": "/v1/collections/individuals/records/person_105",
+        "headers": {
+          "Content-Type": "application/merge-patch+json",
+          "Idempotency-Key": "\"individual-update-inflight-018f47ec\"",
+          "If-Match": "\"person-v1\""
+        },
+        "body": {"data": {"preferred_name": "Som"}}
+      },
+      "response": {
+        "status": 409,
+        "mediaType": "application/problem+json",
+        "headers": {"Retry-After": "30", "Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/idempotency-in-flight",
+          "title": "Matching request is still being resolved",
+          "status": 409,
+          "traceId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      }
+    },
+    {
+      "name": "individualUpdateIdempotencyReconciliationRequired",
+      "operationId": "updateRecord",
+      "request": {
+        "path": "/v1/collections/individuals/records/person_105",
+        "headers": {
+          "Content-Type": "application/merge-patch+json",
+          "Idempotency-Key": "\"individual-update-reconcile-018f47ed\"",
+          "If-Match": "\"person-v1\""
+        },
+        "body": {"data": {"preferred_name": "Som"}}
+      },
+      "response": {
+        "status": 409,
+        "mediaType": "application/problem+json",
+        "headers": {"Cache-Control": "no-store"},
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/idempotency-reconciliation-required",
+          "title": "Operator reconciliation is required",
+          "status": 409,
+          "traceId": "ffffffffffffffffffffffffffffffff"
+        }
+      }
+    },
+    {
+      "name": "individualUpdateAcceptProblemDetailsBodylessSuccess",
+      "operationId": "updateRecord",
+      "request": {
+        "path": "/v1/collections/individuals/records/person_105",
+        "headers": {
+          "Accept": "application/problem+json",
+          "Content-Type": "application/merge-patch+json",
+          "Idempotency-Key": "\"individual-update-accept-018f47ee\"",
+          "If-Match": "\"person-v1\""
+        },
+        "body": {"data": {"preferred_name": "Som"}}
+      },
+      "response": {
+        "status": 204,
+        "headers": {"Cache-Control": "no-store"}
+      }
     }
   ]
 }

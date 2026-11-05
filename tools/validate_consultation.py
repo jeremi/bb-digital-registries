@@ -415,6 +415,13 @@ def _request_discriminator_values(contract: Path, operation: dict, name: str) ->
     return values
 
 
+def _normalised_purpose(value):
+    purpose = deepcopy(value)
+    if isinstance(purpose, dict) and "allowedPurposes" in purpose:
+        purpose["allowedPurposes"] = sorted(purpose["allowedPurposes"])
+    return purpose
+
+
 def validate_caller_capabilities(value: dict) -> None:
     """Validate discovery shape and agreement with explicitly mapped current contracts."""
     validator(CANONICAL, "/components/schemas/CallerCapabilities").validate(value)
@@ -449,7 +456,6 @@ def validate_caller_capabilities(value: dict) -> None:
             read_only_fields = {
                 "view",
                 "features",
-                "purpose",
                 "readableFields",
                 "selectors",
                 "searches",
@@ -485,6 +491,25 @@ def validate_caller_capabilities(value: dict) -> None:
                 raise ValueError(
                     "Caller Write companion read disagrees with linked operation"
                 )
+            advertised_write = advertised.get("write", {})
+            if advertised_write.get(
+                "idempotencyReplayWindow"
+            ) != declared_write.get("idempotencyReplayWindow"):
+                raise ValueError(
+                    "Caller Write replay window disagrees with linked operation"
+                )
+            if "concurrencyPolicy" in advertised_write and advertised_write[
+                "concurrencyPolicy"
+            ] != declared_write.get("concurrencyPolicy"):
+                raise ValueError(
+                    "Caller Write concurrency policy disagrees with linked operation"
+                )
+            if _normalised_purpose(advertised.get("purpose")) != _normalised_purpose(
+                declared_write.get("purpose")
+            ):
+                raise ValueError(
+                    "Caller Write purpose disagrees with linked operation"
+                )
             continue
         if family != "consultation" or collection["collectionId"] is None:
             raise ValueError(
@@ -511,12 +536,9 @@ def validate_caller_capabilities(value: dict) -> None:
             raise ValueError(
                 "Caller capability features disagree with linked operation"
             )
-        advertised_purpose = deepcopy(advertised.get("purpose"))
-        declared_purpose = deepcopy(declared.get("purpose"))
-        for purpose in (advertised_purpose, declared_purpose):
-            if isinstance(purpose, dict) and "allowedPurposes" in purpose:
-                purpose["allowedPurposes"] = sorted(purpose["allowedPurposes"])
-        if advertised_purpose != declared_purpose:
+        if _normalised_purpose(advertised.get("purpose")) != _normalised_purpose(
+            declared.get("purpose")
+        ):
             raise ValueError("Caller capability purpose disagrees with linked operation")
         readable = set(advertised.get("readableFields", []))
         if not readable.issubset(_record_data_fields(contract, operation)):

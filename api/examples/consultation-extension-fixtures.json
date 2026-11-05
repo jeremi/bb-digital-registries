@@ -86,6 +86,32 @@
         {
           "collections": [
             {
+              "collectionId": "records",
+              "registry": "https://registry.example/registries/records",
+              "operations": [
+                {
+                  "operationId": "updateRecord",
+                  "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml",
+                  "family": "write",
+                  "capability": "update",
+                  "write": {
+                    "companionRead": {"operationId": "retrieveRecord", "view": "record-public"},
+                    "idempotencyReplayWindow": 86400,
+                    "concurrencyPolicy": "required"
+                  },
+                  "purpose": {
+                    "required": true,
+                    "binding": "trusted-authorization-context",
+                    "allowedPurposes": ["record-correction"]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "collections": [
+            {
               "collectionId": "businesses",
               "registry": "https://registry.example/registries/business",
               "operations": [
@@ -167,7 +193,8 @@
         {"collections": [{"collectionId": "records", "registry": "https://registry.example/registries/records", "operations": [{"contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml", "capability": "retrieve", "view": "record-public"}]}]},
         {"collections": [{"collectionId": "records", "registry": "https://registry.example/registries/records", "operations": [{"operationId": "searchRecords", "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml", "capability": "search", "view": "record-public", "features": ["conditional-read"]}]}]},
         {"collections": [{"collectionId": "records", "registry": "https://registry.example/registries/records", "operations": [{"operationId": "listRecords", "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml", "capability": "list", "view": "record-public", "features": ["snapshot-traversal"]}]}]},
-        {"collections": [{"collectionId": "records", "registry": "https://registry.example/registries/records", "operations": [{"operationId": "retrieveRecord", "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml", "capability": "retrieve", "view": "record-public", "features": ["purpose-bound"]}]}]}
+        {"collections": [{"collectionId": "records", "registry": "https://registry.example/registries/records", "operations": [{"operationId": "retrieveRecord", "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml", "capability": "retrieve", "view": "record-public", "features": ["purpose-bound"]}]}]},
+        {"collections": [{"collectionId": "records", "registry": "https://registry.example/registries/records", "operations": [{"operationId": "updateRecord", "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml", "family": "write", "capability": "update", "features": ["purpose-bound"], "write": {"companionRead": {"operationId": "retrieveRecord", "view": "record-public"}, "idempotencyReplayWindow": 86400, "concurrencyPolicy": "required"}, "purpose": {"required": true, "binding": "trusted-authorization-context", "allowedPurposes": ["record-correction"]}}]}]}
       ]
     }
   ],

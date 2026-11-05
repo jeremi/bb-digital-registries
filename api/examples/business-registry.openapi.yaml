@@ -187,11 +187,12 @@ paths:
       description: >-
         Resolve byRegistrationNumber or the composite byJurisdictionNumber key within the
         businesses collection using byte-for-byte string matching. BusinessLookupRequest
-        defines their fields and uniqueness scopes. Return the permitted Record, 404 for an
-        unavailable match, or generic 500 for a uniqueness violation. Malformed or structurally invalid input uses
-        400; structurally valid input with an unknown selector, unknown field name, or invalid
-        domain value uses 422. Protected-existence policy applies before Record-specific
-        diagnostics.
+        defines their fields and uniqueness scopes. Protected ambiguity and an unavailable match
+        use the same 404. After that check, 502 means the correctly configured upstream returned
+        multiple matches; 500 means this deployment's declaration or mapping is wrong, or its
+        native Registry violated the uniqueness invariant. No arbitrary first match is returned.
+        Malformed or structurally invalid input uses 400; structurally valid input with an unknown
+        selector, unknown field name, or invalid domain value uses 422.
       tags:
       - Consultation
       x-govstack-digital-registries:
@@ -259,7 +260,7 @@ paths:
         '500':
           $ref: ../openapi.yaml#/components/responses/InternalError
         '502':
-          $ref: ../openapi.yaml#/components/responses/BadGateway
+          $ref: ../openapi.yaml#/components/responses/LookupBadGateway
         '503':
           $ref: ../openapi.yaml#/components/responses/ServiceUnavailable
         '504':

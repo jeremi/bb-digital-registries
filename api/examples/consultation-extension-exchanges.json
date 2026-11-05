@@ -164,6 +164,97 @@
       }
     },
     {
+      "name": "lookupUnknownSelector",
+      "operationId": "lookupRecord",
+      "request": {
+        "path": {"collectionId": "records"},
+        "body": {"selector": "notConfigured", "values": {}}
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/invalid-content",
+          "title": "Request validation failed",
+          "status": 422,
+          "traceId": "6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f",
+          "errors": [
+            {"pointer": "/selector", "message": "The selector is not declared by this operation."}
+          ]
+        }
+      }
+    },
+    {
+      "name": "lookupWholeInputInvalid",
+      "operationId": "lookupRecord",
+      "request": {
+        "path": {"collectionId": "records"},
+        "body": {"selector": "byVerifiedCaller", "values": {}}
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/invalid-content",
+          "title": "Request validation failed",
+          "status": 422,
+          "traceId": "6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f",
+          "errors": [
+            {"pointer": "", "message": "The request is invalid as a whole."}
+          ]
+        }
+      }
+    },
+    {
+      "name": "lookupProtectedAmbiguity",
+      "operationId": "lookupRecord",
+      "request": {
+        "path": {"collectionId": "records"},
+        "body": {"selector": "byRegistrationNumber", "values": {"registrationNumber": "BR-000042"}}
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/record-not-available",
+          "title": "Record not available",
+          "status": 404,
+          "traceId": "6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f"
+        }
+      }
+    },
+    {
+      "name": "lookupDeclaredUniquenessMisconfigured",
+      "operationId": "lookupRecord",
+      "request": {
+        "path": {"collectionId": "records"},
+        "body": {"selector": "byRegistrationNumber", "values": {"registrationNumber": "BR-000042"}}
+      },
+      "response": {
+        "status": 500,
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/internal-error",
+          "title": "Internal server error",
+          "status": 500,
+          "traceId": "6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f"
+        }
+      }
+    },
+    {
+      "name": "lookupUpstreamUniquenessViolation",
+      "operationId": "lookupRecord",
+      "request": {
+        "path": {"collectionId": "records"},
+        "body": {"selector": "byRegistrationNumber", "values": {"registrationNumber": "BR-000042"}}
+      },
+      "response": {
+        "status": 502,
+        "body": {
+          "type": "https://govstack.global/problems/digital-registries/bad-gateway",
+          "title": "Upstream service failed",
+          "status": 502,
+          "traceId": "6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f"
+        }
+      }
+    },
+    {
       "name": "callerHasNoDiscoverableOperations",
       "operationId": "getCallerCapabilities",
       "request": {},

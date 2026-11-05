@@ -87,13 +87,34 @@ prerequisite for granting Write access. Ordinary non-companion reads can retain
 their declared source currency, including material lag, and need not publish a
 strong validator.
 
+Update additionally declares `concurrencyPolicy: required`. The operation requires
+a strong `If-Match`, compares it atomically with mutation, returns `428` when the
+header is absent, and returns `412` when the guard is stale. Missing or unknown
+policy metadata never authorises an unguarded Update. Transition and governed
+application to an existing Record retain their strong guards. This revision does
+not publish an unconditional Update policy.
+
 Write inputs are operation-specific. They can differ from permitted read
 projections and can carry evidence, reasons, or workflow context that is not
 Record output. Accepted values map as declared to authoritative state, retained
-provenance, or workflow-only context. A successful commit receipt establishes
-the declared commit. It does not grant the caller read access, require automatic
-field echo, guarantee immediate projection visibility or currency, or create a
-revision-history guarantee.
+provenance, or workflow-only context. An Update uses an exact registered patch
+format declared by the concrete operation. The reference operation uses RFC 7396
+Merge Patch. A concrete operation can instead select the conservative RFC 6902
+JSON Patch profile; it need not support both. Governed Update input uses
+`inputMediaType` to distinguish the object-shaped and array-shaped inputs. The
+generic JSON Pointer skeleton establishes valid RFC 6901 escaping only; every
+concrete profile narrows it to explicit typed writable paths and declares any
+advanced array, test, move, or copy permissions and concurrency semantics.
+
+A successful commit receipt establishes the declared commit. Record identity and
+truthful acknowledgement are mandatory, while the mutation-receipt ETag is
+optional for Create, Update, Transition, and applied Change Request results. When
+both the header and body carry a tag, their values agree; a supplied tag identifies
+the committed guard state and replays unchanged. A caller needing another guarded
+mutation after a tagless success obtains a fresh guard through an authorised
+companion read or another permitted channel. The receipt does not grant read
+access, require automatic field echo, guarantee immediate projection visibility
+or currency, or create a revision-history guarantee.
 A matching tag is expected only when a later companion Retrieve has reached
 companion currency and observes that exact committed state, with no intervening
 mutation-relevant change, under the same effective authorisation, disclosure,
@@ -126,13 +147,24 @@ operations. Collection-scoped entries appear under `collections`; cross-Collecti
 Change Request and asynchronous Operation entries appear in the optional root
 `operations` array with their Registry context. Every operation entry identifies
 its capability, contract, and operation ID. A recognised Consultation entry
-requires its view and can carry read features, fields, selectors, searches, and
-purpose annotations. Existing recognised read entries can omit `family`, which
-means Consultation; new Write and supporting entries explicitly use
-`family: write` and cannot carry those read annotations. Update and Transition
-instead identify their `write.companionRead`. Every entry whose operation takes
-`Idempotency-Key` publishes the deployment's `write.idempotencyReplayWindow` in
-seconds; a key reused after it is processed as a new request. Unknown future capabilities remain
+requires its view and can carry read features, fields, selectors, and searches.
+Existing recognised read entries can omit `family`, which means Consultation;
+new Write and supporting entries explicitly use `family: write` and cannot carry
+those read-specific annotations. Purpose is a common optional annotation on both
+recognised Read and Write entries and must match the authoritative operation
+contract. Update and Transition identify their `write.companionRead`; Update can
+also copy its `write.concurrencyPolicy`. Every mutating operation publishes the
+authoritative `idempotencyReplayWindow` in its static Write extension. Caller
+discovery copies the same value in `write.idempotencyReplayWindow` when discovery
+is offered.
+
+The replay window is a guaranteed minimum measured from the start of processing.
+Beyond it, clients can assume neither replay nor fresh execution. An unresolved
+claim never becomes a fresh attempt through expiry. Processing or automatic
+recovery returns `409 idempotency-in-flight` with `Retry-After`; an operator-owned
+claim returns `409 idempotency-reconciliation-required` without `Retry-After`.
+Clients retry the original intent only with the same key and do not substitute a
+fresh key for an uncertain write. Unknown future capabilities remain
 skippable and do not acquire read-view requirements. Current authorisation remains
 decisive for every invocation. Discovery never promises access to a particular
 Record or grants mutation, review, application, or status authority. Empty
@@ -141,6 +173,37 @@ visible.
 
 Purpose-bound operations accept purpose only from the declared trusted binding,
 never from a request URI, query, body, or ad hoc header.
+
+## Deployment boundary checklist
+
+Concrete contracts and deployment evidence are operation-specific. Create needs
+create-only identity allocation, reliable commit acknowledgement, safe retry, and
+recovery of uncertain outcomes. Guarded Update additionally needs atomic comparison
+and mutation. Adapter coordination counts only when exclusivity and recovery cover
+ordinary user interfaces, imports, and every other writer.
+
+Complete authorisation is enforced at the API boundary, whether divided across a
+source, gateway, and adapter or implemented natively. Shared source credentials
+declare their maximum accessible scope and source filters. Missing caller grants
+can return `403`; protected target existence returns the same `404` as an unavailable
+target. Broken service credentials and configuration failures are server-side
+errors. Deployment-controlled gateways and middleware preserve challenges,
+Problem types, cache controls, and trace correlation. Trace-context propagation
+does not require a tracing backend.
+
+Each concrete contract declares finite Record Identifier bounds and canonical
+single-segment encoding, consistently across paths, selectors, targets, Records,
+mutation results, and constructed Record URIs. It also reviews declared filters,
+generated URLs, and logs for personal criteria. Cursor bindings use effective
+caller and tenant identity, trusted purpose, visibility, view, and query semantics,
+not the access-token instance or irrelevant claim changes; every page is
+reauthorised.
+
+Registry metadata, the API catalogue, and contracts can be audience-restricted.
+The example public catalogue does not require anonymous disclosure of Collection
+names or schemas. An absent route uses routing `404`; a disclosed resource with an
+unsupported method uses `405` and `Allow`. Protected existence is not revealed
+through method routing.
 
 ## Examples and coverage
 

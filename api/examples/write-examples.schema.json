@@ -1508,10 +1508,9 @@
       },
       "required": [
         "collectionId",
-        "recordId",
-        "etag"
+        "recordId"
       ],
-      "description": "Open authoritative result for one target Record plus profile-local request-reference resolutions."
+      "description": "Open authoritative result for one target Record plus profile-local request-reference resolutions. The strong mutation-receipt validator is optional; when supplied it identifies the committed guard state and replays unchanged."
     },
     "ProcessingError": {
       "type": "object",

@@ -3,7 +3,7 @@
   "title": "x-govstack-digital-registries-write",
   "description": "Closed operation metadata for independently selectable Digital Registries Write capabilities. Direct capability declarations do not imply change-request support, and change-request declarations do not imply direct mutation support.",
   "type": "object",
-  "required": ["registry", "capability"],
+  "required": ["registry", "capability", "idempotencyReplayWindow"],
   "additionalProperties": false,
   "properties": {
     "registry": {
@@ -32,7 +32,17 @@
     },
     "inputMediaType": {
       "description": "Registered patch media type used by update input.",
-      "const": "application/merge-patch+json"
+      "enum": ["application/merge-patch+json", "application/json-patch+json"]
+    },
+    "concurrencyPolicy": {
+      "description": "Concurrency policy enforced by this Update operation. This revision publishes guarded Update only.",
+      "const": "required"
+    },
+    "idempotencyReplayWindow": {
+      "description": "Guaranteed minimum completed-result replay window in seconds, measured from the start of processing. Beyond this window neither replay nor fresh execution is guaranteed, and unresolved claims never become fresh through expiry.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 31536000
     },
     "action": {
       "description": "Fixed published transition action name and final path segment. The value is metadata, not a client-selected runtime action.",
@@ -152,8 +162,15 @@
         "properties": {"capability": {"const": "update"}},
         "required": ["capability"]
       },
-      "then": {"required": ["inputMediaType"]},
-      "else": {"not": {"required": ["inputMediaType"]}}
+      "then": {"required": ["inputMediaType", "concurrencyPolicy"]},
+      "else": {
+        "not": {
+          "anyOf": [
+            {"required": ["inputMediaType"]},
+            {"required": ["concurrencyPolicy"]}
+          ]
+        }
+      }
     },
     {
       "if": {

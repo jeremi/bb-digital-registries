@@ -419,6 +419,11 @@ def validate_exchange(source: Path, exchange: dict[str, Any]) -> None:
     if expected_request_failure not in (
         None,
         "missing-required-header",
+        "missing-if-match",
+        "malformed-idempotency-key",
+        "unsupported-media-type",
+        "malformed-path-parameter",
+        "unacceptable-representation",
         "schema-validation",
     ):
         raise ValueError("Exchange names an unknown expectedRequestFailure")
@@ -466,19 +471,30 @@ def validate_exchange(source: Path, exchange: dict[str, Any]) -> None:
             request_failures.append("missing-required-body")
         if "body" in request:
             requested_media = request.get("mediaType", content_type)
-            _media_type, media = _select_media(
-                request_body.get("content", {}), requested_media, "Request"
-            )
             try:
-                validate_schema_value(body_source, media["schema"], request["body"])
-            except ValidationError:
-                request_failures.append("schema-validation")
+                _media_type, media = _select_media(
+                    request_body.get("content", {}), requested_media, "Request"
+                )
+            except ValueError:
+                if expected_request_failure != "unsupported-media-type":
+                    raise
+                request_failures.append("unsupported-media-type")
+            else:
+                try:
+                    validate_schema_value(body_source, media["schema"], request["body"])
+                except ValidationError:
+                    request_failures.append("schema-validation")
     elif "body" in request:
         raise ValueError("Request body is not declared by the operation")
 
     expected_failures = {
         None: [],
         "missing-required-header": ["missing-required:header:Idempotency-Key"],
+        "missing-if-match": ["missing-required:header:If-Match"],
+        "malformed-idempotency-key": ["parameter-validation:header:Idempotency-Key"],
+        "unsupported-media-type": ["unsupported-media-type"],
+        "malformed-path-parameter": ["parameter-validation:path:recordId"],
+        "unacceptable-representation": [],
         "schema-validation": ["schema-validation"],
     }[expected_request_failure]
     if request_failures != expected_failures:
@@ -487,6 +503,11 @@ def validate_exchange(source: Path, exchange: dict[str, Any]) -> None:
         )
     expected_failure_status = {
         "missing-required-header": 400,
+        "missing-if-match": 428,
+        "malformed-idempotency-key": 400,
+        "unsupported-media-type": 415,
+        "malformed-path-parameter": 400,
+        "unacceptable-representation": 406,
         "schema-validation": 422,
     }.get(expected_request_failure)
     if expected_failure_status is not None and status != expected_failure_status:
@@ -523,9 +544,33 @@ def validate_exchange(source: Path, exchange: dict[str, Any]) -> None:
         raise ValueError(f"Successful {status} response omits its declared body")
 
     body = response.get("body")
-    if isinstance(body, dict) and isinstance(body.get("etag"), str):
+    if isinstance(body, dict):
+        problem_type = body.get("type")
+        if (
+            problem_type
+            == (
+                "https://govstack.global/problems/digital-registries/idempotency-in-flight"
+            )
+            and "retry-after" not in supplied_response_headers
+        ):
+            raise ValueError("idempotency-in-flight requires Retry-After")
+        if (
+            problem_type
+            == (
+                "https://govstack.global/problems/digital-registries/idempotency-reconciliation-required"
+            )
+            and "retry-after" in supplied_response_headers
+        ):
+            raise ValueError(
+                "idempotency-reconciliation-required must omit Retry-After"
+            )
+    if (
+        isinstance(body, dict)
+        and isinstance(body.get("etag"), str)
+        and "etag" in supplied_response_headers
+    ):
         response_etag = supplied_response_headers.get("etag")
-        if response_etag is None or response_etag[1] != body["etag"]:
+        if response_etag[1] != body["etag"]:
             raise ValueError("Response ETag differs from the body etag")
     if (
         status == 201
@@ -568,14 +613,18 @@ def validate_exchange(source: Path, exchange: dict[str, Any]) -> None:
             continue
         value = supplied_headers[key][1]
         if not isinstance(value, str) or not re.fullmatch(r'"[^"\r\n]+"', value):
+            if (
+                key == "idempotency-key"
+                and expected_request_failure == "malformed-idempotency-key"
+            ):
+                continue
             raise ValueError(f"{supplied_headers[key][0]} must be a quoted field value")
         if key == "if-match" and value.startswith('W/"'):
             raise ValueError("If-Match must carry a strong entity-tag")
 
     _validate_exchange_identity(exchange, supplied["path"])
     if 200 <= status < 300 and (
-        EXTENSION in operation
-        or operation_id in {"getChangeRequest", "getOperation"}
+        EXTENSION in operation or operation_id in {"getChangeRequest", "getOperation"}
     ):
         validate_request_local_mappings(exchange, supplied["path"])
 
@@ -765,14 +814,71 @@ def _ref_identity(source: Path, value: Any) -> str | None:
 def _collect_property_schemas(
     source: Path, schema: dict[str, Any], name: str
 ) -> list[tuple[Path, dict[str, Any]]]:
-    source, schema = resolve_object(source, schema)
     found: list[tuple[Path, dict[str, Any]]] = []
-    if name in schema.get("properties", {}):
-        found.append((source, schema["properties"][name]))
-    for composition in ("allOf", "oneOf", "anyOf"):
-        for branch in schema.get(composition, []):
-            found.extend(_collect_property_schemas(source, branch, name))
+    visited: set[str] = set()
+
+    def visit(current_source: Path, value: Any) -> None:
+        if not isinstance(value, dict):
+            return
+        if "$ref" in value:
+            identity = _ref_identity(current_source, value)
+            if identity in visited:
+                return
+            visited.add(identity)
+            target_source, target = resolve_ref(current_source, value["$ref"])
+            visit(target_source, target)
+            return
+        properties = value.get("properties", {})
+        if isinstance(properties, dict):
+            property_schema = properties.get(name)
+            if isinstance(property_schema, dict):
+                found.append((current_source, property_schema))
+            for child in properties.values():
+                visit(current_source, child)
+        for keyword in ("allOf", "oneOf", "anyOf", "prefixItems"):
+            for branch in value.get(keyword, []):
+                visit(current_source, branch)
+        for keyword in ("items", "contains", "if", "then", "else", "not"):
+            visit(current_source, value.get(keyword))
+
+    visit(source, schema)
     return found
+
+
+def _schema_nodes(
+    source: Path, schema: Any
+) -> Iterable[tuple[Path, str, dict[str, Any]]]:
+    """Walk a schema graph once per reference while preserving recursive models."""
+    visited: set[str] = set()
+
+    def visit(
+        current_source: Path, value: Any, pointer: str
+    ) -> Iterable[tuple[Path, str, dict[str, Any]]]:
+        if not isinstance(value, dict):
+            return
+        if "$ref" in value:
+            identity = _ref_identity(current_source, value)
+            if identity in visited:
+                return
+            visited.add(identity)
+            target_source, target = resolve_ref(current_source, value["$ref"])
+            yield from visit(target_source, target, identity or pointer)
+            return
+        yield current_source, pointer, value
+        for key, child in value.items():
+            if key in {"example", "examples", "default", "const", "enum"}:
+                continue
+            if isinstance(child, dict):
+                yield from visit(current_source, child, pointer + "/" + str(key))
+            elif isinstance(child, list):
+                for index, item in enumerate(child):
+                    yield from visit(
+                        current_source,
+                        item,
+                        pointer + "/" + str(key) + "/" + str(index),
+                    )
+
+    yield from visit(source, schema, "")
 
 
 def _referenced_property_identities(source: Path, schema: Any, name: str) -> list[str]:
@@ -930,26 +1036,44 @@ def validate_write_document(
                 f"{operation_id} request body must use a referenced typed input schema"
             )
         canonical_input_name = DIRECT_INPUTS.get(operation_id)
+        canonical_input_names = (
+            {"UpdateInput", "JsonPatchInput"}
+            if operation_id == "updateRecord"
+            else {canonical_input_name}
+        )
         if (
             canonical_input_name
             and source.resolve() == WRITE.resolve()
-            and _schema_ref_name(schema) != canonical_input_name
+            and _schema_ref_name(schema) not in canonical_input_names
         ):
             raise ValueError(
-                f"{operation_id} request body must reference {canonical_input_name}"
+                f"{operation_id} request body must reference one of {sorted(canonical_input_names)}"
             )
         extension_input = operation[EXTENSION].get("inputSchema")
         if _ref_identity(source, {"$ref": extension_input}) != input_identity:
             raise ValueError(
                 f"{operation_id} inputSchema must match its request body schema"
             )
-        expected_media = (
-            "application/merge-patch+json"
+        allowed_media = (
+            {"application/merge-patch+json", "application/json-patch+json"}
             if capability == "update"
-            else "application/json"
+            else {"application/json"}
         )
-        if media_type != expected_media:
-            raise ValueError(f"{operation_id} must use {expected_media}")
+        if media_type not in allowed_media:
+            raise ValueError(
+                f"{operation_id} must use one declared registered input media type"
+            )
+        extension_media = operation[EXTENSION].get("inputMediaType")
+        if capability == "update" and extension_media != media_type:
+            raise ValueError(
+                f"{operation_id} inputMediaType must match its request body media type"
+            )
+        if (
+            capability == "update"
+            and media_type == "application/json-patch+json"
+            and source.resolve() != WRITE.resolve()
+        ):
+            _validate_concrete_json_patch_schema(body_source, schema)
         if capability == "transition":
             action = operation[EXTENSION].get("action")
             if route.rsplit("/", 1)[-1] != action:
@@ -995,9 +1119,9 @@ def validate_write_document(
             raise ValueError(
                 "Change-request submission needs at least one typed input branch"
             )
-        if require_reference_surface and len(set(governed_inputs)) != 3:
+        if require_reference_surface and len(set(governed_inputs)) != 4:
             raise ValueError(
-                "Reference change requests need create, update, and transition inputs"
+                "Reference change requests need create, Merge Patch update, JSON Patch update, and transition inputs"
             )
         submission_extension_ref = submission_operation[EXTENSION].get("inputSchema")
         if (
@@ -1007,6 +1131,7 @@ def validate_write_document(
             raise ValueError(
                 "submitChangeRequest inputSchema must match its request body schema"
             )
+        _validate_governed_update_dialects(submission_source, submission_schema)
 
     strong_preconditions = {
         operation_id
@@ -1046,7 +1171,10 @@ def validate_write_document(
             )
 
     for operation_id, (_route, method, operation) in by_id.items():
-        if method not in {"post", "put", "patch", "delete"} or EXTENSION not in operation:
+        if (
+            method not in {"post", "put", "patch", "delete"}
+            or EXTENSION not in operation
+        ):
             continue
         idempotency = _header_parameter(source, operation, "Idempotency-Key")
         if idempotency is None or not idempotency[1].get("required"):
@@ -1064,17 +1192,241 @@ def validate_write_document(
             raise ValueError(
                 f"{operation_id} Idempotency-Key schema rejects a quoted key"
             )
+        replay_window = operation[EXTENSION].get("idempotencyReplayWindow")
+        if (
+            isinstance(replay_window, bool)
+            or not isinstance(replay_window, int)
+            or not 1 <= replay_window <= 31536000
+        ):
+            raise ValueError(
+                f"{operation_id} needs a bounded static idempotencyReplayWindow"
+            )
+
+    for operation_id, _route, _method, operation in write_entries:
+        if (
+            operation[EXTENSION].get("capability") == "update"
+            and operation[EXTENSION].get("concurrencyPolicy") != "required"
+        ):
+            raise ValueError(f"{operation_id} must declare concurrencyPolicy required")
 
     _validate_response_shapes(source, by_id)
     _validate_error_response_schemas(source, by_id)
+    _validate_discovered_replay_windows(document, by_id)
     _validate_operation_scopes(document)
     _validate_client_fields(source, by_id)
     _validate_refs(source, document)
 
 
+def _validate_governed_update_dialects(source: Path, schema: dict[str, Any]) -> None:
+    """Require each governed Update branch to bind media type to its input shape."""
+    source, schema = resolve_object(source, schema)
+    update_branches: list[tuple[Path, dict[str, Any]]] = []
+    for branch in schema.get("oneOf", []):
+        branch_source, branch = resolve_object(source, branch)
+        if _property_consts(branch_source, branch, "kind") == {"update"}:
+            update_branches.append((branch_source, branch))
+    if not update_branches:
+        return
+    expected_types = {
+        "application/merge-patch+json": "object",
+        "application/json-patch+json": "array",
+    }
+    for branch_source, branch in update_branches:
+        properties = branch.get("properties", {})
+        media_schema = properties.get("inputMediaType", {})
+        media_values = set(media_schema.get("enum", []))
+        if "const" in media_schema:
+            media_values.add(media_schema["const"])
+        if not media_values or not media_values <= expected_types.keys():
+            raise ValueError(
+                "Governed Update must select one or more registered patch formats"
+            )
+        selected_inputs: dict[str, tuple[Path, dict[str, Any]]] = {}
+        for conditional in branch.get("allOf", []):
+            if not isinstance(conditional, dict):
+                continue
+            condition = (
+                conditional.get("if", {})
+                .get("properties", {})
+                .get("inputMediaType", {})
+            )
+            media_type = condition.get("const")
+            selected = conditional.get("then", {}).get("properties", {}).get("input")
+            if isinstance(media_type, str) and isinstance(selected, dict):
+                selected_inputs[media_type] = (branch_source, selected)
+        if len(media_values) == 1 and not selected_inputs:
+            selected = properties.get("input")
+            if isinstance(selected, dict):
+                selected_inputs[next(iter(media_values))] = (branch_source, selected)
+        if set(selected_inputs) != media_values:
+            raise ValueError(
+                "Governed Update inputMediaType branches must select matching input schemas"
+            )
+        for media_type, (input_source, input_schema) in selected_inputs.items():
+            if (
+                media_type == "application/json-patch+json"
+                and source.resolve() != WRITE.resolve()
+            ):
+                _validate_concrete_json_patch_schema(input_source, input_schema)
+            input_source, input_schema = resolve_object(input_source, input_schema)
+            if input_schema.get("type") != expected_types[media_type]:
+                raise ValueError(
+                    "Governed Update input shape does not match inputMediaType"
+                )
+
+
+def _finite_schema_values(schema: dict[str, Any]) -> set[Any]:
+    if "const" in schema:
+        values = [schema["const"]]
+    else:
+        values = schema.get("enum")
+        if not isinstance(values, list) or not values:
+            return set()
+    try:
+        return set(values)
+    except TypeError as exc:
+        raise ValueError(
+            "Concrete JSON Patch op and path values must be scalar"
+        ) from exc
+
+
+def _validate_conservative_json_pointer(pointer: Any) -> None:
+    if not isinstance(pointer, str) or not pointer.startswith("/data/"):
+        raise ValueError(
+            "Concrete JSON Patch paths must name finite writable members below /data"
+        )
+    if any(ord(character) < 0x20 or ord(character) == 0x7F for character in pointer):
+        raise ValueError(
+            "Concrete JSON Patch paths must not contain control characters"
+        )
+    tokens = pointer[1:].split("/")
+    decoded: list[str] = []
+    for token in tokens:
+        index = 0
+        output = []
+        while index < len(token):
+            character = token[index]
+            if character != "~":
+                output.append(character)
+                index += 1
+                continue
+            if index + 1 >= len(token) or token[index + 1] not in {"0", "1"}:
+                raise ValueError(
+                    "Concrete JSON Patch paths must use RFC 6901 ~0 and ~1 escapes"
+                )
+            output.append("~" if token[index + 1] == "0" else "/")
+            index += 2
+        decoded.append("".join(output))
+    if any(token == "-" or re.fullmatch(r"0|[1-9][0-9]*", token) for token in decoded):
+        raise ValueError(
+            "Positional JSON Patch array paths require a separately reviewed advanced profile"
+        )
+
+
+def _validate_concrete_json_patch_schema(source: Path, schema: dict[str, Any]) -> None:
+    """Statically validate the conservative JSON Patch profile we can prove offline.
+
+    Dynamic path expressions, positional arrays, and advanced RFC 6902 operations need
+    separate permission and concurrency evidence and are not inferred by this checker.
+    """
+    source, schema = resolve_object(source, schema)
+    if schema.get("type") != "array" or not isinstance(schema.get("items"), dict):
+        raise ValueError(
+            "Concrete JSON Patch input must be an array of typed operations"
+        )
+    item_source, items = resolve_object(source, schema["items"])
+    raw_branches = items.get("oneOf")
+    branches = raw_branches if isinstance(raw_branches, list) else [items]
+    if not branches:
+        raise ValueError("Concrete JSON Patch input needs typed operation branches")
+    for raw_branch in branches:
+        if not isinstance(raw_branch, dict):
+            raise ValueError("Concrete JSON Patch operation branch must be a schema")
+        branch_source, branch = resolve_object(item_source, raw_branch)
+        if (
+            branch.get("type") != "object"
+            or branch.get("additionalProperties") is not False
+        ):
+            raise ValueError(
+                "Concrete JSON Patch operation branches must be closed objects"
+            )
+        properties = branch.get("properties")
+        required = branch.get("required")
+        if not isinstance(properties, dict) or not isinstance(required, list):
+            raise ValueError(
+                "Concrete JSON Patch operation branches need explicit properties"
+            )
+        if not {"op", "path"} <= set(required):
+            raise ValueError("Concrete JSON Patch operations require op and path")
+        op_schema = properties.get("op")
+        path_schema = properties.get("path")
+        if not isinstance(op_schema, dict) or not isinstance(path_schema, dict):
+            raise ValueError("Concrete JSON Patch operations need typed op and path")
+        operations = _finite_schema_values(op_schema)
+        if len(operations) != 1 or not operations <= {"add", "remove", "replace"}:
+            raise ValueError(
+                "The conservative checker supports one add, remove, or replace operation per branch"
+            )
+        paths = _finite_schema_values(path_schema)
+        if not paths:
+            raise ValueError(
+                "Concrete JSON Patch profiles must enumerate finite writable paths"
+            )
+        for pointer in paths:
+            _validate_conservative_json_pointer(pointer)
+        operation = next(iter(operations))
+        if operation in {"add", "replace"}:
+            value_schema = properties.get("value")
+            if (
+                "value" not in required
+                or not isinstance(value_schema, dict)
+                or not value_schema
+                or not set(value_schema)
+                & {"$ref", "type", "const", "enum", "oneOf", "anyOf", "allOf"}
+            ):
+                raise ValueError(
+                    "Concrete add and replace operations need a required typed value"
+                )
+        elif "value" in properties or "value" in required:
+            raise ValueError("Concrete remove operations must not accept a value")
+
+
+def _validate_discovered_replay_windows(
+    document: dict[str, Any],
+    by_id: dict[str, tuple[str, str, dict[str, Any]]],
+) -> None:
+    """When caller discovery examples are offered, keep static metadata authoritative."""
+    schemas = document.get("components", {}).get("schemas", {})
+    caller_capabilities = schemas.get("CallerCapabilities", {})
+    for _pointer, node in nodes(caller_capabilities.get("examples", [])):
+        if not isinstance(node, dict):
+            continue
+        operation_id = node.get("operationId")
+        discovered = node.get("write")
+        if operation_id not in by_id or not isinstance(discovered, dict):
+            continue
+        operation = by_id[operation_id][2]
+        extension = operation.get(EXTENSION)
+        if not isinstance(extension, dict):
+            continue
+        static_window = extension.get("idempotencyReplayWindow")
+        discovered_window = discovered.get("idempotencyReplayWindow")
+        if discovered_window is not None and discovered_window != static_window:
+            raise ValueError(
+                f"Caller discovery replay window differs from {operation_id}"
+            )
+
+
 def _validate_response_shapes(
     source: Path, by_id: dict[str, tuple[str, str, dict[str, Any]]]
 ) -> None:
+    companion_operation_ids = {
+        companion["operationId"]
+        for _route, _method, operation in by_id.values()
+        if isinstance(operation.get(EXTENSION), dict)
+        for companion in [operation[EXTENSION].get("companionRead")]
+        if isinstance(companion, dict) and isinstance(companion.get("operationId"), str)
+    }
     for operation_id, (_route, _method, create) in by_id.items():
         extension = create.get(EXTENSION, {})
         if extension.get("capability") != "create":
@@ -1099,10 +1451,11 @@ def _validate_response_shapes(
                 )[1].get("required"):
                     raise ValueError(f"{operation_id} 202 requires Location")
             headers = {
-                name.casefold(): resolve_object(response_source, value)[1]
+                name.casefold(): resolve_object(response_source, value)
                 for name, value in response.get("headers", {}).items()
             }
-            cache = headers.get("cache-control")
+            cache_entry = headers.get("cache-control")
+            cache = cache_entry[1] if cache_entry is not None else None
             if cache is None or not cache.get("required"):
                 raise ValueError(f"{operation_id} {status} requires Cache-Control")
             cache_schema = cache.get("schema", {})
@@ -1112,6 +1465,36 @@ def _validate_response_shapes(
                 raise ValueError(
                     f"{operation_id} {status} Cache-Control must be no-store"
                 )
+            etag_entry = headers.get("etag")
+            if etag_entry is not None:
+                _validate_strong_etag_header(
+                    operation_id, status, etag_entry[0], etag_entry[1]
+                )
+            requires_change_request_tag = (
+                operation_id == "getChangeRequest"
+                or operation.get(EXTENSION, {}).get("capability") == "change-requests"
+            ) and status.startswith("2")
+            requires_companion_tag = (
+                operation_id in companion_operation_ids and status == "200"
+            )
+            if (requires_change_request_tag or requires_companion_tag) and (
+                etag_entry is None or not etag_entry[1].get("required")
+            ):
+                raise ValueError(
+                    f"{operation_id} {status} requires a strong ETag for exact guarded use"
+                )
+
+
+def _validate_strong_etag_header(
+    operation_id: str, status: str, source: Path, header: dict[str, Any]
+) -> None:
+    validator = Draft202012Validator(
+        _absolute_refs(source, header.get("schema", {})), registry=REGISTRY
+    )
+    if validator.is_valid('W/"weak"') or not validator.is_valid('"strong"'):
+        raise ValueError(
+            f"{operation_id} {status} ETag must use the strong entity-tag schema"
+        )
 
 
 def _property_consts(source: Path, schema: Any, property_name: str) -> set[Any]:
@@ -1239,11 +1622,9 @@ def _validate_client_fields(
         ):
             continue
         body_source, schema, _media = _request_schema(source, operation)
-        _resolved_source, schema = resolve_object(body_source, schema)
         forbidden = {
             key
-            for _pointer, node in nodes(schema)
-            if isinstance(node, dict)
+            for _schema_source, _pointer, node in _schema_nodes(body_source, schema)
             for key in node.get("properties", {})
             if key in FORBIDDEN_CLIENT_FIELDS
         }
@@ -1501,8 +1882,7 @@ def _journey_identity(step: dict[str, Any]) -> tuple[str, str] | None:
     if isinstance(body, dict):
         result = body.get("result", body)
         if isinstance(result, dict) and all(
-            isinstance(result.get(key), str)
-            for key in ("collectionId", "recordId")
+            isinstance(result.get(key), str) for key in ("collectionId", "recordId")
         ):
             return result["collectionId"], result["recordId"]
     operation_id = step.get("operationId")
@@ -1619,16 +1999,18 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
             )
         _validate_companion_guard(hidden)
         if hidden.get("fixtureCondition") != "mutation-relevant-hidden-state-changed":
-            raise ValueError("Hidden relevant change needs an explicit fixture condition")
+            raise ValueError(
+                "Hidden relevant change needs an explicit fixture condition"
+            )
         if stale_hidden.get("fixtureCondition") != (
             "previous-token-after-mutation-relevant-hidden-change"
         ):
-            raise ValueError("Hidden relevant stale attempt needs an explicit condition")
-        if (
-            visible.get("response", {}).get("body")
-            != hidden.get("response", {}).get("body")
-            or _journey_response_etag(visible) == _journey_response_etag(hidden)
-        ):
+            raise ValueError(
+                "Hidden relevant stale attempt needs an explicit condition"
+            )
+        if visible.get("response", {}).get("body") != hidden.get("response", {}).get(
+            "body"
+        ) or _journey_response_etag(visible) == _journey_response_etag(hidden):
             raise ValueError(
                 "Hidden mutation-relevant state must change the guard ETag without changing the permitted body"
             )
@@ -1657,9 +2039,7 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
             step
             for step in steps
             if step.get("operationId") == "getChangeRequest"
-            and step.get("response", {})
-            .get("body", {})
-            .get("applicationState")
+            and step.get("response", {}).get("body", {}).get("applicationState")
             == "applied"
         ]
         if len(applied) != 1:
@@ -1682,7 +2062,10 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
             if (
                 body.get("changeRequestId") != submitted.get("changeRequestId")
                 or path.get("changeRequestId") != submitted.get("changeRequestId")
-                or any(body.get(field) != submitted.get(field) for field in immutable_fields)
+                or any(
+                    body.get(field) != submitted.get(field)
+                    for field in immutable_fields
+                )
             ):
                 raise ValueError(
                     "Governed journey changes its Change Request identity or proposal"
@@ -1740,9 +2123,7 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
             or link.get("version") != version
             or bool(link.get("sameView")) is not same_view
         ):
-            raise ValueError(
-                f"Combined {kind} journey weakens its required handoff"
-            )
+            raise ValueError(f"Combined {kind} journey weakens its required handoff")
     if kind == "async-completion-read":
         accepted = by_name["accepted"].get("response", {}).get("body", {})
         completed = by_name["completed"].get("response", {}).get("body", {})
@@ -1766,8 +2147,7 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
             raise ValueError("Combined journey link names an unknown step")
         if link.get("sameEffectiveContext") is not None:
             if link.get("sameEffectiveContext") is not True or (
-                _journey_effective_context(source)
-                != _journey_effective_context(target)
+                _journey_effective_context(source) != _journey_effective_context(target)
             ):
                 raise ValueError(
                     "Combined journey effective authorization, disclosure, purpose, or field selection differs"
@@ -1790,15 +2170,15 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
         if version is None:
             continue
         if link.get("sameEffectiveContext") is not True:
-            raise ValueError("Combined journey version handoff needs one effective context")
+            raise ValueError(
+                "Combined journey version handoff needs one effective context"
+            )
         source_etag = _journey_response_etag(source)
         if source_etag is None:
             raise ValueError("Combined journey version source has no ETag")
         if version == "if-match":
             guard_id = _validate_companion_guard(source)
-            target_headers = _casefold_headers(
-                target.get("request", {}).get("headers")
-            )
+            target_headers = _casefold_headers(target.get("request", {}).get("headers"))
             if (
                 target_headers.get("if-match", (None, None))[1] != source_etag
                 or target.get("preconditionGuardEvaluationId") != guard_id
@@ -1831,9 +2211,7 @@ def validate_combined_journey(journey: dict[str, Any]) -> None:
             raise ValueError("Combined journey link names an unknown version handoff")
 
         if source.get("operationId") in {"updateRecord", "applyRecordTransition"}:
-            _route, _method, mutation = operation_by_id(
-                WRITE, source["operationId"]
-            )
+            _route, _method, mutation = operation_by_id(WRITE, source["operationId"])
             companion = mutation[EXTENSION]["companionRead"]
             if target.get("operationId") != companion["operationId"]:
                 raise ValueError("Mutation successor is not its declared companion GET")
@@ -1857,6 +2235,112 @@ def validate_contract_fixture(fixture: dict[str, Any]) -> None:
     if "value" not in fixture:
         raise ValueError("Canonical schema/value fixture needs a value")
     validate_schema_value(WRITE, {"$ref": schema}, fixture["value"])
+
+
+def _result_headers(response: dict[str, Any]) -> dict[str, Any]:
+    headers = _casefold_headers(response.get("headers"))
+    return {
+        name: headers[name][1]
+        for name in ("content-type", "location", "etag")
+        if name in headers
+    }
+
+
+def validate_contract_fixture_set(fixtures: list[dict[str, Any]]) -> None:
+    """Validate cross-fixture replay, fingerprint, and unresolved-claim claims."""
+    by_name = {fixture.get("name"): fixture for fixture in fixtures}
+    if len(by_name) != len(fixtures) or None in by_name:
+        raise ValueError("Canonical fixture names must be present and unique")
+    for fixture in fixtures:
+        replay_of = fixture.get("replayOf")
+        if replay_of is not None:
+            original = by_name.get(replay_of)
+            if original is None:
+                raise ValueError(f"Replay fixture names unknown original {replay_of}")
+            if fixture.get("operationId") != original.get("operationId") or fixture.get(
+                "request"
+            ) != original.get("request"):
+                raise ValueError(
+                    "Completed replay must use the original request fingerprint"
+                )
+            replay_response = fixture.get("response", {})
+            original_response = original.get("response", {})
+            if (
+                replay_response.get("status") != original_response.get("status")
+                or replay_response.get("body") != original_response.get("body")
+                or replay_response.get("mediaType")
+                != original_response.get("mediaType")
+                or _result_headers(replay_response)
+                != _result_headers(original_response)
+            ):
+                raise ValueError(
+                    "Completed replay must preserve status, body, media type, Location, and ETag"
+                )
+            if fixture.get("processingOrder") != [
+                "authenticate",
+                "authorize-and-apply-disclosure",
+                "resolve-completed-replay",
+                "evaluate-current-target-preconditions",
+            ]:
+                raise ValueError(
+                    "Replay fixture must place current authority before replay and replay before target preconditions"
+                )
+
+        fingerprint_of = fixture.get("fingerprintOf")
+        if fingerprint_of is not None:
+            original = by_name.get(fingerprint_of)
+            if original is None:
+                raise ValueError(
+                    f"Fingerprint fixture names unknown original {fingerprint_of}"
+                )
+            request = fixture.get("request", {})
+            original_request = original.get("request", {})
+            headers = _casefold_headers(request.get("headers"))
+            original_headers = _casefold_headers(original_request.get("headers"))
+            if (
+                fixture.get("operationId") != original.get("operationId")
+                or request.get("path") != original_request.get("path")
+                or request.get("body") != original_request.get("body")
+                or request.get("mediaType") != original_request.get("mediaType")
+                or headers.get("idempotency-key", (None, None))[1]
+                != original_headers.get("idempotency-key", (None, None))[1]
+                or headers.get("if-match", (None, None))[1]
+                == original_headers.get("if-match", (None, None))[1]
+            ):
+                raise ValueError(
+                    "Fingerprint mismatch fixture must differ in raw If-Match under the same key and request intent"
+                )
+            response = fixture.get("response", {})
+            if fixture.get("fingerprintIncludes") != [
+                "method",
+                "canonical-target-uri",
+                "content-type",
+                "canonical-body",
+                "raw-if-match",
+                "accept",
+            ]:
+                raise ValueError(
+                    "Fingerprint fixture must enumerate the target, body, and semantics-changing headers"
+                )
+            if (
+                response.get("status") != 422
+                or response.get("body", {}).get("type")
+                != "https://govstack.global/problems/digital-registries/idempotency-fingerprint-mismatch"
+            ):
+                raise ValueError(
+                    "Changed If-Match under one idempotency key must use fingerprint-mismatch 422"
+                )
+
+        claim = fixture.get("unresolvedClaim")
+        if claim is not None and claim != {
+            "state": "unresolved",
+            "afterReplayWindow": "retain-original-claim",
+            "clientFreshKeyForSameIntent": "prohibited-guidance",
+            "originalClaimReexecution": "prohibited",
+        }:
+            raise ValueError(
+                "Unresolved claims must survive expiry; clients must not treat a fresh key as recovery"
+            )
 
 
 def validate_example_coverage(exchanges: list[dict[str, Any]]) -> None:
@@ -1915,7 +2399,9 @@ def validate_all() -> None:
     if missing:
         raise ValueError(f"Required Write artifact is missing: {', '.join(missing)}")
     if not WRITE_ALIAS.is_symlink() or WRITE_ALIAS.resolve() != WRITE.resolve():
-        raise ValueError("api/write.openapi.yaml must be a symlink alias to api/openapi.yaml")
+        raise ValueError(
+            "api/write.openapi.yaml must be a symlink alias to api/openapi.yaml"
+        )
     canonical = load_document(WRITE)
     example_api = load_document(EXAMPLE_API)
     validate_no_duplicate_yaml_keys(WRITE)
@@ -1931,8 +2417,10 @@ def validate_all() -> None:
     for exchange in exchanges:
         validate_exchange(EXAMPLE_API, exchange)
     validate_example_coverage(exchanges)
-    for fixture in contract_fixture_items():
+    fixtures = contract_fixture_items()
+    for fixture in fixtures:
         validate_contract_fixture(fixture)
+    validate_contract_fixture_set(fixtures)
     journeys = combined_journey_items()
     expected_journey_kinds = {
         "create-retrieve",

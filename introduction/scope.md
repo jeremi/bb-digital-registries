@@ -103,7 +103,9 @@ The Consultation OpenAPI extension retains `capability` as a wire-level field na
 
 An existing Registry does not need to replace its internal software to implement the draft contract. An adaptor can translate an existing interface into the operations, metadata, outcomes, and bindings described here. Assessment concerns the resulting external behaviour and required evidence.
 
-The adaptor documents source currency, identifier mapping where needed, Collection membership, supported selectors and searches, and representation mappings. It does not fabricate source revisions, recording or effective times, history, or lifecycle facts to fill an envelope. A service offering latest reads does not need to implement revision operations, temporal features, caller capability discovery, purpose binding, or a general query engine.
+The adaptor documents source currency, identifier mapping and bounds where needed, Collection membership, supported selectors and searches, representation and error mappings, paging strategy, credential scope, source filters, and retry recovery. It does not fabricate source revisions, recording or effective times, history, or lifecycle facts to fill an envelope. A service offering latest reads does not need to implement revision operations, temporal features, caller capability discovery, purpose binding, or a general query engine. A Retrieve-only or Retrieve-plus-Lookup adapter is a legitimate minimal target.
+
+An adapter, gateway, and source can cooperate to satisfy the contract, but component labels do not establish the guarantee. Shared source credentials are permitted when their maximum scope and explicit source filters preserve the API's caller and target policy. Write coordination counts only when exclusivity and recovery remain enforceable across ordinary user interfaces, imports, jobs, and other writers. The repository's companion adoption guide, `guides/adopting-digital-registries.md`, consolidates informative adapter guidance covering applicability, mappings, credentials, errors, paging, and retry recovery without mandating a storage design or adapter product.
 
 ## Not covered
 

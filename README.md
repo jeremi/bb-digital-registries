@@ -44,7 +44,8 @@ remain conditional on the source and the selected capability or feature.
 - **API consumers:** use the unified [Registry API reference](resources/api-reference.md).
   The
   [API examples](resources/api-examples/README.md) illustrate deployment choices
-  and add no requirements to the shared contract.
+  and add no requirements to the shared contract. Generated Retrieve-only and
+  Retrieve-plus-Lookup profiles provide minimal starting points.
 - **Assessors:** use the [verification procedures](resources/testing.md),
   [Write verification](resources/write-testing.md), and the applicability
   declarations in the functionality files.

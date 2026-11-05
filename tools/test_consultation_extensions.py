@@ -258,7 +258,39 @@ class ConsultationExtensionTests(unittest.TestCase):
         )
         self.assertTrue({"retrieveBirthRegistration", "searchBirthRegistrations",
                          "listBirthRegistrationRevisions", "retrieveBirthRegistrationRevision",
-                         "getCallerCapabilities"}.issubset(seen))
+                         "getCallerCapabilities", "lookupRecord"}.issubset(seen))
+
+    def test_lookup_error_examples_are_cause_specific_contract_artifacts(self):
+        exchanges = json.loads(
+            (API / "examples/consultation-extension-exchanges.json").read_text()
+        )["exchanges"]
+        by_name = {exchange["name"]: exchange for exchange in exchanges}
+        expected = {
+            "lookupUnknownSelector": (422, "/selector"),
+            "lookupWholeInputInvalid": (422, ""),
+            "lookupProtectedAmbiguity": (404, None),
+            "lookupDeclaredUniquenessMisconfigured": (500, None),
+            "lookupUpstreamUniquenessViolation": (502, None),
+        }
+        for name, (status, pointer) in expected.items():
+            with self.subTest(exchange=name):
+                exchange = by_name[name]
+                self.assertEqual(exchange["response"]["status"], status)
+                consultation.validate_exchange(CANONICAL, exchange)
+                errors = exchange["response"].get("body", {}).get("errors", [])
+                if pointer is not None:
+                    self.assertEqual([error["pointer"] for error in errors], [pointer])
+                elif name == "lookupWholeInputInvalid":
+                    self.assertEqual([error["pointer"] for error in errors], [""])
+
+        root_pointer = {
+            "type": "https://govstack.global/problems/digital-registries/invalid-content",
+            "title": "Request content is invalid",
+            "status": 422,
+            "traceId": "6f1c3f0e2a9b4c8d7e6f5a4b3c2d1e0f",
+            "errors": [{"pointer": "", "message": "The request is invalid as a whole."}],
+        }
+        schema("ValidationProblem").validate(root_pointer)
 
     def test_discovery_rejects_conflicting_duplicate_identities(self):
         operation = {"contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml",
@@ -526,8 +558,13 @@ class ConsultationExtensionTests(unittest.TestCase):
                         {**operation, "capability": "revision-list", "features": ["effective-time"]}):
             self.assertFalse(check.is_valid(invalid), invalid)
 
-    def test_write_discovery_forbids_top_level_read_purpose(self):
+    def test_discovery_allows_shared_purpose_on_read_and_write(self):
         check = schema("CapabilityOperation")
+        purpose = {
+            "required": True,
+            "binding": "trusted-authorization-context",
+            "allowedPurposes": ["record-correction"],
+        }
         operation = {
             "operationId": "updateRecord",
             "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml",
@@ -539,21 +576,24 @@ class ConsultationExtensionTests(unittest.TestCase):
                     "view": "record-public",
                 },
                 "idempotencyReplayWindow": 86400,
+                "concurrencyPolicy": "required",
             },
+            "purpose": purpose,
         }
         check.validate(operation)
-        self.assertFalse(
-            check.is_valid(
-                {
-                    **operation,
-                    "purpose": {
-                        "required": True,
-                        "binding": "trusted-authorization-context",
-                        "allowedPurposes": ["record-correction"],
-                    },
-                }
-            )
-        )
+        self.assertNotIn("features", operation)
+
+        read = {
+            "operationId": "retrieveRecord",
+            "contract": "https://registry.example/contracts/1.0.0-draft/openapi.yaml",
+            "family": "consultation",
+            "capability": "retrieve",
+            "view": "record-public",
+            "features": ["purpose-bound"],
+            "purpose": purpose,
+        }
+        check.validate(read)
+        self.assertFalse(check.is_valid({**read, "features": []}))
 
     def test_keyed_write_discovery_publishes_the_replay_window(self):
         check = schema("CapabilityOperation")
@@ -571,6 +611,99 @@ class ConsultationExtensionTests(unittest.TestCase):
         for capability in ("change-requests", "change-request-approve", "change-request-reject", "change-request-withdraw"):
             self.assertFalse(check.is_valid({**unpublished, "capability": capability}), capability)
         check.validate({**unpublished, "capability": "change-request-list"})
+
+    def test_write_discovery_copies_authoritative_static_metadata(self):
+        examples = document(CANONICAL)["components"]["schemas"]["CallerCapabilities"][
+            "examples"
+        ]
+        baseline = deepcopy(examples[0])
+        write_entries = [
+            entry
+            for collection in baseline["collections"]
+            for entry in collection["operations"]
+            if entry.get("family") == "write"
+        ]
+        self.assertTrue(write_entries)
+        for entry in write_entries:
+            consultation.validate_caller_capabilities(baseline)
+            _, _, operation = consultation._operation_by_id(
+                CANONICAL, entry["operationId"]
+            )
+            authoritative = operation[consultation.WRITE_EXTENSION]
+            if "idempotencyReplayWindow" in authoritative:
+                self.assertEqual(
+                    entry["write"]["idempotencyReplayWindow"],
+                    authoritative["idempotencyReplayWindow"],
+                )
+                mismatched = deepcopy(baseline)
+                candidate = next(
+                    value
+                    for collection in mismatched["collections"]
+                    for value in collection["operations"]
+                    if value["operationId"] == entry["operationId"]
+                )
+                candidate["write"]["idempotencyReplayWindow"] += 1
+                with self.assertRaisesRegex(ValueError, "replay window"):
+                    consultation.validate_caller_capabilities(mismatched)
+            if "concurrencyPolicy" in authoritative:
+                if "concurrencyPolicy" in entry["write"]:
+                    self.assertEqual(
+                        entry["write"]["concurrencyPolicy"],
+                        authoritative["concurrencyPolicy"],
+                    )
+                without_copy = deepcopy(baseline)
+                candidate = next(
+                    value
+                    for collection in without_copy["collections"]
+                    for value in collection["operations"]
+                    if value["operationId"] == entry["operationId"]
+                )
+                candidate["write"].pop("concurrencyPolicy", None)
+                consultation.validate_caller_capabilities(without_copy)
+
+                mismatched = deepcopy(baseline)
+                candidate = next(
+                    value
+                    for collection in mismatched["collections"]
+                    for value in collection["operations"]
+                    if value["operationId"] == entry["operationId"]
+                )
+                candidate["write"]["concurrencyPolicy"] = "future-policy"
+                with self.assertRaises((ValidationError, ValueError)):
+                    consultation.validate_caller_capabilities(mismatched)
+
+    def test_cursor_bounds_and_binding_use_effective_context(self):
+        canonical = document(CANONICAL)
+        cursor = canonical["components"]["schemas"]["Cursor"]
+        self.assertEqual(cursor["maxLength"], 4096)
+        change_request_cursor = canonical["components"]["parameters"][
+            "ChangeRequestCursor"
+        ]
+        self.assertEqual(change_request_cursor["schema"]["maxLength"], 4096)
+        for value in (cursor, change_request_cursor):
+            description = value["description"].lower()
+            self.assertIn("effective", description)
+            self.assertIn("token instance", description)
+            self.assertRegex(description, r"(?:excludes|does not bind).{0,32}token instance")
+
+        for contract, _, _, operation in operations():
+            for source, parameter in operation_parameters(contract, operation):
+                if parameter["name"] != "cursor":
+                    continue
+                schema_value = parameter["schema"]
+                if "$ref" in schema_value:
+                    _, schema_value = resolve_object(source, schema_value)
+                self.assertLessEqual(schema_value["maxLength"], 4096)
+
+    def test_record_identifiers_are_finitely_bounded_without_universal_uuid_ascii_256(self):
+        record_id = schema("RecordId")
+        declaration = document(CANONICAL)["components"]["schemas"]["RecordId"]
+        self.assertGreaterEqual(declaration["minLength"], 1)
+        self.assertGreater(declaration["maxLength"], 256)
+        self.assertNotEqual(declaration.get("format"), "uuid")
+        record_id.validate("ทะเบียน-ร_42")
+        record_id.validate("r" * 257)
+        self.assertFalse(record_id.is_valid("r" * (declaration["maxLength"] + 1)))
 
     def test_temporal_search_example_echoes_selection_on_empty_pages(self):
         witnessed = False
@@ -805,7 +938,6 @@ class ConsultationExtensionTests(unittest.TestCase):
                     self.assertFalse(
                         {
                             "features",
-                            "purpose",
                             "readableFields",
                             "selectors",
                             "searches",

@@ -11,7 +11,9 @@ compatibility paths [`api/write.openapi.yaml`](../api/write.openapi.yaml) and
 
 The [Write binding](../requirements/registry-services.md#write-write) defines
 proposal and source preconditions, review and application outcomes, and declared
-commit guarantees. The
+commit guarantees, including static `idempotencyReplayWindow`, guarded Update
+with `concurrencyPolicy: required`, optional mutation-receipt ETags, and retained
+unresolved idempotency claims. The
 [non-normative example contract](../api/examples/write-examples.openapi.yaml) and
 [example guide](api-examples/README.md) illustrate birth registration and
 household journeys. Their domain models remain institution-selected examples and

@@ -20,3 +20,5 @@ jobs:
       - run: uv run python tools/validate_specification.py
       - run: uv run python tools/validate_consultation.py
       - run: uv run python tools/validate_write.py
+      - run: uv run python tools/project_contract.py --validate api/examples/retrieve-only.openapi.yaml
+      - run: uv run python tools/project_contract.py --validate api/examples/retrieve-lookup.openapi.yaml

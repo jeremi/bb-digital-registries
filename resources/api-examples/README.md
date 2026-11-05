@@ -6,6 +6,8 @@ description: Illustrative Registry API read and Write bindings, schemas, and exc
 
 The read examples below specialise the read operations in the unified [Registry API contract](../api-reference.md). The independently selectable Write examples are listed separately below.
 
+Two generated minimal profiles are also available: [Retrieve-only](../../api/examples/retrieve-only.openapi.yaml) and [Retrieve plus Lookup](../../api/examples/retrieve-lookup.openapi.yaml). They are derived from the unified owner, require neither caller capability discovery nor Write, and can be regenerated with `uv run python tools/project_contract.py SOURCE OUTPUT --operation-id retrieveRecord --baseline-retrieve` and an additional `--operation-id lookupRecord` for the second profile. The explicit preset omits the canonical reference's optional conditional-read feature; without it, projection preserves the selected operation unchanged. Validate a generated or independently authored concrete contract with `uv run python tools/project_contract.py --validate CONTRACT`.
+
 | OpenAPI | Collection | Capabilities | Selectable features | Record view |
 | --- | --- | --- | --- | --- |
 | [Business registry](business.md) | `/v1/collections/businesses` | Retrieve, Lookup, List, Search | Field selection on all operations; conditional Retrieve; complete List and Search traversal | Legal name and registration status |

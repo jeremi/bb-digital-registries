@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Registry metadata document",
-  "description": "Shape of a Registry metadata document compacted with the Digital Registries JSON-LD context version 1. The document is a named graph of catalogue, Registry, agent, dataset and Data Service nodes. Every govreg:Registry node carries the minimal metadata required by Registry Core and every dcat:DataService node carries the service discovery metadata.",
+  "description": "Shape of a Registry metadata document compacted with the Digital Registries JSON-LD context version 1. The document is a named graph of catalogue, Registry, agent, dataset and Data Service nodes. Every govreg:Registry node carries the minimal metadata required by Registry Core and every dcat:DataService node carries the service discovery metadata. Publication may be audience-restricted under institutional policy; this shape does not require anonymous disclosure.",
   "type": "object",
   "required": ["@context", "@graph"],
   "properties": {
